@@ -1,0 +1,436 @@
+/* =========================================================
+   FRATEL-AGRIPREDICT — COHESIVE BOTANICAL THEME
+   White workspace · deep botanical navigation · fresh green actions
+   ========================================================= */
+:root {
+  --fratel-brand: #22A85A;
+  --fratel-brand-bright: #22C55E;
+  --fratel-brand-dark: #174D35;
+  --fratel-brand-soft: #E8F7ED;
+  --fratel-teal: #258F83;
+  --fratel-blue: #3189B8;
+  --fratel-amber: #C58A2A;
+  --fratel-violet: #7667A8;
+  --fratel-red: #C65C55;
+  --fratel-ink: #20372B;
+  --fratel-muted: #718077;
+  --fratel-line: #E4ECE6;
+  --fratel-shadow: 0 8px 24px rgba(24,77,53,.055);
+}
+
+/* Keep every page surface white and typography consistent. */
+html, body { background: #FFFFFF !important; color: var(--fratel-ink) !important; }
+.setup-view, .app-shell, .app-body, .app-main, .main-content,
+.app-content, .app-page, .workspace-view { background: #FFFFFF !important; }
+.app-header { background: #FFFFFF !important; border-bottom: 1px solid var(--fratel-line) !important; box-shadow: 0 3px 14px rgba(24,77,53,.035) !important; }
+.brand-name, .brand-name span { color: var(--fratel-brand-dark) !important; }
+.brand-mark { background: var(--fratel-brand-soft) !important; }
+.application-name { color: #52665A !important; }
+
+/* Sidebar: deep botanical green, not a bright gradient. */
+.app-sidebar {
+  background: #174D35 !important;
+  color: #F7FCF8 !important;
+  border-right: 0 !important;
+  box-shadow: 8px 0 26px rgba(18,65,43,.12) !important;
+}
+.app-sidebar .sidebar-label { color: #A8C9B3 !important; }
+.app-sidebar .sidebar-link {
+  color: #E5F2E9 !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: 11px !important;
+}
+.app-sidebar .sidebar-link .nav-icon {
+  color: #D8EBDD !important;
+  background: rgba(255,255,255,.10) !important;
+  border-radius: 9px !important;
+}
+.app-sidebar .sidebar-link:hover {
+  color: #FFFFFF !important;
+  background: rgba(255,255,255,.10) !important;
+  transform: translateX(2px);
+}
+.app-sidebar .sidebar-link.active {
+  color: #174D35 !important;
+  background: #FFFFFF !important;
+  border-color: rgba(255,255,255,.55) !important;
+  box-shadow: 0 5px 15px rgba(5,35,20,.16) !important;
+}
+.app-sidebar .sidebar-link.active .nav-icon {
+  color: #FFFFFF !important;
+  background: #22A85A !important;
+}
+.app-sidebar .sidebar-brand-note {
+  color: #EAF5ED !important;
+  background: rgba(255,255,255,.09) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+}
+.app-sidebar .sidebar-brand-note span:first-child { color: #FFFFFF !important; }
+.app-sidebar .sidebar-link:focus-visible { outline: 3px solid #A7E8BB !important; outline-offset: 2px; }
+
+/* Common buttons, inputs and content surfaces. */
+.btn-primary, .primary-button, .action-primary, .setup-submit {
+  color: #FFFFFF !important;
+  background: #22A85A !important;
+  border-color: #22A85A !important;
+  box-shadow: 0 5px 13px rgba(34,168,90,.16) !important;
+}
+.btn-primary:hover, .primary-button:hover, .action-primary:hover, .setup-submit:hover {
+  background: #18884A !important;
+  border-color: #18884A !important;
+}
+.btn-outline, .btn-secondary {
+  color: #276447 !important;
+  background: #FFFFFF !important;
+  border-color: #D8E7DC !important;
+}
+.content-panel, .dashboard-card, .metric-card, .prediction-card,
+.feed-module-panel, .report-card, .price-category-card,
+.quick-record-card, .menu-card, .afi-panel {
+  background: #FFFFFF !important;
+  border: 1px solid var(--fratel-line) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--fratel-shadow) !important;
+}
+.page-heading .eyebrow, .eyebrow { color: #18884A !important; }
+.home-active-batch, .active-batch-hero, .lifecycle-hero,
+.overview-welcome {
+  color: var(--fratel-ink) !important;
+  background: #FBFEFC !important;
+  border: 1px solid #D8EBDD !important;
+  box-shadow: var(--fratel-shadow) !important;
+}
+.home-active-batch h1, .home-active-batch h2, .home-active-batch strong,
+.active-batch-hero h1, .active-batch-hero h2,
+.overview-welcome h1, .overview-welcome h2 { color: var(--fratel-ink) !important; }
+.home-active-batch p, .home-active-batch small,
+.active-batch-hero p, .active-batch-hero small,
+.overview-welcome p { color: var(--fratel-muted) !important; }
+
+/* Keep ordinary management pages calm and readable. */
+.metric-card::before { background: #22A85A !important; }
+.section-number, .quick-record-icon, .report-icon, .price-category-icon {
+  background: var(--fratel-brand-soft) !important;
+  color: #187444 !important;
+  box-shadow: none !important;
+}
+.quick-record-card:hover, .menu-card:hover {
+  background: #FBFEFC !important;
+  border-color: #BBDCC5 !important;
+  box-shadow: 0 10px 24px rgba(24,77,53,.08) !important;
+}
+.lifecycle-progress, .growth-bar, .progress-fill {
+  background: linear-gradient(90deg,#22A85A,#79D79A) !important;
+}
+.sidebar-link.active, .nav-link.active, .feed-module-nav button.active {
+  background: #E8F7ED !important;
+  color: #176B43 !important;
+  border-color: #D5EBDD !important;
+}
+.sidebar-link:hover, .nav-link:hover, .feed-module-nav button:hover {
+  background: #F2F8F4 !important;
+  color: #176B43 !important;
+}
+.form-control:focus, input:focus, select:focus, textarea:focus {
+  border-color: #4EBB79 !important;
+  box-shadow: 0 0 0 3px rgba(34,168,90,.12) !important;
+}
+.table-container, .table-responsive, .table-scroll, .afi-chart-wrap {
+  background: #FFFFFF !important;
+  border-color: var(--fratel-line) !important;
+}
+thead th, .afi-table thead th {
+  background: #F1F7F3 !important;
+  color: #42634F !important;
+}
+tbody tr:nth-child(even) { background: #FBFDFC !important; }
+tbody tr:hover td { background: #F4F9F5 !important; }
+
+/* =========================================================
+   FORECASTING INTELLIGENCE — clear hierarchy and restrained colour
+   ========================================================= */
+.afi-hero {
+  position: relative;
+  overflow: hidden;
+  color: var(--fratel-ink) !important;
+  background: #FBFEFC !important;
+  border: 1px solid #D8EBDD !important;
+  border-radius: 20px !important;
+  box-shadow: var(--fratel-shadow) !important;
+}
+.afi-hero:before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: #22A85A;
+  border-radius: 20px 0 0 20px;
+}
+.afi-hero .eyebrow { color: #18884A !important; }
+.afi-hero h2 { color: var(--fratel-ink) !important; }
+.afi-hero p { color: var(--fratel-muted) !important; }
+.afi-hero-mark span {
+  color: #176B43 !important;
+  background: #E8F7ED !important;
+  border: 1px solid #D8EBDD !important;
+}
+.afi-hero-mark small { color: #47745A !important; }
+
+.afi-stat-grid { gap: 13px !important; }
+.afi-stat {
+  position: relative;
+  overflow: hidden;
+  background: #FFFFFF !important;
+  border: 1px solid var(--fratel-line) !important;
+  border-radius: 15px !important;
+  box-shadow: 0 5px 16px rgba(24,77,53,.04) !important;
+}
+.afi-stat:nth-child(1) { border-top: 3px solid #22A85A !important; }
+.afi-stat:nth-child(2) { border-top: 3px solid #258F83 !important; }
+.afi-stat:nth-child(3) { border-top: 3px solid #C58A2A !important; }
+.afi-stat:nth-child(4) { border-top: 3px solid #7667A8 !important; }
+.afi-stat span, .afi-stat small { color: var(--fratel-muted) !important; }
+.afi-stat strong { color: var(--fratel-ink) !important; }
+
+.afi-panel { padding: 20px !important; margin-top: 16px !important; }
+.afi-panel .panel-heading h2 { color: var(--fratel-ink) !important; }
+.afi-panel .panel-heading p { color: var(--fratel-muted) !important; }
+.afi-panel .eyebrow { color: #18884A !important; }
+.afi-flock-outlook-panel { border-top: 3px solid #22A85A !important; }
+.afi-live-chip, .afi-simulation-chip, .afi-horizon-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 11px;
+  border-radius: 30px;
+  color: #176B43 !important;
+  background: #E8F7ED !important;
+  border: 1px solid #D8EBDD !important;
+  font-size: 10px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+.afi-live-chip i { width: 7px; height: 7px; border-radius: 50%; background: #22A85A; box-shadow: 0 0 0 4px #DDF2E3; }
+.afi-flock-outlook { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.afi-flock-card {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  padding: 16px;
+  background: #FBFEFC !important;
+  border: 1px solid #E2ECE5 !important;
+  border-radius: 14px !important;
+}
+.afi-flock-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.afi-flock-icon { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 11px; background: #E8F7ED; color: #176B43; font-size: 21px; }
+.afi-stage-pill { padding: 6px 9px; border-radius: 30px; background: #EAF3EE !important; color: #315E45 !important; font-size: 9px; font-weight: 850; }
+.afi-flock-card > strong { font-size: 15px; color: var(--fratel-ink) !important; }
+.afi-flock-card > small { color: var(--fratel-muted) !important; font-size: 10px; }
+.afi-flock-facts { display: flex; flex-wrap: wrap; gap: 7px; }
+.afi-flock-facts span { padding: 6px 8px; border-radius: 8px; background: #FFFFFF; border: 1px solid #E2ECE5; color: #52695A; font-size: 9px; }
+.afi-flock-empty { grid-column: 1/-1; padding: 18px; border: 1px dashed #C8DCCF; border-radius: 12px; color: #718077; background: #FBFEFC; font-size: 12px; }
+
+/* Ingredient price simulation is the primary interaction. */
+.afi-simulation-panel { border-top: 3px solid #7667A8 !important; }
+.afi-simulation-chip { color: #5F528D !important; background: #F4F1F8 !important; border-color: #E6E0EF !important; }
+.afi-sim-input-row {
+  display: grid;
+  grid-template-columns: minmax(220px,1fr) auto minmax(180px,.9fr);
+  align-items: end;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid #E2ECE5;
+  border-radius: 14px;
+  background: #FBFEFC !important;
+}
+.afi-sim-input-row > label { display: grid; gap: 7px; color: #345340; font-size: 11px; font-weight: 850; }
+.afi-sim-input-row input {
+  width: 100%; padding: 12px; border: 1px solid #D7E5DB; border-radius: 10px;
+  background: #FFFFFF; color: var(--fratel-ink); font: inherit; font-size: 15px; font-weight: 800;
+}
+.afi-sim-input-row input:focus { outline: 3px solid #DDF2E3; border-color: #4EBB79; }
+.afi-reset-button {
+  padding: 11px 13px; border: 1px solid #D8E7DC; border-radius: 10px;
+  background: #FFFFFF; color: #315E45; font-size: 10px; font-weight: 850; cursor: pointer;
+}
+.afi-reset-button:hover { background: #E8F7ED; border-color: #BBDCC5; }
+.afi-sim-price-reference { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 10px; align-content: center; }
+.afi-sim-price-reference small { color: var(--fratel-muted); font-size: 9px; }
+.afi-sim-price-reference strong { color: #315E45; font-size: 12px; }
+.afi-sim-metrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; margin: 13px 0; }
+.afi-sim-metric {
+  display: grid; gap: 7px; min-width: 0; padding: 14px;
+  background: #F6FBF7 !important; border: 1px solid #E0ECE3 !important; border-radius: 13px;
+}
+.afi-sim-metric small { color: var(--fratel-muted) !important; font-size: 10px; }
+.afi-sim-metric strong { color: #176B43 !important; font-size: clamp(15px,1.6vw,20px); overflow-wrap: anywhere; }
+.afi-sim-metric.amber { background: #FBF5E9 !important; border-color: #EFE3C9 !important; }
+.afi-sim-metric.amber strong { color: #94651E !important; }
+.afi-sim-metric.blue { background: #EFF7FB !important; border-color: #DCEAF1 !important; }
+.afi-sim-metric.blue strong { color: #286D91 !important; }
+.afi-sim-metric.violet { background: #F4F1F8 !important; border-color: #E6E0EF !important; }
+.afi-sim-metric.violet strong { color: #65578F !important; }
+.afi-sim-explanation {
+  padding: 13px 15px; margin-bottom: 12px; border-left: 4px solid #7667A8;
+  border-radius: 0 11px 11px 0; background: #F8F6FA !important; color: #5F5870 !important;
+  font-size: 11px; line-height: 1.65;
+}
+.afi-sim-table .afi-cost-up { color: #A95F2E !important; font-weight: 900; }
+.afi-sim-table .afi-cost-down { color: #187444 !important; font-weight: 900; }
+.afi-sim-table .afi-cost-neutral { color: #64748B !important; font-weight: 800; }
+
+/* Feed stock and production impact. */
+.afi-stock-panel { border-top: 3px solid #258F83 !important; }
+.afi-stock-summary { display: flex; gap: 10px; margin-bottom: 13px; flex-wrap: wrap; }
+.afi-stock-summary > div {
+  min-width: 145px; padding: 12px 14px; border-radius: 12px;
+  background: #EFF8F5 !important; border: 1px solid #DCECE6 !important; display: grid; gap: 3px;
+}
+.afi-stock-summary span { color: #668076 !important; font-size: 10px; }
+.afi-stock-summary strong { color: #24695C !important; font-size: 20px; }
+.afi-subheading { margin: 15px 0 9px; color: #315E45 !important; font-size: 12px; }
+.afi-table { width: 100%; border-collapse: collapse; min-width: 580px; }
+.afi-table th, .afi-table td { padding: 11px 12px; border-bottom: 1px solid #EAF0EC; text-align: left; font-size: 11px; }
+.afi-table th { color: #42634F; background: #F1F7F3; font-size: 9px; letter-spacing: .6px; text-transform: uppercase; }
+.afi-table td { color: #52665A; }
+.afi-chart-wrap { padding: 14px; border: 1px solid #E2ECE5 !important; border-radius: 14px; background: #FBFEFC !important; }
+.afi-chart-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 10px; color: #718077; font-size: 10px; }
+.afi-chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.afi-chart-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.afi-legend-actual { background: #22A85A !important; }
+.afi-legend-forecast { background: #3189B8 !important; }
+.afi-insights { display: grid; gap: 9px; }
+.afi-insight { background: #FBFEFC !important; border: 1px solid #E2ECE5 !important; border-radius: 12px !important; transition: transform .18s ease,box-shadow .18s ease; }
+.afi-insight:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(24,77,53,.07); }
+.afi-watch { background: #FBF5E9 !important; border-color: #EFE3C9 !important; }
+.afi-good { background: #EFF8F1 !important; border-color: #D8EBDD !important; }
+.afi-good > span { background: #DCEFE2 !important; color: #176B43 !important; }
+.afi-disclaimer { background: #F6FAF7 !important; border-left-color: #22A85A !important; }
+.afi-knowledge-list { display: grid; gap: 8px; }
+.afi-knowledge-list > * { border-color: #E4ECE6 !important; }
+
+/* Existing price chart and financial pages share the same restrained palette. */
+.afi-price-kpis > div { background: #F6FBF7 !important; border: 1px solid #E1ECE4 !important; }
+.afi-price-kpis > div:nth-child(2) { background: #EFF8F5 !important; }
+.afi-price-kpis > div:nth-child(3) { background: #FBF5E9 !important; }
+.afi-price-kpis > div:nth-child(4) { background: #F4F1F8 !important; }
+.afi-horizon-chip { background: #E8F7ED !important; color: #176B43 !important; }
+.afi-chart { color: #22A85A !important; }
+.afi-two-column { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
+
+@media (max-width: 900px) {
+  .afi-two-column { grid-template-columns: 1fr; }
+  .afi-sim-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 760px) {
+  html, body { background: #FFFFFF !important; }
+  .afi-flock-outlook { grid-template-columns: 1fr; }
+  .afi-sim-input-row { grid-template-columns: 1fr; }
+  .afi-sim-price-reference { grid-template-columns: 1fr 1fr; }
+  .afi-stock-summary > div { flex: 1 1 130px; }
+  .afi-panel { padding: 15px !important; }
+}
+@media (max-width: 480px) {
+  .afi-sim-metrics { grid-template-columns: 1fr 1fr; }
+  .afi-hero { padding: 18px 16px !important; }
+  .afi-hero-mark { display: none; }
+}
+
+/* =========================================================
+   AGRIPREDICT COLOUR BALANCE — broiler management & intelligence
+   A clear colour language: blue growth, teal feed, amber costs,
+   violet forecasting, orange simulation, green good performance.
+   ========================================================= */
+:root {
+  --fratel-brand: #22C55E;
+  --fratel-brand-dark: #174D35;
+  --fratel-teal: #0F9D91;
+  --fratel-blue: #1689C7;
+  --fratel-amber: #D58A12;
+  --fratel-violet: #7654C8;
+  --fratel-orange: #E87522;
+  --fratel-red: #D94B50;
+  --fratel-teal-soft: #E8F8F5;
+  --fratel-blue-soft: #EAF6FD;
+  --fratel-amber-soft: #FFF5DF;
+  --fratel-violet-soft: #F2EEFF;
+  --fratel-orange-soft: #FFF0E5;
+}
+
+/* Broiler navigation stays forest green; workspace remains white. */
+.app-sidebar { background: #174D35 !important; }
+.app-sidebar .sidebar-link.active { background: #FFFFFF !important; color: #174D35 !important; }
+.app-sidebar .sidebar-link.active .nav-icon { background: #22C55E !important; color: #FFFFFF !important; }
+.app-sidebar .sidebar-link:hover:not(.active) { background: rgba(255,255,255,.12) !important; color: #FFFFFF !important; }
+
+/* Management modules use their own colour identities, not one green wash. */
+.metric-card:nth-child(4n+1)::before { background: #22C55E !important; }
+.metric-card:nth-child(4n+2)::before { background: #1689C7 !important; }
+.metric-card:nth-child(4n+3)::before { background: #0F9D91 !important; }
+.metric-card:nth-child(4n)::before { background: #D58A12 !important; }
+.growth-bar, .progress-fill { background: linear-gradient(90deg,#1689C7,#56B7E8) !important; }
+.lifecycle-progress { background: linear-gradient(90deg,#22C55E,#78D99B) !important; }
+.feed-module-nav button.active { background: #E8F8F5 !important; color: #087F76 !important; border-color: #BCE8E1 !important; }
+.feed-module-nav button:hover { background: #F0FAF8 !important; color: #087F76 !important; }
+.price-category-icon, .report-icon { background: #EAF6FD !important; color: #1479B0 !important; }
+
+/* Forecasting hero and KPIs: a distinct violet analytical identity. */
+.afi-hero { background: linear-gradient(112deg,#F2EEFF 0%,#FFFFFF 58%,#EFF8FF 100%) !important; border-color: #E1D9F5 !important; }
+.afi-hero:before { background: linear-gradient(180deg,#7654C8,#1689C7) !important; }
+.afi-hero .eyebrow, .afi-hero-mark small { color: #6949B5 !important; }
+.afi-hero-mark span { background: #E8E0FF !important; border-color: #D8CCF7 !important; color: #6744B7 !important; }
+.afi-stat:nth-child(1) { border-top-color: #22C55E !important; background: #FBFFFC !important; }
+.afi-stat:nth-child(2) { border-top-color: #1689C7 !important; background: #F9FCFF !important; }
+.afi-stat:nth-child(3) { border-top-color: #D58A12 !important; background: #FFFCF5 !important; }
+.afi-stat:nth-child(4) { border-top-color: #7654C8 !important; background: #FBF9FF !important; }
+
+/* Production outlook = blue; stage badges use clean, readable tints. */
+.afi-flock-outlook-panel { border-top-color: #1689C7 !important; }
+.afi-flock-card { background: #F8FCFF !important; border-color: #DCECF5 !important; }
+.afi-flock-icon { background: #E1F2FC !important; color: #1479B0 !important; }
+.afi-stage-pill { background: #EAF6FD !important; color: #176E9B !important; }
+.afi-flock-facts span { background: #FFFFFF !important; border-color: #DCECF5 !important; }
+
+/* Live price simulation = violet with orange scenario controls. */
+.afi-simulation-panel { border-top-color: #7654C8 !important; }
+.afi-simulation-chip { color: #6544B5 !important; background: #F2EEFF !important; border-color: #DED5F8 !important; }
+.afi-sim-input-row { background: #FFFAF5 !important; border-color: #F5E1CE !important; }
+.afi-sim-input-row > label { color: #9A4C19 !important; }
+.afi-sim-input-row input:focus { outline-color: #FFE0C5 !important; border-color: #E87522 !important; }
+.afi-reset-button:hover { background: #FFF0E5 !important; border-color: #F3C8A8 !important; color: #A94F16 !important; }
+.afi-sim-metric { background: #F8F5FF !important; border-color: #E6DFF8 !important; }
+.afi-sim-metric strong { color: #6848B8 !important; }
+.afi-sim-metric.amber { background: #FFF8E9 !important; border-color: #F2E2BA !important; }
+.afi-sim-metric.amber strong { color: #A66A08 !important; }
+.afi-sim-metric.blue { background: #EFF8FE !important; border-color: #D8EAF7 !important; }
+.afi-sim-metric.blue strong { color: #1479B0 !important; }
+.afi-sim-metric.violet { background: #F2EEFF !important; border-color: #E1D9F5 !important; }
+.afi-sim-metric.violet strong { color: #6848B8 !important; }
+.afi-sim-explanation { border-left-color: #E87522 !important; background: #FFF6EF !important; color: #874619 !important; }
+.afi-sim-table .afi-cost-up { color: #C65D17 !important; }
+.afi-sim-table .afi-cost-down { color: #168247 !important; }
+
+/* Feed stock = turquoise; shortage notices = amber/orange. */
+.afi-stock-panel { border-top-color: #0F9D91 !important; }
+.afi-stock-summary > div { background: #E8F8F5 !important; border-color: #CDECE6 !important; }
+.afi-stock-summary strong { color: #087F76 !important; }
+.afi-subheading { color: #087F76 !important; }
+.afi-table th { background: #EAF6F5 !important; color: #176F68 !important; }
+.afi-legend-actual { background: #0F9D91 !important; }
+.afi-legend-forecast { background: #7654C8 !important; }
+.afi-chart-wrap { background: #FCFBFF !important; border-color: #E5DFF4 !important; }
+.afi-watch { background: #FFF5E8 !important; border-color: #F4DAB9 !important; }
+.afi-good { background: #EAF8EF !important; border-color: #CBEBD5 !important; }
+.afi-good > span { background: #D7F2E0 !important; color: #168247 !important; }
+.afi-disclaimer { background: #F4F0FF !important; border-left-color: #7654C8 !important; }
+.afi-price-kpis > div { background: #EAF8EF !important; border-color: #D3EEDD !important; }
+.afi-price-kpis > div:nth-child(2) { background: #EAF6FD !important; border-color: #D6EAF7 !important; }
+.afi-price-kpis > div:nth-child(3) { background: #FFF5DF !important; border-color: #F2E3BE !important; }
+.afi-price-kpis > div:nth-child(4) { background: #F2EEFF !important; border-color: #E1D9F5 !important; }
+.afi-horizon-chip { background: #F2EEFF !important; color: #6848B8 !important; border-color: #DED5F8 !important; }
+
+/* Positive vs negative outcomes are consistent throughout the farm UI. */
+.positive, .text-positive, .profit-positive { color: #168247 !important; }
+.negative, .text-negative, .loss-negative { color: #D0444B !important; }
+.warning, .text-warning { color: #B87508 !important; }

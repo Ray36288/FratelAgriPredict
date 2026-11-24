@@ -1,0 +1,2634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b9b68">
+  <meta name="description" content="Fratel-AgriPredict Broiler Management - Monitor flock performance, manage farm records and predict broiler lifecycles.">
+
+  <title>Fratel-AgriPredict | Broiler Management</title>
+
+  <link rel="stylesheet" href="broiler-dashboard.css">
+  <link rel="stylesheet" href="broiler-fresh-green.css">
+  <script src="broiler-feed.js" defer></script>
+  <script src="broiler-feed-ui.js" defer></script>
+  <script src="broiler-dashboard.js" defer></script>
+  <script src="agri-forecast-intelligence.js" defer></script>
+</head>
+
+<body>
+
+  <!-- =====================================================
+       BATCH SETUP
+       Displayed when the farmer has no existing batch
+  ====================================================== -->
+
+  <section id="setupView" class="setup-view">
+
+    <header class="setup-header">
+      <a href="#setupView" class="brand">
+        <span class="brand-mark">🌱</span>
+        <span class="brand-name"><span>Fratel</span>-Agri<span>Predict</span></span>
+      </a>
+
+      <span class="setup-label">Broiler Management</span>
+    </header>
+
+    <main class="setup-container">
+
+      <div class="setup-intro">
+        <span class="eyebrow">GET STARTED</span>
+        <h1>Set up your broiler flock</h1>
+        <p>
+          Enter your flock information to create a batch and start
+          monitoring its lifecycle.
+        </p>
+      </div>
+
+      <form id="batchSetupForm" class="setup-form">
+
+        <div class="form-section">
+          <div class="section-heading">
+            <span class="section-number">01</span>
+            <div>
+              <h2>Batch information</h2>
+              <p>Identify the flock you want to manage.</p>
+            </div>
+          </div>
+
+          <div class="form-grid">
+
+            <div class="form-field">
+              <label for="batchName">Batch name</label>
+              <input
+                type="text"
+                id="batchName"
+                name="name"
+                placeholder="e.g. Broiler Batch 001"
+                required
+              >
+            </div>
+
+            <div class="form-field">
+              <label for="house">Poultry house</label>
+              <input
+                type="text"
+                id="house"
+                name="house"
+                placeholder="e.g. House A"
+              >
+            </div>
+
+            <div class="form-field">
+              <label for="breed">Breed</label>
+              <select id="breed" name="breed">
+                <option value="">Select breed</option>
+                <option value="Cobb 500">Cobb 500</option>
+                <option value="Ross 308">Ross 308</option>
+                <option value="Arbor Acres">Arbor Acres</option>
+                <option value="Hubbard">Hubbard</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label for="supplier">Chick supplier</label>
+              <input
+                type="text"
+                id="supplier"
+                name="supplier"
+                placeholder="Supplier name"
+              >
+            </div>
+
+            <div class="form-field">
+              <label for="initialBirds">Number of chicks placed</label>
+              <input
+                type="number"
+                id="initialBirds"
+                name="initialBirds"
+                min="1"
+                step="1"
+                placeholder="e.g. 1000"
+                required
+              >
+            </div>
+
+            <div class="form-field">
+              <label for="placementDate">Placement date</label>
+              <input
+                type="date"
+                id="placementDate"
+                name="placementDate"
+                required
+              >
+            </div>
+
+            <div class="form-field">
+              <label for="chickCost">Cost per chick (UGX)</label>
+              <input
+                type="number"
+                id="chickCost"
+                name="chickCost"
+                min="0"
+                step="any"
+                placeholder="e.g. 1800"
+              >
+            </div>
+
+            <div class="form-field">
+              <label for="initialWeight">Initial average weight (g)</label>
+              <input
+                type="number"
+                id="initialWeight"
+                name="initialWeight"
+                min="0"
+                step="any"
+                placeholder="Optional"
+              >
+            </div>
+
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="section-heading">
+            <span class="section-number">02</span>
+            <div>
+              <h2>Production targets</h2>
+              <p>Set the targets used to monitor flock performance.</p>
+            </div>
+          </div>
+
+          <div class="form-grid">
+
+            <div class="form-field">
+              <label for="targetAgeDays">Target harvest age (days)</label>
+              <input
+                type="number"
+                id="targetAgeDays"
+                name="targetAgeDays"
+                min="1"
+                placeholder="e.g. 28"
+              >
+            </div>
+
+            <div class="form-field">
+              <label for="targetWeight">Target average weight (kg)</label>
+              <input
+                type="number"
+                id="targetWeight"
+                name="targetWeight"
+                min="0"
+                step="any"
+                placeholder="e.g. 1.8"
+              >
+            </div>
+
+            <div class="form-field">
+              <label for="expectedPrice">Expected selling price</label>
+              <input
+                type="number"
+                id="expectedPrice"
+                name="expectedPrice"
+                min="0"
+                step="any"
+                placeholder="Enter expected price"
+              >
+            </div>
+
+            <div class="form-field">
+              <label for="priceBasis">Selling price basis</label>
+              <select id="priceBasis" name="priceBasis">
+                <option value="bird">Per bird</option>
+                <option value="kg">Per kilogram</option>
+              </select>
+            </div>
+
+            <div class="form-field form-field-full">
+              <label for="notes">Additional notes</label>
+              <textarea
+                id="notes"
+                name="notes"
+                rows="3"
+                placeholder="Any important information about this flock..."
+              ></textarea>
+            </div>
+
+          </div>
+        </div>
+
+        <p id="setupError" class="form-error" role="alert"></p>
+
+        <div class="setup-form-actions">
+          <button type="button" class="btn btn-outline" id="cancelBatchSetupBtn" hidden>
+            Cancel and return
+          </button>
+          <button type="submit" class="btn btn-primary setup-submit">
+            Create batch
+            <span aria-hidden="true">→</span>
+          </button>
+        </div>
+
+        <p class="privacy-note">
+          Your records will be saved on this device in this prototype.
+        </p>
+
+      </form>
+    </main>
+  </section>
+
+
+  <!-- =====================================================
+       MAIN APPLICATION
+  ====================================================== -->
+
+  <section id="workspaceView" class="workspace-view" hidden>
+
+    <!-- APPLICATION HEADER -->
+
+    <header class="app-header">
+
+      <a href="#" class="brand" data-view="home">
+        <span class="brand-mark">🌱</span>
+        <span class="brand-name"><span>Fratel</span>-Agri<span>Predict</span></span>
+      </a>
+
+      <div class="header-center">
+        <span class="application-name">Broiler Management</span>
+      </div>
+
+      <div class="header-actions">
+
+        <button
+          type="button"
+          class="icon-button"
+          id="notificationBtn"
+          aria-label="Notifications"
+          title="Notifications"
+        >
+          ♧
+        </button>
+
+        <button
+          type="button"
+          class="profile-button"
+          id="profileBtn"
+          aria-label="Profile"
+        >
+          <span class="profile-avatar">F</span>
+          <span class="profile-label">Farmer</span>
+        </button>
+
+      </div>
+
+    </header>
+
+
+    <!-- APPLICATION BODY -->
+
+    <div class="app-body">
+
+      <!-- DESKTOP NAVIGATION -->
+
+      <aside class="app-sidebar" id="appSidebar">
+
+        <div class="sidebar-top">
+          <span class="sidebar-label">WORKSPACE</span>
+
+          <button
+            type="button"
+            class="sidebar-link active"
+            data-view="home"
+          >
+            <span class="nav-icon">⌂</span>
+            <span>Home</span>
+          </button>
+
+          <button
+            type="button"
+            class="sidebar-link"
+            data-view="overview"
+          >
+            <span class="nav-icon">▦</span>
+            <span>Overview</span>
+          </button>
+
+          <span class="sidebar-label">FLOCK MANAGEMENT</span>
+
+          <button
+            type="button"
+            class="sidebar-link"
+            data-view="daily-records"
+          >
+            <span class="nav-icon">✎</span>
+            <span>Daily Records</span>
+          </button>
+
+          <button
+            type="button"
+            class="sidebar-link"
+            data-view="growth"
+          >
+            <span class="nav-icon">↗</span>
+            <span>Growth & Progress</span>
+          </button>
+
+          <button
+            type="button"
+            class="sidebar-link"
+            data-view="predictions"
+          >
+            <span class="nav-icon">◈</span>
+            <span>Predictions</span>
+          </button>
+
+          <button
+            type="button"
+            class="sidebar-link"
+            data-view="forecasting"
+          >
+            <span class="nav-icon">⌁</span>
+            <span>Forecasting Intelligence</span>
+          </button>
+
+          <button
+            type="button"
+            class="sidebar-link"
+            data-view="health"
+          >
+            <span class="nav-icon">♡</span>
+            <span>Health</span>
+          </button>
+
+          <button
+            type="button"
+            class="sidebar-link"
+            data-view="feed"
+          >
+            <span class="nav-icon">♧</span>
+            <span>Feed Management</span>
+          </button>
+
+          <button
+            type="button"
+            class="sidebar-link"
+            data-view="prices"
+          >
+            <span class="nav-icon">◇</span>
+            <span>Price Management</span>
+          </button>
+
+          <span class="sidebar-label">BUSINESS</span>
+
+          <button
+            type="button"
+            class="sidebar-link"
+            data-view="financials"
+          >
+            <span class="nav-icon">＄</span>
+            <span>Financials</span>
+          </button>
+
+          <button
+            type="button"
+            class="sidebar-link"
+            data-view="reports"
+          >
+            <span class="nav-icon">▤</span>
+            <span>Reports</span>
+          </button>
+
+        </div>
+
+        <div class="sidebar-bottom">
+
+          <button
+            type="button"
+            class="sidebar-link"
+            data-view="batch-settings"
+          >
+            <span class="nav-icon">⚙</span>
+            <span>Batch Settings</span>
+          </button>
+
+          <div class="sidebar-brand-note">
+            <span>🌱</span>
+            <span>Growing smarter farms</span>
+          </div>
+
+        </div>
+
+      </aside>
+
+
+      <!-- MAIN CONTENT AREA -->
+
+      <main class="main-content" id="mainContent">
+
+        <!-- PAGE CONTEXT BAR -->
+
+        <div class="page-context">
+
+          <div class="context-batch">
+            <label for="batchSelect">ACTIVE BATCH</label>
+            <select id="batchSelect" aria-label="Select active batch">
+              <option value="">Select batch</option>
+            </select>
+          </div>
+
+          <div class="context-actions">
+
+            <details class="quick-nav-menu">
+              <summary class="btn btn-outline">
+                <span aria-hidden="true">☷</span>
+                Navigate
+                <span class="quick-nav-caret" aria-hidden="true">▾</span>
+              </summary>
+              <div class="quick-nav-dropdown">
+                <span class="quick-nav-heading">WORKSPACE</span>
+                <button type="button" data-view="home">Home</button>
+                <button type="button" data-view="overview">Overview</button>
+                <span class="quick-nav-heading">FLOCK MANAGEMENT</span>
+                <button type="button" data-view="daily-records">Daily Records</button>
+                <button type="button" data-view="growth">Growth &amp; Progress</button>
+                <button type="button" data-view="predictions">Predictions</button>
+                <button type="button" data-view="health">Health</button>
+                <button type="button" data-view="feed">Feed Management</button>
+                <button type="button" data-view="prices">Price Management</button>
+                <span class="quick-nav-heading">BUSINESS</span>
+                <button type="button" data-view="financials">Financials</button>
+                <button type="button" data-view="reports">Reports</button>
+                <button type="button" data-view="batch-settings">Batch Settings</button>
+              </div>
+            </details>
+
+            <button
+              type="button"
+              class="btn btn-outline"
+              id="addBatchBtn"
+            >
+              + New batch
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-primary"
+              data-record="feed"
+            >
+              + Record data
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- =================================================
+             HOME
+        ================================================== -->
+
+        <section class="app-page active" id="homePage" data-page="home">
+
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">YOUR FARM WORKSPACE</span>
+              <h1>Welcome to Fratel-AgriPredict</h1>
+              <p>Choose a workspace to manage your broiler flock.</p>
+            </div>
+          </div>
+
+
+          <div class="home-active-batch">
+
+            <div class="active-batch-info">
+              <span class="eyebrow">CURRENTLY MANAGING</span>
+              <h2 id="homeBatchTitle">Your active flock</h2>
+              <p id="homeBatchMeta">Batch information will appear here.</p>
+            </div>
+
+            <div class="active-batch-status">
+              <span class="status-dot"></span>
+              <span id="homeBatchStatus">Active batch</span>
+            </div>
+
+          </div>
+
+
+          <div class="quick-action-area">
+
+            <div class="section-heading">
+              <div>
+                <h2>Quick action</h2>
+                <p>Record important farm activities.</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="quick-record-card"
+              data-record="feed"
+            >
+              <span class="quick-record-icon">＋</span>
+              <span>
+                <strong>Record today's data</strong>
+                <small>Enter feed, weight, mortality, health or expenses.</small>
+              </span>
+              <span class="quick-record-arrow">→</span>
+            </button>
+
+          </div>
+
+
+          <div class="home-menu-area">
+
+            <div class="section-heading">
+              <div>
+                <h2>Farm management</h2>
+                <p>Select a section to continue.</p>
+              </div>
+            </div>
+
+            <div class="app-menu-grid">
+
+              <button type="button" class="app-menu-card" data-view="overview">
+                <span class="menu-card-icon">▦</span>
+                <strong>Overview</strong>
+                <small>Flock performance at a glance</small>
+                <span class="menu-card-arrow">→</span>
+              </button>
+
+              <button type="button" class="app-menu-card" data-view="daily-records">
+                <span class="menu-card-icon">✎</span>
+                <strong>Daily Records</strong>
+                <small>Record daily farm activities</small>
+                <span class="menu-card-arrow">→</span>
+              </button>
+
+              <button type="button" class="app-menu-card" data-view="growth">
+                <span class="menu-card-icon">↗</span>
+                <strong>Growth & Progress</strong>
+                <small>Monitor flock development</small>
+                <span class="menu-card-arrow">→</span>
+              </button>
+
+              <button type="button" class="app-menu-card" data-view="predictions">
+                <span class="menu-card-icon">◈</span>
+                <strong>Predictions</strong>
+                <small>Explore lifecycle forecasts</small>
+                <span class="menu-card-arrow">→</span>
+              </button>
+
+              <button type="button" class="app-menu-card" data-view="financials">
+                <span class="menu-card-icon">＄</span>
+                <strong>Financials</strong>
+                <small>Costs, revenue and returns</small>
+                <span class="menu-card-arrow">→</span>
+              </button>
+
+              <button type="button" class="app-menu-card" data-view="health">
+                <span class="menu-card-icon">♡</span>
+                <strong>Health</strong>
+                <small>Mortality and health records</small>
+                <span class="menu-card-arrow">→</span>
+              </button>
+
+              <button type="button" class="app-menu-card" data-view="feed">
+                <span class="menu-card-icon">♧</span>
+                <strong>Feed Management</strong>
+                <small>Consumption and feed tracking</small>
+                <span class="menu-card-arrow">→</span>
+              </button>
+
+              <button type="button" class="app-menu-card" data-view="prices">
+                <span class="menu-card-icon">◇</span>
+                <strong>Price Management</strong>
+                <small>Manage changing farm prices</small>
+                <span class="menu-card-arrow">→</span>
+              </button>
+
+              <button type="button" class="app-menu-card" data-view="reports">
+                <span class="menu-card-icon">▤</span>
+                <strong>Reports</strong>
+                <small>Review and export farm data</small>
+                <span class="menu-card-arrow">→</span>
+              </button>
+
+              <button type="button" class="app-menu-card" data-view="batch-settings">
+                <span class="menu-card-icon">⚙</span>
+                <strong>Batch Settings</strong>
+                <small>Manage flock information</small>
+                <span class="menu-card-arrow">→</span>
+              </button>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- =================================================
+             OVERVIEW
+        ================================================== -->
+
+        <section class="app-page" id="overviewPage" data-page="overview">
+
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">FLOCK PERFORMANCE</span>
+              <h1>Overview</h1>
+              <p>A summary of your active broiler flock.</p>
+            </div>
+            <span class="page-status" id="batchStatus">Active</span>
+          </div>
+
+
+          <div class="overview-welcome">
+            <div>
+              <span class="eyebrow">ACTIVE FLOCK</span>
+              <h2 id="batchTitle">Your broiler batch</h2>
+              <p id="batchMeta">Batch details</p>
+            </div>
+
+            <div class="overview-age">
+              <strong id="ageNumber">--</strong>
+              <span>days old</span>
+            </div>
+          </div>
+
+
+          <div class="lifecycle-panel">
+
+            <div class="lifecycle-heading">
+              <div>
+                <h2>Lifecycle progress</h2>
+                <p id="stageHint">Your flock's current development stage.</p>
+              </div>
+
+              <span class="lifecycle-stage" id="currentStage">--</span>
+            </div>
+
+            <div class="lifecycle-track">
+              <div class="lifecycle-progress" id="timelineProgress"></div>
+            </div>
+
+            <div class="lifecycle-stages">
+              <span>Brooding</span>
+              <span>Starter</span>
+              <span>Grower</span>
+              <span>Finisher</span>
+              <span>Harvest</span>
+            </div>
+
+            <div class="lifecycle-footer">
+              <span>Target harvest: <strong id="targetDate">--</strong></span>
+              <span><strong id="daysToTarget">--</strong> days remaining</span>
+            </div>
+
+          </div>
+
+
+          <div class="overview-metrics">
+
+            <article class="metric-card">
+              <span class="metric-label">Birds alive</span>
+              <strong class="metric-value" id="birdsAlive">--</strong>
+              <small id="birdsPlacedNote">Birds placed: --</small>
+            </article>
+
+            <article class="metric-card">
+              <span class="metric-label">Survival rate</span>
+              <strong class="metric-value" id="survivalRate">--</strong>
+              <small id="mortalityNote">Mortality information</small>
+            </article>
+
+            <article class="metric-card">
+              <span class="metric-label">Feed consumed</span>
+              <strong class="metric-value" id="feedConsumed">--</strong>
+              <small>Recorded feed consumption</small>
+            </article>
+
+            <article class="metric-card">
+              <span class="metric-label">Latest average weight</span>
+              <strong class="metric-value" id="latestWeight">--</strong>
+              <small id="weightDate">No weight record yet</small>
+            </article>
+
+          </div>
+
+
+          <div class="overview-grid">
+
+            <article class="content-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Growth performance</h2>
+                  <p>Recorded weight measurements.</p>
+                </div>
+                <button type="button" class="text-button" data-view="growth">
+                  View details →
+                </button>
+              </div>
+
+              <div id="growthChart" class="chart-container">
+                <div class="empty-state">
+                  <span class="empty-icon">↗</span>
+                  <p>Growth information will appear when weight records are added.</p>
+                </div>
+              </div>
+
+              <div id="growthEstimate" class="growth-estimate"></div>
+              <p id="growthEstimateNote" class="muted-note"></p>
+            </article>
+
+
+            <article class="content-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Financial snapshot</h2>
+                  <p>Current batch financial position.</p>
+                </div>
+                <button type="button" class="text-button" data-view="financials">
+                  View details →
+                </button>
+              </div>
+
+              <div class="financial-summary">
+
+                <div class="financial-summary-row">
+                  <span>Total expenditure</span>
+                  <strong id="totalCosts">UGX 0</strong>
+                </div>
+
+                <div class="financial-summary-row">
+                  <span>Recorded revenue</span>
+                  <strong id="totalRevenue">UGX 0</strong>
+                </div>
+
+                <div class="financial-summary-row">
+                  <span>Current profit / loss</span>
+                  <strong id="profit">UGX 0</strong>
+                </div>
+
+              </div>
+
+            </article>
+
+          </div>
+
+
+          <div class="overview-bottom">
+
+            <article class="content-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Flock summary</h2>
+                  <p>Important batch information.</p>
+                </div>
+              </div>
+
+              <div class="summary-list">
+
+                <div>
+                  <span>Birds originally placed</span>
+                  <strong id="summaryPlaced">--</strong>
+                </div>
+
+                <div>
+                  <span>Birds sold</span>
+                  <strong id="summarySold">--</strong>
+                </div>
+
+                <div>
+                  <span>Recorded mortality</span>
+                  <strong id="summaryMortality">--</strong>
+                </div>
+
+              </div>
+            </article>
+
+
+            <article class="content-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Recent activity</h2>
+                  <p>Latest recorded farm events.</p>
+                </div>
+
+                <button type="button" class="text-button" data-view="daily-records">
+                  All records →
+                </button>
+              </div>
+
+              <div class="activity-list" id="activityList">
+                <div class="empty-state">
+                  <p>No farm activities recorded yet.</p>
+                </div>
+              </div>
+            </article>
+
+          </div>
+
+        </section>
+
+
+        <!-- =================================================
+             DAILY RECORDS
+        ================================================== -->
+
+        <section class="app-page" id="dailyRecordsPage" data-page="daily-records">
+
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">FARM OPERATIONS</span>
+              <h1>Daily Records</h1>
+              <p>Record activities that happen on your farm.</p>
+            </div>
+          </div>
+
+
+          <div class="record-action-grid">
+
+            <button type="button" class="record-action-card" data-record="feed">
+              <span class="record-icon">♧</span>
+              <strong>Feed intake</strong>
+              <small>Record feed given to the flock.</small>
+              <span class="card-arrow">→</span>
+            </button>
+
+            <button type="button" class="record-action-card" data-record="weight">
+              <span class="record-icon">⚖</span>
+              <strong>Bird weight</strong>
+              <small>Record sample weights.</small>
+              <span class="card-arrow">→</span>
+            </button>
+
+            <button type="button" class="record-action-card" data-record="mortality">
+              <span class="record-icon">♡</span>
+              <strong>Mortality</strong>
+              <small>Record bird deaths.</small>
+              <span class="card-arrow">→</span>
+            </button>
+
+            <button type="button" class="record-action-card" data-record="health">
+              <span class="record-icon">✚</span>
+              <strong>Health event</strong>
+              <small>Record treatments and vaccinations.</small>
+              <span class="card-arrow">→</span>
+            </button>
+
+            <button type="button" class="record-action-card" data-record="expense">
+              <span class="record-icon">＄</span>
+              <strong>Farm expense</strong>
+              <small>Record farm operating expenses.</small>
+              <span class="card-arrow">→</span>
+            </button>
+
+            <button type="button" class="record-action-card" data-record="sale">
+              <span class="record-icon">⇧</span>
+              <strong>Bird sales</strong>
+              <small>Record birds sold and payments.</small>
+              <span class="card-arrow">→</span>
+            </button>
+
+          </div>
+
+
+          <div class="content-panel records-history">
+
+            <div class="panel-heading">
+              <div>
+                <h2>Farm activity history</h2>
+                <p>Review previously recorded activities.</p>
+              </div>
+
+              <select id="activityFilter" aria-label="Filter activity records">
+                <option value="all">All activities</option>
+                <option value="feed">Feed</option>
+                <option value="weight">Weight</option>
+                <option value="mortality">Mortality</option>
+                <option value="health">Health</option>
+                <option value="expense">Expenses</option>
+                <option value="sale">Sales</option>
+              </select>
+
+            </div>
+
+            <div id="activityListRecords" class="activity-list">
+              <div class="empty-state">
+                <p>Your recorded farm activities will appear here.</p>
+              </div>
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- =================================================
+             GROWTH AND PROGRESS
+        ================================================== -->
+
+        <section class="app-page" id="growthPage" data-page="growth">
+
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">FLOCK DEVELOPMENT</span>
+              <h1>Growth & Progress</h1>
+              <p>Monitor how your birds develop throughout their lifecycle.</p>
+            </div>
+
+            <button type="button" class="btn btn-primary" data-record="weight">
+              + Record weight
+            </button>
+          </div>
+
+
+          <div class="growth-overview-grid">
+
+            <article class="metric-card">
+              <span class="metric-label">Latest average weight</span>
+              <strong class="metric-value" id="growthLatestWeight">--</strong>
+              <small>Based on the latest sample</small>
+            </article>
+
+            <article class="metric-card">
+              <span class="metric-label">Target weight</span>
+              <strong class="metric-value" id="growthTargetWeight">--</strong>
+              <small>Batch production target</small>
+            </article>
+
+            <article class="metric-card">
+              <span class="metric-label">Flock age</span>
+              <strong class="metric-value" id="growthAge">--</strong>
+              <small>Days since placement</small>
+            </article>
+
+          </div>
+
+
+          <article class="content-panel">
+            <div class="panel-heading"><div><h2>Production performance indicators</h2><p>Calculated from recorded feed, weight and mortality information.</p></div></div>
+            <div class="performance-kpi-grid">
+              <div><span>FCR</span><strong id="performanceFCR">--</strong><small>Feed consumed ÷ live-weight gain</small></div>
+              <div><span>ADG</span><strong id="performanceADG">--</strong><small>Average daily weight gain</small></div>
+              <div><span>Mortality rate</span><strong id="performanceMortality">--</strong><small>Deaths ÷ birds placed</small></div>
+              <div><span>Target vs actual</span><strong id="performanceTargetGap">--</strong><small>Latest measured weight against target</small></div>
+            </div>
+            <p class="form-help" id="performanceMethodNote">Indicators appear when the required records are available.</p>
+          </article>
+
+          <article class="content-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Weight development</h2>
+                <p>Compare actual recorded weights against the target.</p>
+              </div>
+            </div>
+
+            <div id="growthDetailChart" class="chart-container">
+              <div class="empty-state">
+                <p>Record bird weights to build your growth chart.</p>
+              </div>
+            </div>
+          </article>
+
+
+          <article class="content-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Growth records</h2>
+                <p>Historical weight measurements.</p>
+              </div>
+            </div>
+
+            <div id="weightHistory" class="table-container">
+              <p class="empty-message">No weight records available.</p>
+            </div>
+          </article>
+
+        </section>
+
+
+        <!-- =================================================
+             FORECASTING INTELLIGENCE
+        ================================================== -->
+        <section class="app-page" id="forecastIntelligencePage" data-page="forecasting">
+          <div class="page-heading afi-page-heading">
+            <div>
+              <span class="eyebrow">AGRICULTURAL DECISION SCIENCE</span>
+              <h1>Forecasting Intelligence</h1>
+              <p>Farm-record-led predictions, agricultural interpretation and early risk signals.</p>
+            </div>
+            <div class="afi-heading-actions">
+              <div class="afi-horizon-control">
+                <label for="afiHorizonAmount">Forecast period</label>
+                <div class="afi-horizon-inputs">
+                  <input id="afiHorizonAmount" type="number" min="1" max="3650" step="1" value="1" inputmode="numeric" aria-label="Forecast period amount">
+                  <select id="afiHorizonUnit" aria-label="Forecast period unit">
+                    <option value="days">Days</option><option value="weeks">Weeks</option><option value="months" selected>Months</option>
+                  </select>
+                </div>
+                <small id="afiHorizonResolved">1 month · 30 days</small>
+              </div>
+              <button type="button" class="btn btn-outline" id="afiRefresh">Refresh intelligence</button>
+            </div>
+          </div>
+
+          <div class="afi-hero">
+            <div><span class="eyebrow">FRATEL AGRICULTURAL INTELLIGENCE ENGINE</span><h2>What is likely to happen next on this farm?</h2><p>Forecasts combine recorded transactions and flock performance with agricultural science. Estimates are only produced where the available records support them.</p></div>
+            <div class="afi-hero-mark"><span>F</span><small>DATA · SCIENCE · DECISIONS</small></div>
+          </div>
+
+          <div class="afi-stat-grid">
+            <article class="afi-stat"><span>Active ingredients</span><strong id="afiIngredientCount">0</strong><small>Ingredient catalogue</small></article>
+            <article class="afi-stat"><span>Dated price observations</span><strong id="afiPurchaseCount">0</strong><small>Landed purchase records</small></article>
+            <article class="afi-stat"><span>Active formulations</span><strong id="afiFormulaCount">0</strong><small>Feed formula records</small></article>
+            <article class="afi-stat"><span>Active broiler batches</span><strong id="afiBatchCount">0</strong><small>Production records</small></article>
+          </div>
+
+          <article class="content-panel afi-panel afi-flock-outlook-panel">
+            <div class="panel-heading"><div><span class="eyebrow">LIVE FLOCK STATUS</span><h2>Flock lifecycle outlook</h2><p>Age is counted inclusively: placement day is Day 1. The stage shown is based on the recorded placement date.</p></div><span class="afi-live-chip"><i></i> RECORD-LINKED</span></div>
+            <div id="afiFlockOutlook" class="afi-flock-outlook"><div class="afi-flock-empty">Loading active flock information…</div></div>
+          </article>
+
+          <article class="content-panel afi-panel">
+            <div class="panel-heading afi-panel-heading"><div><span class="eyebrow">01 · PRICE INTELLIGENCE</span><h2>Ingredient price outlook</h2><p>Uses dated landed purchase cost: ingredient price plus recorded transport and other purchase costs.</p></div><label class="afi-select-label">Ingredient<select id="afiIngredient"><option value="">Loading ingredients…</option></select></label></div>
+            <div id="afiPriceSummary"></div>
+            <div class="afi-chart-wrap"><div class="afi-chart-legend"><span><i class="afi-legend-actual"></i> Recorded landed price</span><span><i class="afi-legend-forecast"></i> Model forecast</span></div><div id="afiPriceChart"></div></div>
+          </article>
+
+
+          <article class="content-panel afi-panel afi-simulation-panel">
+            <div class="panel-heading"><div><span class="eyebrow">02 · REAL-TIME WHAT-IF ANALYSIS</span><h2>Ingredient price simulation</h2><p>Change the selected ingredient price and see affected formulations recalculate as you type. This is a temporary scenario; actual purchase records are not changed.</p></div><span class="afi-simulation-chip">LIVE SIMULATION</span></div>
+            <div class="afi-sim-input-row">
+              <label for="afiSimPrice">Simulated landed price (UGX/kg)<input id="afiSimPrice" type="number" min="0" step="any" inputmode="decimal" placeholder="Enter a scenario price"></label>
+              <button type="button" class="afi-reset-button" id="afiSimReset">Reset to latest price</button>
+              <div class="afi-sim-price-reference"><small>Latest recorded</small><strong id="afiSimCurrentPrice">—</strong><small>Model forecast</small><strong id="afiSimModelPrice">—</strong></div>
+            </div>
+            <div class="afi-sim-metrics">
+              <div class="afi-sim-metric green"><small>Simulated price</small><strong id="afiSimEnteredPrice">—</strong></div>
+              <div class="afi-sim-metric amber"><small>Vs model forecast</small><strong id="afiSimPriceDelta">—</strong></div>
+              <div class="afi-sim-metric blue"><small>Remaining feed-cost impact</small><strong id="afiSimFeedCostImpact">—</strong></div>
+              <div class="afi-sim-metric violet"><small>Indicative margin effect</small><strong id="afiSimProfitImpact">—</strong></div>
+            </div>
+            <div class="afi-sim-explanation" id="afiSimImpactNote">Select an ingredient and enter a simulated price to see its impact.</div>
+            <div class="table-scroll"><table class="afi-table afi-sim-table"><thead><tr><th>Feed formulation</th><th>Trend forecast cost/kg</th><th>Simulated cost/kg</th><th>Difference/kg</th></tr></thead><tbody id="afiSimulationFormulaRows"><tr><td colspan="4">Waiting for formulations…</td></tr></tbody></table></div>
+          </article>
+
+          <article class="content-panel afi-panel afi-stock-panel">
+            <div class="panel-heading"><div><span class="eyebrow">03 · FEED AVAILABILITY</span><h2>Available feed versus projected need</h2><p>Stock cover is estimated only where at least three dated usage days are recorded for a formulation.</p></div><span class="afi-horizon-chip" id="afiStockHorizonLabel">Selected horizon</span></div>
+            <div class="afi-stock-summary"><div><span>Finished-feed types</span><strong id="afiFinishedStockCount">0</strong></div><div><span>Raw ingredients</span><strong id="afiRawStockCount">0</strong></div></div>
+            <h3 class="afi-subheading">Finished feed stock cover</h3>
+            <div class="table-scroll"><table class="afi-table"><thead><tr><th>Feed formula</th><th>Available stock</th><th>Observed use</th><th>Estimated cover</th><th>Need over horizon</th></tr></thead><tbody id="afiFinishedStockRows"><tr><td colspan="5">Loading finished feed stock…</td></tr></tbody></table></div>
+            <p class="form-help">Available stock includes unallocated finished feed plus feed already allocated to batches but not yet consumed. Observed use is based on dated feed records; missing entries can understate requirements.</p>
+            <h3 class="afi-subheading">Raw ingredient stock</h3>
+            <div class="table-scroll"><table class="afi-table"><thead><tr><th>Ingredient</th><th>Available raw stock</th></tr></thead><tbody id="afiRawStockRows"><tr><td colspan="2">Loading raw ingredient stock…</td></tr></tbody></table></div>
+          </article>
+
+          <article class="content-panel afi-panel">
+            <div class="panel-heading"><div><span class="eyebrow">04 · NUTRITION & FEED ECONOMICS</span><h2>Feed formulation cost impact</h2><p>Reprices active formulations using the selected forecast horizon and each ingredient's own recorded price trend.</p></div><span class="afi-horizon-chip" id="afiHorizonLabel">30-day outlook</span></div>
+            <div class="table-scroll"><table class="afi-table"><thead><tr><th>Formulation</th><th>Latest landed-cost basis</th><th>Forecast mix cost</th><th>Forecast cost/kg</th><th>Trend support</th></tr></thead><tbody id="afiFormulaRows"><tr><td colspan="5">Loading formulation records…</td></tr></tbody></table></div>
+            <p class="form-help">This is a forecast re-costing of saved formulation quantities. It does not rewrite historical formula versions, production costs or purchases.</p>
+          </article>
+
+          <article class="content-panel afi-panel">
+            <div class="panel-heading"><div><span class="eyebrow">05 · POULTRY PRODUCTION SCIENCE</span><h2>Growth and flock performance outlook</h2><p>Uses dated weights, feed records, placements, mortality and sales. Missing evidence is shown explicitly.</p></div></div>
+            <div class="table-scroll"><table class="afi-table"><thead><tr><th>Batch</th><th>Latest weight</th><th>Observed ADG</th><th>Harvest weight outlook</th><th>Forecast feed need</th><th>Observed FCR</th><th>Cumulative mortality</th></tr></thead><tbody id="afiProductionRows"><tr><td colspan="7">Loading batch records…</td></tr></tbody></table></div>
+          </article>
+
+          <article class="content-panel afi-panel">
+            <div class="panel-heading"><div><span class="eyebrow">06 · AGRICULTURAL ECONOMICS</span><h2>Batch financial outlook</h2><p>Combines recorded batch costs, observed feed-consumption rates, forecast formulation costs and the batch's entered selling-price basis.</p></div></div>
+            <div class="table-scroll"><table class="afi-table"><thead><tr><th>Batch</th><th>Projected remaining feed cost</th><th>Potential revenue</th><th>Projected total cost</th><th>Indicative margin</th></tr></thead><tbody id="afiFinancialRows"><tr><td colspan="5">Loading financial records…</td></tr></tbody></table></div>
+            <p class="form-help">Indicative margin is available only when linked feed-consumption history and an expected selling price are recorded. It is not a cash-flow or net-profit statement.</p>
+          </article>
+
+          <div class="afi-two-column">
+            <article class="content-panel afi-panel"><div class="panel-heading"><div><span class="eyebrow">07 · PREDICTIVE RISK MONITOR</span><h2>Farm signals and data gaps</h2><p>Signals are explanations of recorded patterns, not unsupported diagnoses.</p></div></div><div id="afiInsights" class="afi-insights"></div></article>
+            <article class="content-panel afi-panel"><div class="panel-heading"><div><span class="eyebrow">08 · AGRICULTURAL KNOWLEDGE</span><h2>Scientific interpretation coverage</h2><p>Specialist broiler analysis within an extensible whole-agriculture framework.</p></div></div><div id="afiKnowledgeStatus" class="afi-knowledge-list"></div></article>
+          </div>
+          <p class="afi-disclaimer">Scientific integrity: model outputs are decision-support estimates, not veterinary diagnoses or guaranteed outcomes. Breed-specific nutrient targets, environmental measurements and external market data must be supplied before those dimensions can be forecast reliably.</p>
+        </section>
+
+        <!-- =================================================
+             PREDICTIONS
+        ================================================== -->
+
+        <section class="app-page" id="predictionsPage" data-page="predictions">
+
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">LIFECYCLE INTELLIGENCE</span>
+              <h1>Predictions</h1>
+              <p>Understand where your flock is heading and what to expect next.</p>
+            </div>
+          </div>
+
+
+          <div class="prediction-notice">
+            <span class="notice-icon">◈</span>
+            <div>
+              <strong>Forecasts are estimates</strong>
+              <p>
+                Predictions will use your recorded flock data, historical
+                performance and clearly identified assumptions. Accuracy
+                improves as more records become available.
+              </p>
+            </div>
+          </div>
+
+
+          <div class="prediction-grid">
+
+            <article class="prediction-card">
+              <span class="prediction-label">Expected harvest date</span>
+              <strong id="predictedHarvestDate">Not available</strong>
+              <small>Based on the current target age.</small>
+            </article>
+
+            <article class="prediction-card">
+              <span class="prediction-label">Expected average weight</span>
+              <strong id="predictedWeight">Not available</strong>
+              <small>Based on recorded growth measurements.</small>
+            </article>
+
+            <article class="prediction-card">
+              <span class="prediction-label">Expected birds at harvest</span>
+              <strong id="predictedBirds">Not available</strong>
+              <small>Based on recorded survival information.</small>
+            </article>
+
+            <article class="prediction-card">
+              <span class="prediction-label">Future feed requirement</span>
+              <strong id="predictedFeed">Not available</strong>
+              <small>Based on available consumption data.</small>
+            </article>
+
+          </div>
+
+
+          <article class="content-panel feed-budget-panel">
+            <div class="panel-heading"><div><h2>Feed budget planner</h2><p>Combines recorded consumption with editable age-based daily feed standards where records are missing.</p></div></div>
+            <div class="forecast-controls">
+              <div class="form-field"><label for="forecastScope">Forecast scope</label><select id="forecastScope"><option value="active">Active batch</option><option value="farm">Whole farm (all batches)</option></select></div>
+              <div class="form-field"><label for="farmFeedForecastPeriod">Forecast period</label><select id="farmFeedForecastPeriod"><option value="14">2 weeks</option><option value="30">1 month</option><option value="60">2 months</option><option value="90">3 months</option><option value="180">6 months</option><option value="365">1 year</option></select></div>
+              <div class="form-field"><label for="feedPriceAssumption">Feed price (UGX/kg)</label><input type="number" id="feedPriceAssumption" min="0" step="1" placeholder="Uses latest recorded price"></div>
+            </div>
+            <div class="form-grid feed-standard-grid">
+              <div class="form-field"><label for="feedStandardStarter">Starter standard g/bird/day (day 1–14)</label><input id="feedStandardStarter" type="number" min="0" step="1" value="35"></div>
+              <div class="form-field"><label for="feedStandardGrower">Grower standard g/bird/day (day 15–28)</label><input id="feedStandardGrower" type="number" min="0" step="1" value="75"></div>
+              <div class="form-field"><label for="feedStandardFinisher">Finisher standard g/bird/day (day 29+)</label><input id="feedStandardFinisher" type="number" min="0" step="1" value="120"></div>
+            </div>
+            <div class="form-actions"><button type="button" class="btn btn-outline" id="recalculateFeedBudgetBtn">Update estimate</button></div>
+            <div id="feedBudgetResults" class="simulation-results"><p class="empty-message">Feed budget estimate will appear here.</p></div>
+            <p class="form-help">Daily standards are editable planning assumptions, not breed-specific guarantees. Recorded feed history is used first; age-based standards fill periods without records. Future batches are included in whole-farm forecasts.</p>
+          </article>
+
+          <article class="content-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Lifecycle forecast</h2>
+                <p>Estimated progress towards the flock's target.</p>
+              </div>
+            </div>
+
+            <div id="predictionTimeline" class="prediction-timeline">
+              <p class="empty-message">
+                More flock information is required to generate a forecast.
+              </p>
+            </div>
+          </article>
+
+
+          <article class="content-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Prediction confidence</h2>
+                <p>Understand how much recorded information supports the forecast.</p>
+              </div>
+            </div>
+
+            <div id="predictionConfidence" class="confidence-content">
+              <p>Prediction confidence will appear as flock records accumulate.</p>
+            </div>
+          </article>
+
+        </section>
+
+
+        <!-- =================================================
+             FINANCIALS
+        ================================================== -->
+
+        <section class="app-page" id="financialsPage" data-page="financials">
+
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">FARM FINANCES</span>
+              <h1>Financials</h1>
+              <p>Understand the financial performance of your flock.</p>
+            </div>
+          </div>
+
+
+          <div class="financial-metrics">
+
+            <article class="metric-card">
+              <span class="metric-label">Total expenditure</span>
+              <strong class="metric-value" id="financialCosts">UGX 0</strong>
+              <small>Recorded batch costs</small>
+            </article>
+
+            <article class="metric-card">
+              <span class="metric-label">Recorded revenue</span>
+              <strong class="metric-value" id="financialRevenue">UGX 0</strong>
+              <small>Sales recorded</small>
+            </article>
+
+            <article class="metric-card">
+              <span class="metric-label">Profit / loss</span>
+              <strong class="metric-value" id="financialProfit">UGX 0</strong>
+              <small>Based on recorded transactions</small>
+            </article>
+
+          </div>
+
+
+          <div class="financial-actions">
+
+            <button type="button" class="btn btn-primary" data-record="expense">
+              + Record expense
+            </button>
+
+            <button type="button" class="btn btn-outline" data-record="sale">
+              + Record sale
+            </button>
+
+          </div>
+
+
+          <article class="content-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Cost breakdown</h2>
+                <p>Understand where your farm money is going.</p>
+              </div>
+            </div>
+
+            <div id="costBreakdown" class="financial-breakdown">
+              <p class="empty-message">Financial records will appear here.</p>
+            </div>
+          </article>
+
+
+          <article class="content-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Financial transactions</h2>
+                <p>Recorded expenses and sales.</p>
+              </div>
+            </div>
+
+            <div id="financialHistory" class="table-container">
+              <p class="empty-message">No financial transactions available.</p>
+            </div>
+          </article>
+
+        </section>
+
+
+        <!-- =================================================
+             HEALTH
+        ================================================== -->
+
+        <section class="app-page" id="healthPage" data-page="health">
+
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">FLOCK WELLBEING</span>
+              <h1>Health Management</h1>
+              <p>Monitor mortality, vaccinations, treatments and flock health.</p>
+            </div>
+
+            <button type="button" class="btn btn-primary" data-record="health">
+              + Record health event
+            </button>
+          </div>
+
+
+          <div class="health-summary-grid">
+
+            <article class="metric-card">
+              <span class="metric-label">Birds alive</span>
+              <strong class="metric-value" id="healthBirdsAlive">--</strong>
+              <small>Current flock count</small>
+            </article>
+
+            <article class="metric-card">
+              <span class="metric-label">Mortality</span>
+              <strong class="metric-value" id="healthMortality">--</strong>
+              <small>Total recorded deaths</small>
+            </article>
+
+            <article class="metric-card">
+              <span class="metric-label">Survival rate</span>
+              <strong class="metric-value" id="healthSurvival">--</strong>
+              <small>Current flock survival</small>
+            </article>
+
+          </div>
+
+
+          <div class="health-action-grid">
+
+            <button type="button" class="record-action-card" data-record="mortality">
+              <span class="record-icon">♡</span>
+              <strong>Record mortality</strong>
+              <small>Record deaths and observations.</small>
+            </button>
+
+            <button type="button" class="record-action-card" data-record="health">
+              <span class="record-icon">✚</span>
+              <strong>Record treatment</strong>
+              <small>Vaccination, medication and health events.</small>
+            </button>
+
+          </div>
+
+
+          <article class="content-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Health history</h2>
+                <p>Previous health and mortality records.</p>
+              </div>
+            </div>
+
+            <div id="healthHistory" class="activity-list">
+              <p class="empty-message">No health records available.</p>
+            </div>
+          </article>
+
+        </section>
+
+
+        <!-- =================================================
+             FEED MANAGEMENT
+        ================================================== -->
+
+<section class="app-page dashboard-view" id="feedView" data-page="feed">
+
+    <div class="page-header">
+        <div>
+            <h1>Feed Management</h1>
+            <p>Manage feed ingredients, formulations, production, inventory and batch consumption.</p>
+        </div>
+
+        <div class="page-header-actions">
+            <button type="button" class="btn btn-secondary" id="feedReportsBtn">
+                Feed Reports
+            </button>
+            <button type="button" class="btn btn-primary" id="recordFeedProductionBtn">
+                + Record Production
+            </button>
+        </div>
+    </div>
+    <p class="form-help">For accurate stock balances, record allocations and consumption in Feed Management. Consumption entered here also appears in Daily Records and the batch overview; quick feed logs entered directly in Daily Records do not deduct inventory.</p>
+
+    <!-- FEED SUMMARY -->
+    <div class="metrics-grid feed-metrics">
+
+        <div class="metric-card">
+            <span class="metric-label">Total Feed Stock</span>
+            <h2 id="feedTotalStock">0 kg</h2>
+            <small>Available finished feed</small>
+        </div>
+
+        <div class="metric-card">
+            <span class="metric-label">Feed Consumed</span>
+            <h2 id="feedTotalConsumed">0 kg</h2>
+            <small>Consumption across batches</small>
+        </div>
+
+        <div class="metric-card">
+            <span class="metric-label">Average Feed Cost</span>
+            <h2 id="feedAverageCost">UGX 0</h2>
+            <small>Cost per kilogram</small>
+        </div>
+
+        <div class="metric-card">
+            <span class="metric-label">Feed Required</span>
+            <h2 id="feedProjectedNeed">0 kg</h2>
+            <small>Estimated future requirement</small>
+        </div>
+
+        <div class="metric-card">
+            <span class="metric-label">Raw Material Stock</span>
+            <h2 id="rawMaterialStock">0 kg</h2>
+            <small>Available ingredients</small>
+        </div>
+
+        <div class="metric-card">
+            <span class="metric-label">Feed Cost per Bird</span>
+            <h2 id="feedCostPerBird">UGX 0</h2>
+            <small>Actual recorded cost</small>
+        </div>
+
+    </div>
+
+    <!-- FEED MODULE NAVIGATION -->
+    <nav class="feed-module-nav" aria-label="Feed management sections">
+        <button type="button" class="active" data-feed-tab="dashboard">Overview</button>
+        <button type="button" data-feed-tab="ingredients">Ingredients</button>
+        <button type="button" data-feed-tab="suppliers">Suppliers</button>
+        <button type="button" data-feed-tab="purchases">Purchases</button>
+        <button type="button" data-feed-tab="inventory">Inventory</button>
+        <button type="button" data-feed-tab="formulation">Formulation</button>
+        <button type="button" data-feed-tab="production">Production</button>
+        <button type="button" data-feed-tab="allocation">Batch Allocation</button>
+        <button type="button" data-feed-tab="consumption">Consumption</button>
+        <button type="button" data-feed-tab="costing">Cost Analysis</button>
+        <button type="button" data-feed-tab="forecast">Forecasting</button>
+        <button type="button" data-feed-tab="reports">Reports</button>
+    </nav>
+
+    <!-- 1. FEED OVERVIEW -->
+    <div class="feed-tab-content active" id="feedTab-dashboard">
+
+        <div class="section-header">
+            <div>
+                <h2>Feed Operations Overview</h2>
+                <p>Monitor feed availability, usage, costs and production.</p>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+
+            <div class="dashboard-card">
+                <h3>Feed Stock Alerts</h3>
+                <div id="feedStockAlerts">
+                    <p class="empty-state">No stock alerts available.</p>
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Feed by Category</h3>
+                <div id="feedCategorySummary">
+                    <p class="empty-state">Feed category information will appear here.</p>
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Recent Feed Activity</h3>
+                <div id="feedRecentActivity">
+                    <p class="empty-state">No feed activity recorded yet.</p>
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Current Batch Feed Status</h3>
+                <div id="feedBatchSummary">
+                    <p class="empty-state">Batch feed information will appear here.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 2. INGREDIENT CATALOGUE -->
+    <div class="feed-tab-content" id="feedTab-ingredients">
+
+        <div class="section-header">
+            <div>
+                <h2>Ingredient Catalogue</h2>
+                <p>Maintain the raw materials used in your feed formulations.</p>
+            </div>
+            <button type="button" class="btn btn-primary" id="addIngredientBtn">
+                + Add Ingredient
+            </button>
+        </div>
+
+        <div class="filter-bar">
+            <input type="search" id="ingredientSearch" placeholder="Search ingredients...">
+            <select id="ingredientCategoryFilter">
+                <option value="">All Categories</option>
+                <option value="energy">Energy sources</option>
+                <option value="protein">Protein sources</option>
+                <option value="minerals">Minerals</option>
+                <option value="vitamins">Vitamins and premixes</option>
+                <option value="amino_acids">Amino acids</option>
+                <option value="additives">Other additives</option>
+            </select>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ingredient</th>
+                        <th>Category</th>
+                        <th>Unit</th>
+                        <th>Current Price/kg</th>
+                        <th>Crude Protein (%)</th>
+                        <th>Metabolizable Energy</th>
+                        <th>Stock (kg)</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="ingredientTableBody">
+                    <tr>
+                        <td colspan="9">No ingredients recorded yet.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p class="form-help">
+            Nutritional values must be entered from verified supplier specifications,
+            laboratory analysis or recognised feed composition references.
+        </p>
+    </div>
+
+    <!-- 3. SUPPLIERS -->
+    <div class="feed-tab-content" id="feedTab-suppliers">
+
+        <div class="section-header">
+            <div>
+                <h2>Feed Suppliers</h2>
+                <p>Manage suppliers and their ingredient supply records.</p>
+            </div>
+            <button type="button" class="btn btn-primary" id="addFeedSupplierBtn">
+                + Add Supplier
+            </button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Supplier</th>
+                        <th>Contact Person</th>
+                        <th>Telephone</th>
+                        <th>Location</th>
+                        <th>Ingredients Supplied</th>
+                        <th>Payment Terms</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="feedSupplierTableBody">
+                    <tr>
+                        <td colspan="7">No suppliers recorded yet.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 4. PURCHASE REGISTER -->
+    <div class="feed-tab-content" id="feedTab-purchases">
+
+        <div class="section-header">
+            <div>
+                <h2>Ingredient Purchases</h2>
+                <p>Record purchases and their actual costs.</p>
+            </div>
+            <button type="button" class="btn btn-primary" id="addFeedPurchaseBtn">
+                + Record Purchase
+            </button>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <span class="metric-label">Total Purchases</span>
+                <h2 id="feedPurchaseTotal">UGX 0</h2>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Outstanding Payments</span>
+                <h2 id="feedOutstandingPayments">UGX 0</h2>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Purchases This Month</span>
+                <h2 id="feedMonthlyPurchases">UGX 0</h2>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Reference</th>
+                        <th>Supplier</th>
+                        <th>Ingredient</th>
+                        <th>Quantity</th>
+                        <th>Unit Price</th>
+                        <th>Additional Costs</th>
+                        <th>Total Cost</th>
+                        <th>Payment Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="feedPurchaseTableBody">
+                    <tr>
+                        <td colspan="10">No purchases recorded yet.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 5. INVENTORY -->
+    <div class="feed-tab-content" id="feedTab-inventory">
+
+        <div class="section-header">
+            <div>
+                <h2>Feed Inventory</h2>
+                <p>Monitor raw ingredients and manufactured feed separately.</p>
+            </div>
+        </div>
+
+        <div class="inventory-subtabs">
+            <button type="button" class="active" data-inventory-tab="raw">Raw Materials</button>
+            <button type="button" data-inventory-tab="finished">Finished Feed</button>
+            <button type="button" data-inventory-tab="movements">Stock Movements</button>
+        </div>
+
+        <div class="inventory-tab-content active" id="inventoryTab-raw">
+            <h3>Raw Material Inventory</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ingredient</th>
+                            <th>Opening Stock</th>
+                            <th>Purchases</th>
+                            <th>Used in Production</th>
+                            <th>Adjustments</th>
+                            <th>Current Stock</th>
+                            <th>Reorder Level</th>
+                            <th>Stock Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rawInventoryTableBody">
+                        <tr><td colspan="8">No inventory records available.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="inventory-tab-content" id="inventoryTab-finished">
+            <h3>Finished Feed Inventory</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feed Type</th>
+                            <th>Produced</th>
+                            <th>Issued to Batches</th>
+                            <th>Wastage</th>
+                            <th>Available Stock</th>
+                            <th>Average Cost/kg</th>
+                            <th>Stock Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="finishedInventoryTableBody">
+                        <tr><td colspan="7">No finished feed recorded yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="inventory-tab-content" id="inventoryTab-movements">
+            <div class="section-header">
+                <h3>Stock Movement Ledger</h3>
+                <button type="button" class="btn btn-secondary" id="addStockAdjustmentBtn">
+                    + Stock Adjustment
+                </button>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Item</th>
+                            <th>Movement Type</th>
+                            <th>Quantity In</th>
+                            <th>Quantity Out</th>
+                            <th>Reference</th>
+                            <th>Recorded By</th>
+                        </tr>
+                    </thead>
+                    <tbody id="feedMovementTableBody">
+                        <tr><td colspan="7">No stock movements recorded yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. FORMULATION -->
+    <div class="feed-tab-content" id="feedTab-formulation">
+
+        <div class="section-header">
+            <div>
+                <h2>Feed Formulation</h2>
+                <p>Create and maintain feed formulas for different production stages.</p>
+            </div>
+            <button type="button" class="btn btn-primary" id="createFeedFormulaBtn">
+                + New Formula
+            </button>
+        </div>
+
+        <div class="formulation-layout">
+
+            <div class="dashboard-card">
+                <h3>Feed Formulas</h3>
+                <div id="feedFormulaList">
+                    <p class="empty-state">No feed formulas created yet.</p>
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Formula Details</h3>
+
+                <div class="form-group">
+                    <label for="formulaName">Formula Name</label>
+                    <input type="text" id="formulaName" placeholder="e.g. Broiler Starter">
+                </div>
+
+                <div class="form-group">
+                    <label for="formulaStage">Production Stage</label>
+                    <select id="formulaStage">
+                        <option value="">Select stage</option>
+                        <option value="starter">Starter</option>
+                        <option value="grower">Grower</option>
+                        <option value="finisher">Finisher</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="formulaTargetWeight">Target Mix Weight (kg)</label>
+                    <input type="number" id="formulaTargetWeight" min="0" step="0.01">
+                </div>
+
+                <div class="form-group">
+                    <label for="formulaNotes">Notes</label>
+                    <textarea id="formulaNotes" rows="3"></textarea>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="dashboard-card">
+            <div class="section-header">
+                <h3>Formula Ingredients</h3>
+                <button type="button" class="btn btn-secondary" id="addFormulaIngredientBtn">
+                    + Add Ingredient
+                </button>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ingredient</th>
+                            <th>Quantity (kg)</th>
+                            <th>Price/kg</th>
+                            <th>Cost</th>
+                            <th>Inclusion Rate (%)</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="formulaIngredientTableBody">
+                        <tr>
+                            <td colspan="6">Add ingredients to begin formulating.</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th>Total</th>
+                            <th id="formulaTotalWeight">0 kg</th>
+                            <th></th>
+                            <th id="formulaTotalCost">UGX 0</th>
+                            <th id="formulaTotalInclusion">0%</th>
+                            <th></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <span class="metric-label">Total Mix Weight</span>
+                    <h2 id="formulaSummaryWeight">0 kg</h2>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">Total Formula Cost</span>
+                    <h2 id="formulaSummaryCost">UGX 0</h2>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">Cost per Kilogram</span>
+                    <h2 id="formulaCostPerKg">UGX 0</h2>
+                </div>
+            </div>
+
+            <div class="section-header">
+                <h3>Nutritional Analysis</h3>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nutrient</th>
+                            <th>Calculated Value</th>
+                            <th>Target / Reference</th>
+                            <th>Difference</th>
+                        </tr>
+                    </thead>
+                    <tbody id="formulaNutritionTableBody">
+                        <tr><td colspan="4">Nutritional analysis will appear when verified ingredient data is available.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="form-help">
+                Calculated nutrient values are estimates based on the ingredient data entered.
+                A calculated formula is not automatically a nutritionally validated or balanced feed.
+            </p>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="saveFormulaDraftBtn">
+                    Save Draft
+                </button>
+                <button type="button" class="btn btn-primary" id="saveFeedFormulaBtn">
+                    Save Formula
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. FEED PRODUCTION -->
+    <div class="feed-tab-content" id="feedTab-production">
+
+        <div class="section-header">
+            <div>
+                <h2>Feed Production</h2>
+                <p>Record feed manufactured from raw materials.</p>
+            </div>
+            <button type="button" class="btn btn-primary" id="addProductionRecordBtn">
+                + Record Production
+            </button>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <span class="metric-label">Total Produced</span>
+                <h2 id="totalFeedProduced">0 kg</h2>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Production Cost</span>
+                <h2 id="totalFeedProductionCost">UGX 0</h2>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Average Cost/kg</span>
+                <h2 id="productionAverageCost">UGX 0</h2>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Production Date</th>
+                        <th>Production Reference</th>
+                        <th>Formula</th>
+                        <th>Quantity Produced</th>
+                        <th>Production Loss</th>
+                        <th>Net Quantity</th>
+                        <th>Total Cost</th>
+                        <th>Cost/kg</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="feedProductionTableBody">
+                    <tr><td colspan="9">No production records available.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 8. BATCH ALLOCATION -->
+    <div class="feed-tab-content" id="feedTab-allocation">
+
+        <div class="section-header">
+            <div>
+                <h2>Batch Feed Allocation</h2>
+                <p>Track finished feed issued to each broiler batch.</p>
+            </div>
+            <button type="button" class="btn btn-primary" id="allocateFeedBtn">
+                + Allocate Feed
+            </button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Batch</th>
+                        <th>Feed Type</th>
+                        <th>Quantity Issued</th>
+                        <th>Cost/kg</th>
+                        <th>Total Cost</th>
+                        <th>Issued By</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="feedAllocationTableBody">
+                    <tr><td colspan="8">No feed allocations recorded yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>Batch Feed Balances</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Batch</th>
+                            <th>Feed Issued</th>
+                            <th>Feed Consumed</th>
+                            <th>Remaining Feed</th>
+                            <th>Feed Cost</th>
+                            <th>Cost per Bird</th>
+                        </tr>
+                    </thead>
+                    <tbody id="batchFeedBalanceTableBody">
+                        <tr><td colspan="6">Batch balances will appear here.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 9. DAILY CONSUMPTION -->
+    <div class="feed-tab-content" id="feedTab-consumption">
+
+        <div class="section-header">
+            <div>
+                <h2>Daily Feed Consumption</h2>
+                <p>Record daily feed usage and monitor flock consumption.</p>
+            </div>
+            <button type="button" class="btn btn-primary" id="recordDailyFeedBtn">
+                + Record Consumption
+            </button>
+        </div>
+
+        <div class="filter-bar">
+            <select id="feedConsumptionBatchFilter">
+                <option value="">All Batches</option>
+            </select>
+
+            <input type="date" id="feedConsumptionStartDate">
+            <input type="date" id="feedConsumptionEndDate">
+
+            <button type="button" class="btn btn-secondary" id="filterFeedConsumptionBtn">
+                Apply Filters
+            </button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Batch</th>
+                        <th>Flock Age</th>
+                        <th>Feed Type</th>
+                        <th>Opening Stock</th>
+                        <th>Feed Used</th>
+                        <th>Closing Stock</th>
+                        <th>Live Birds</th>
+                        <th>Feed/Bird</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="dailyFeedConsumptionTableBody">
+                    <tr><td colspan="10">No daily consumption records available.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 10. COST ANALYSIS -->
+    <div class="feed-tab-content" id="feedTab-costing">
+
+        <div class="section-header">
+            <div>
+                <h2>Feed Cost Analysis</h2>
+                <p>Understand the financial impact of feed on broiler production.</p>
+            </div>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <span class="metric-label">Total Feed Expenditure</span>
+                <h2 id="feedTotalExpenditure">UGX 0</h2>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Average Feed Cost/Bird</span>
+                <h2 id="feedCostBirdAnalysis">UGX 0</h2>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Average FCR</span>
+                <h2 id="feedAverageFCR">0.00</h2>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Feed Cost/kg Live Weight</span>
+                <h2 id="feedCostPerKgLiveWeight">UGX 0</h2>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="dashboard-card">
+                <h3>Batch Feed Cost Comparison</h3>
+                <div id="feedBatchCostComparison">
+                    <p class="empty-state">Batch cost comparisons will appear here.</p>
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Ingredient Price History</h3>
+                <div id="ingredientPriceHistory">
+                    <p class="empty-state">Ingredient price history will appear here.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>Price Sensitivity Analysis</h3>
+            <p>Test how ingredient price changes affect feed and production costs.</p>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="sensitivityIngredient">Ingredient</label>
+                    <select id="sensitivityIngredient">
+                        <option value="">Select ingredient</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="sensitivityPriceChange">Price Change (%)</label>
+                    <input type="number" id="sensitivityPriceChange" value="10" step="0.1">
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-primary" id="runFeedSensitivityBtn">
+                Run Simulation
+            </button>
+
+            <div id="feedSensitivityResults">
+                <p class="empty-state">Simulation results will appear here.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 11. FORECASTING -->
+    <div class="feed-tab-content" id="feedTab-forecast">
+
+        <div class="section-header">
+            <div>
+                <h2>Feed Requirements Forecast</h2>
+                <p>Estimate future feed requirements, costs and potential shortages.</p>
+            </div>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>Forecast Settings</h3>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="forecastBatch">Batch</label>
+                    <select id="forecastBatch">
+                        <option value="">Select batch</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="forecastPeriod">Forecast Period</label>
+                    <select id="forecastPeriod">
+                        <option value="7">7 days</option>
+                        <option value="14">14 days</option>
+                        <option value="21">21 days</option>
+                        <option value="28">28 days</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="forecastBirds">Expected Live Birds</label>
+                    <input type="number" id="forecastBirds" min="0">
+                </div>
+
+                <div class="form-group">
+                    <label for="forecastDailyConsumption">Estimated Daily Feed/Bird (kg)</label>
+                    <input type="number" id="forecastDailyConsumption" min="0" step="0.001">
+                </div>
+
+                <div class="form-group">
+                    <label for="forecastFeedPrice">Estimated Feed Cost/kg (UGX)</label>
+                    <input type="number" id="forecastFeedPrice" min="0">
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-primary" id="calculateFeedForecastBtn">
+                Calculate Forecast
+            </button>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <span class="metric-label">Expected Feed Requirement</span>
+                <h2 id="forecastFeedRequirement">0 kg</h2>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Projected Feed Cost</span>
+                <h2 id="forecastFeedCost">UGX 0</h2>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Expected Shortage</span>
+                <h2 id="forecastFeedShortage">0 kg</h2>
+            </div>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>Scenario Analysis</h3>
+            <p>Compare possible changes against the current forecast.</p>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="scenarioFeedPrice">Feed Price Change (%)</label>
+                    <input type="number" id="scenarioFeedPrice" value="0" step="1">
+                </div>
+
+                <div class="form-group">
+                    <label for="scenarioMortality">Additional Mortality (%)</label>
+                    <input type="number" id="scenarioMortality" value="0" min="0" step="0.1">
+                </div>
+
+                <div class="form-group">
+                    <label for="scenarioSalePrice">Sale Price Change (%)</label>
+                    <input type="number" id="scenarioSalePrice" value="0" step="1">
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-secondary" id="runFeedScenarioBtn">
+                Compare Scenario
+            </button>
+
+            <div id="feedScenarioResults">
+                <p class="empty-state">Scenario comparisons will appear here.</p>
+            </div>
+        </div>
+
+        <p class="form-help">
+            Forecasts are estimates based on recorded farm performance and the assumptions
+            entered. They are not guaranteed production outcomes.
+        </p>
+    </div>
+
+    <!-- 12. REPORTS -->
+    <div class="feed-tab-content" id="feedTab-reports">
+
+        <div class="section-header">
+            <div>
+                <h2>Feed Reports</h2>
+                <p>Generate records for feed purchases, production, consumption and costs.</p>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+
+            <div class="dashboard-card">
+                <h3>Inventory Report</h3>
+                <p>Raw material and finished feed stock balances.</p>
+                <button type="button" class="btn btn-secondary" data-feed-report="inventory">
+                    Generate Report
+                </button>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Formulation Report</h3>
+                <p>Ingredient composition, inclusion rates and nutritional analysis.</p>
+                <button type="button" class="btn btn-secondary" data-feed-report="formulation">
+                    Generate Report
+                </button>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Production Report</h3>
+                <p>Feed production quantities and manufacturing costs.</p>
+                <button type="button" class="btn btn-secondary" data-feed-report="production">
+                    Generate Report
+                </button>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Batch Consumption Report</h3>
+                <p>Feed issued, consumed and remaining for each batch.</p>
+                <button type="button" class="btn btn-secondary" data-feed-report="consumption">
+                    Generate Report
+                </button>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Feed Financial Report</h3>
+                <p>Feed expenditure, cost per bird and cost per kilogram of live weight.</p>
+                <button type="button" class="btn btn-secondary" data-feed-report="financial">
+                    Generate Report
+                </button>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Ingredient Price Report</h3>
+                <p>Historical purchase prices and price movements.</p>
+                <button type="button" class="btn btn-secondary" data-feed-report="prices">
+                    Generate Report
+                </button>
+            </div>
+
+        </div>
+
+        <div id="feedReportOutput"></div>
+    </div>
+
+</section>
+
+        
+        <!-- =================================================
+             PRICE MANAGEMENT
+        ================================================== -->
+
+        <section class="app-page" id="pricesPage" data-page="prices">
+
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">PRICE CONTROL</span>
+              <h1>Price Management</h1>
+              <p>Manage changing prices without losing historical cost information.</p>
+            </div>
+
+            <button type="button" class="btn btn-primary" data-record="feed_price">
+              + Change price
+            </button>
+          </div>
+
+
+          <div class="price-introduction">
+            <div class="price-introduction-icon">◇</div>
+            <div>
+              <strong>Historical prices are preserved</strong>
+              <p>
+                Price changes apply from their effective date. Previously
+                consumed feed and recorded transactions retain their original costs.
+              </p>
+            </div>
+          </div>
+
+
+          <div class="price-category-grid">
+
+            <button type="button" class="price-category-card" data-price-category="feed">
+              <span class="price-category-icon">♧</span>
+              <strong>Feed prices</strong>
+              <small>Starter, grower and finisher feed.</small>
+              <span class="card-arrow">→</span>
+            </button>
+
+            <button type="button" class="price-category-card" data-price-category="chick">
+              <span class="price-category-icon">🐣</span>
+              <strong>Chick prices</strong>
+              <small>Day-old chick purchase prices.</small>
+              <span class="card-arrow">→</span>
+            </button>
+
+            <button type="button" class="price-category-card" data-price-category="input">
+              <span class="price-category-icon">▣</span>
+              <strong>Other input prices</strong>
+              <small>Medication, bedding and supplies.</small>
+              <span class="card-arrow">→</span>
+            </button>
+
+            <button type="button" class="price-category-card" data-price-category="selling">
+              <span class="price-category-icon">⇧</span>
+              <strong>Selling prices</strong>
+              <small>Price per bird or kilogram.</small>
+              <span class="card-arrow">→</span>
+            </button>
+
+          </div>
+
+
+          <article class="content-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Current prices</h2>
+                <p>Latest recorded prices for this batch.</p>
+              </div>
+            </div>
+
+            <div id="currentPrices" class="table-container">
+              <p class="empty-message">No price information available.</p>
+            </div>
+          </article>
+
+
+          <article class="content-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Price change history</h2>
+                <p>Review previous prices and their effective dates.</p>
+              </div>
+            </div>
+
+            <div id="priceHistory" class="table-container">
+              <p class="empty-message">No price changes recorded yet.</p>
+            </div>
+          </article>
+
+          <article class="content-panel price-simulation-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Price trend simulation</h2>
+                <p>Explore possible price movements using your latest recorded prices.</p>
+              </div>
+              <span class="page-status">Planning tool</span>
+            </div>
+            <div class="simulation-controls">
+              <div class="form-field"><label for="priceSimulationScope">Apply to</label><select id="priceSimulationScope"><option value="active">Active batch</option><option value="farm">Whole farm (all batches)</option></select></div>
+              <div class="form-field"><label for="priceSimulationHorizon">Forecast period</label><select id="priceSimulationHorizon"><option value="14">2 weeks</option><option value="30">1 month</option><option value="60" selected>2 months</option><option value="90">3 months</option><option value="180">6 months</option><option value="365">1 year</option></select></div>
+            </div>
+            <div class="price-slider-wrap">
+              <div class="slider-heading"><label for="priceSimulationChange">Simulated feed price movement</label><strong id="priceChangeValue">0%</strong></div>
+              <input type="range" id="priceSimulationChange" min="-50" max="100" step="1" value="0">
+              <div class="slider-limits"><span>−50% lower</span><span>Current price</span><span>+100% higher</span></div>
+            </div>
+            <div id="priceSimulationOutput" class="price-simulation-output" aria-live="polite">
+              <p class="empty-message">Move the slider to see the estimated financial impact.</p>
+            </div>
+            <p class="form-help">Simulated prices are planning estimates only. They do not alter your recorded price history or farm transactions.</p>
+          </article>
+
+        </section>
+
+
+        <!-- =================================================
+             REPORTS
+        ================================================== -->
+
+        <section class="app-page" id="reportsPage" data-page="reports">
+
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">FARM INFORMATION</span>
+              <h1>Reports</h1>
+              <p>Review and export your flock's historical information.</p>
+            </div>
+          </div>
+
+
+          <div class="report-grid">
+
+            <article class="report-card">
+              <span class="report-icon">▦</span>
+              <h2>Batch summary</h2>
+              <p>Placement details, flock status and lifecycle information.</p>
+              <button type="button" class="btn btn-outline" data-report="summary">
+                Generate report
+              </button>
+            </article>
+
+            <article class="report-card">
+              <span class="report-icon">✎</span>
+              <h2>Daily activity report</h2>
+              <p>Feed, weight, mortality, health and expense records.</p>
+              <button type="button" class="btn btn-outline" data-report="activities">
+                Generate report
+              </button>
+            </article>
+
+            <article class="report-card">
+              <span class="report-icon">↗</span>
+              <h2>Growth report</h2>
+              <p>Weight measurements and growth performance.</p>
+              <button type="button" class="btn btn-outline" data-report="growth">
+                Generate report
+              </button>
+            </article>
+
+            <article class="report-card">
+              <span class="report-icon">＄</span>
+              <h2>Financial report</h2>
+              <p>Expenditure, revenue and financial performance.</p>
+              <button type="button" class="btn btn-outline" data-report="financials">
+                Generate report
+              </button>
+            </article>
+
+          </div>
+
+
+          <article class="content-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Export farm data</h2>
+                <p>Download a copy of your batch records.</p>
+              </div>
+            </div>
+
+            <div class="export-actions">
+              <button type="button" class="btn btn-outline" id="exportCsvBtn">
+                Export CSV
+              </button>
+
+              <button type="button" class="btn btn-outline" id="printReportBtn">
+                Print report
+              </button>
+            </div>
+
+          </article>
+
+        </section>
+
+
+        <!-- =================================================
+             BATCH SETTINGS
+        ================================================== -->
+
+        <section class="app-page" id="batchSettingsPage" data-page="batch-settings">
+
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">FLOCK CONFIGURATION</span>
+              <h1>Batch Settings</h1>
+              <p>Manage the information and targets for your active flock.</p>
+            </div>
+          </div>
+
+
+          <article class="content-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Active batch information</h2>
+                <p>Current flock configuration.</p>
+              </div>
+            </div>
+
+            <div id="batchDetails" class="settings-details">
+              <p class="empty-message">Select a batch to view its details.</p>
+            </div>
+
+            <button type="button" class="btn btn-outline" id="editBatchBtn">
+              Edit batch information
+            </button>
+          </article>
+
+
+          <article class="content-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Manage batches</h2>
+                <p>Create or switch between your broiler flocks.</p>
+              </div>
+            </div>
+
+            <button type="button" class="btn btn-primary" id="settingsAddBatchBtn">
+              + Create another batch
+            </button>
+
+            <div id="batchList" class="batch-list"></div>
+          </article>
+
+        </section>
+
+
+      </main>
+    </div>
+
+
+    <!-- MOBILE NAVIGATION -->
+
+    <nav class="mobile-navigation" aria-label="Mobile navigation">
+
+      <button type="button" class="mobile-nav-item active" data-view="home">
+        <span>⌂</span>
+        <small>Home</small>
+      </button>
+
+      <button type="button" class="mobile-nav-item" data-view="overview">
+        <span>▦</span>
+        <small>Overview</small>
+      </button>
+
+      <button type="button" class="mobile-nav-item" data-view="daily-records">
+        <span>✎</span>
+        <small>Records</small>
+      </button>
+
+      <button type="button" class="mobile-nav-item" data-view="predictions">
+        <span>◈</span>
+        <small>Predict</small>
+      </button>
+
+      <button type="button" class="mobile-nav-item" data-view="batch-settings">
+        <span>⚙</span>
+        <small>More</small>
+      </button>
+
+    </nav>
+
+  </section>
+
+
+  <!-- =====================================================
+       RECORD MODAL
+       JavaScript will populate the fields dynamically.
+  ====================================================== -->
+
+  <div
+    class="modal"
+    id="recordModal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modalTitle"
+    hidden
+  >
+
+    <div class="modal-backdrop" data-close></div>
+
+    <div class="modal-card">
+
+      <div class="modal-header">
+
+        <div>
+          <span class="eyebrow">FARM RECORD</span>
+          <h2 id="modalTitle">Record activity</h2>
+        </div>
+
+        <button
+          type="button"
+          class="modal-close"
+          data-close
+          aria-label="Close dialog"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <form id="recordForm">
+
+        <div id="recordFields"></div>
+
+        <p id="recordError" class="form-error" role="alert"></p>
+
+        <div class="modal-actions">
+
+          <button type="button" class="btn btn-outline" data-close>
+            Cancel
+          </button>
+
+          <button type="submit" class="btn btn-primary">
+            Save record
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       GLOBAL NOTIFICATION AREA
+  ====================================================== -->
+
+  <div
+    id="appNotification"
+    class="app-notification"
+    role="status"
+    aria-live="polite"
+    hidden
+  ></div>
+
+
+</body>
+</html>

@@ -1,0 +1,243 @@
+/* AgriPredict Farmer Dashboard — Fresh Green / White theme */
+:root{--ap-green:#22C55E;--ap-green-strong:#16A34A;--ap-green-dark:#15803D;--ap-mint:#DCFCE7;--ap-green-pale:#F0FDF4;--ap-blue:#38BDF8;--ap-blue-pale:#F0F9FF;--ap-amber:#F59E0B;--ap-amber-pale:#FFFBEB;--ap-violet:#8B5CF6;--ap-violet-pale:#F5F3FF;--ap-orange:#F97316;--ap-orange-pale:#FFF7ED;--ap-teal:#14B8A6;--ap-text:#173326;--ap-muted:#6B7C72;--ap-line:#E5EEE8;--ap-shadow:0 12px 32px rgba(22,101,52,.07)}
+html,body.dashboard-page{background:#fff!important;color:var(--ap-text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100%;}
+body.dashboard-page{margin:0}*{box-sizing:border-box}.dashboard-layout{min-height:100vh;display:grid;grid-template-columns:258px minmax(0,1fr);background:#fff}
+.dashboard-sidebar{position:sticky;top:0;height:100vh;background:#fff;border-right:1px solid var(--ap-line);display:flex;flex-direction:column;padding:22px 16px;z-index:30;box-shadow:5px 0 20px rgba(15,80,43,.025)}
+.sidebar-brand{display:flex;align-items:center;justify-content:space-between;padding:3px 9px 23px;border-bottom:1px solid var(--ap-line)}.brand-logo{text-decoration:none;color:var(--ap-text);font-weight:900;font-size:23px;letter-spacing:-1px;display:flex;align-items:center;gap:9px}.brand-icon{width:39px;height:39px;display:grid;place-items:center;border-radius:13px;background:#DCFCE7;font-size:22px}.brand-highlight{color:var(--ap-green-strong)}.sidebar-close{display:none;border:0;background:#F1FDF4;border-radius:10px;font-size:23px;color:var(--ap-green-dark);width:36px;height:36px}
+.sidebar-user{display:flex;align-items:center;gap:12px;padding:20px 9px 22px}.user-avatar,.topbar-avatar,.profile-avatar{width:42px;height:42px;border-radius:50%;background:#DCFCE7;color:var(--ap-green-dark);display:grid;place-items:center;font-size:18px;font-weight:850;overflow:hidden;flex:0 0 auto}.user-avatar img,.topbar-avatar img,.profile-avatar img{width:100%;height:100%;object-fit:cover}.sidebar-user-info h3{font-size:14px;margin:0 0 3px;font-weight:800}.sidebar-user-info span{font-size:11px;color:var(--ap-muted)}.sidebar-navigation{display:grid;gap:5px}.sidebar-heading{font-size:10px;letter-spacing:1.2px;font-weight:850;color:#9AA99F;margin:15px 10px 7px}.sidebar-link{min-height:45px;border-radius:12px;display:flex;align-items:center;gap:12px;padding:10px 12px;color:#5C6D62;text-decoration:none;font-size:13px;font-weight:700;transition:.18s ease}.nav-icon{width:28px;height:28px;display:grid;place-items:center;border-radius:9px;background:#F4F8F5;color:#678172;font-size:16px}.sidebar-link:hover{background:#F0FDF4;color:var(--ap-green-dark);transform:translateX(2px)}.sidebar-link.active{background:#E8FBEF;color:#15803D;box-shadow:inset 3px 0 0 var(--ap-green)}.sidebar-link.active .nav-icon{background:var(--ap-green);color:#fff}.sidebar-footer{margin-top:auto;padding:13px 7px 4px}.sidebar-footer-message{display:flex;align-items:center;gap:8px;padding:12px;background:#F0FDF4;border:1px solid #D7F5E1;border-radius:13px;margin-bottom:12px}.sidebar-footer-message span{font-size:19px}.sidebar-footer-message p{font-size:11px;font-weight:700;color:#43845A;margin:0}.sidebar-logout{width:100%;border:1px solid #F3DCDC;background:#FFF9F9;color:#B64B4B;border-radius:11px;padding:11px;text-align:left;font:inherit;font-size:12px;font-weight:750;cursor:pointer}.sidebar-logout:hover{background:#FFF0F0}
+.dashboard-main{min-width:0;display:flex;flex-direction:column;background:#fff}.dashboard-topbar{min-height:82px;border-bottom:1px solid var(--ap-line);background:#fff;display:flex;align-items:center;justify-content:space-between;padding:14px clamp(18px,3vw,38px);position:sticky;top:0;z-index:20}.topbar-left,.topbar-right{display:flex;align-items:center;gap:15px}.topbar-label,.section-eyebrow{color:var(--ap-green-strong);font-size:10px;font-weight:900;letter-spacing:1.2px}.topbar-heading h2{margin:4px 0 0;font-size:18px;letter-spacing:-.4px}.sidebar-toggle{display:none;border:1px solid var(--ap-line);background:#F4FDF6;color:var(--ap-green-dark);border-radius:10px;width:39px;height:39px;font-size:18px}.dashboard-datetime{display:flex;align-items:center;gap:9px;color:var(--ap-muted)}.datetime-icon{font-size:22px;color:var(--ap-green)}.dashboard-datetime div{display:grid;gap:2px}.dashboard-date{font-size:11px;font-weight:750;color:#43574A}.dashboard-clock{font-size:10px;color:#829086}.topbar-avatar{width:39px;height:39px}
+.dashboard-content{width:100%;max-width:1500px;margin:0 auto;padding:27px clamp(16px,3vw,38px) 38px;flex:1}.dashboard-section{display:none}.dashboard-section.active-section{display:block;animation:apFade .22s ease}@keyframes apFade{from{opacity:.55;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}.dashboard-message{display:none;padding:11px 14px;margin-bottom:15px;border:1px solid #F3D5D5;border-radius:11px;background:#FFF7F7;color:#9F3434;font-size:12px}
+.welcome-section{background:#fff;border:1px solid #D8F3E1;border-radius:22px;padding:25px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px;position:relative;overflow:hidden;box-shadow:var(--ap-shadow)}.welcome-section:after{content:"";position:absolute;width:190px;height:190px;border:26px solid #E7FBEF;border-radius:50%;right:80px;top:-110px;opacity:.85}.welcome-text{position:relative;z-index:1}.welcome-text h1{font-size:clamp(23px,3vw,33px);letter-spacing:-1.1px;margin:8px 0;color:#153B28}.welcome-text h1 span{color:var(--ap-green-strong)}.welcome-text p{margin:0;color:var(--ap-muted);font-size:13px;line-height:1.6}.welcome-decoration{position:relative;z-index:1;width:74px;height:74px;border-radius:22px;display:grid;place-items:center;background:#E4FBEA;font-size:40px;flex:0 0 auto}
+.dashboard-stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:18px 0}.dashboard-stat-card{position:relative;overflow:hidden;background:#fff;border:1px solid var(--ap-line);border-radius:17px;padding:17px 18px;box-shadow:0 7px 20px rgba(20,75,44,.035)}.dashboard-stat-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--ap-green)}.stat-projects:before{background:var(--ap-green)}.stat-livestock:before{background:var(--ap-teal)}.stat-expenses:before{background:var(--ap-amber)}.stat-forecasts:before{background:var(--ap-violet)}.stat-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}.stat-icon{width:36px;height:36px;border-radius:11px;background:#DCFCE7;color:#15803D;display:grid;place-items:center;font-size:19px}.stat-livestock .stat-icon{background:#DFFAF5;color:#0F9488}.stat-expenses .stat-icon{background:#FFF3D4;color:#B97705}.stat-forecasts .stat-icon{background:#F0EAFE;color:#7C3AED}.stat-description{font-size:10px;color:#8A998E;font-weight:700}.dashboard-stat-card h2{font-size:25px;letter-spacing:-.7px;margin:13px 0 3px;color:#1C3B2A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dashboard-stat-card p{font-size:11px;color:var(--ap-muted);margin:0;font-weight:650}
+.dashboard-overview-grid,.performance-overview-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}.dashboard-panel{background:#fff;border:1px solid var(--ap-line);border-radius:17px;padding:19px;box-shadow:0 7px 22px rgba(20,75,44,.035);min-width:0}.panel-header{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;margin-bottom:14px}.panel-header h3{margin:4px 0 4px;font-size:16px;letter-spacing:-.25px}.panel-header p{margin:0;font-size:11px;color:var(--ap-muted);line-height:1.55}.panel-link{font-size:11px;color:var(--ap-green-strong);font-weight:800;text-decoration:none;white-space:nowrap}.panel-link:hover{text-decoration:underline}.dashboard-project-summary{display:grid;gap:9px}.project-summary-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border:1px solid #EAF3EC;border-radius:11px;background:#FBFEFC}.project-summary-item strong,.project-summary-item span{display:block}.project-summary-item strong{font-size:12px}.project-summary-item div>span{font-size:10px;color:var(--ap-muted);margin-top:3px}.enrollment-status{font-size:10px;font-weight:800;color:#148344;background:#E8FBEF;border-radius:30px;padding:6px 9px;white-space:nowrap}.recent-farm-activity{display:grid;gap:8px}.activity-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #F0F4F1}.activity-row:last-child{border-bottom:0}.activity-dot{width:9px;height:9px;border-radius:50%;background:var(--ap-green);flex:0 0 auto}.activity-dot.labour{background:var(--ap-amber)}.activity-dot.veterinary{background:#F97316}.activity-dot.other{background:var(--ap-blue)}.activity-main{min-width:0;flex:1}.activity-main strong,.activity-main small{display:block}.activity-main strong{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.activity-main small{font-size:10px;color:var(--ap-muted);margin-top:3px}.activity-row>b{font-size:11px;white-space:nowrap;color:#345440}
+.inventory-panel{margin-top:16px}.source-pill,.scenario-pill,.forecast-badge{padding:7px 10px;background:#F3F7F4;color:#758379;border-radius:30px;font-size:10px;font-weight:800;white-space:nowrap}.source-pill.source-ready{background:#E6FBEF;color:#168248}.farm-inventory-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}.inventory-card{display:flex;align-items:center;gap:11px;padding:13px;border:1px solid #E7F2EA;border-radius:13px;background:#FCFEFD;min-width:0}.inventory-card-icon{width:42px;height:42px;border-radius:13px;background:#E6FBEF;display:grid;place-items:center;font-size:22px;flex:0 0 auto}.inventory-tone-1 .inventory-card-icon{background:#E1F8F5}.inventory-tone-2 .inventory-card-icon{background:#FFF5DE}.inventory-tone-3 .inventory-card-icon{background:#EFF0FF}.inventory-tone-4 .inventory-card-icon{background:#EAF5FF}.inventory-card>div{min-width:0;display:grid;gap:3px}.inventory-label{font-size:10px;font-weight:750;color:var(--ap-muted)}.inventory-card strong{font-size:22px;letter-spacing:-.5px;color:#1B3B29}.inventory-card small{font-size:9px;color:#849187;line-height:1.4}.inventory-pending{background:#FCFCFC;border-style:dashed}.inventory-pending .inventory-card-icon{background:#F1F4F1;color:#87948A}.inventory-pending strong{font-size:17px;color:#89958B}.inventory-placeholder{grid-column:1/-1;border:1px dashed #DCE9DF;border-radius:12px;padding:18px;color:var(--ap-muted);font-size:12px}.data-note{font-size:10px;line-height:1.6;color:#7B8B80;margin:13px 0 0}.quick-actions-section{margin-top:22px}.section-heading h3{font-size:16px;margin:0 0 3px}.section-heading p{font-size:11px;color:var(--ap-muted);margin:0}.quick-actions-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin-top:13px}.quick-action-card{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid var(--ap-line);border-radius:14px;text-decoration:none;color:var(--ap-text);background:#fff;transition:.18s ease}.quick-action-card:hover{transform:translateY(-2px);border-color:#A7E8BA;box-shadow:var(--ap-shadow)}.quick-action-icon{width:37px;height:37px;border-radius:12px;display:grid;place-items:center;font-size:20px;font-weight:800}.quick-action-icon.green{background:#DCFCE7;color:#15803D}.quick-action-icon.blue{background:#E0F2FE;color:#0284C7}.quick-action-icon.orange{background:#FFEDD5;color:#EA580C}.quick-action-icon.purple{background:#F3E8FF;color:#9333EA}.quick-action-card h4{font-size:11px;margin:0 0 3px}.quick-action-card p{font-size:9px;color:var(--ap-muted);margin:0;line-height:1.4}
+.page-section-header,.forecast-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:19px}.page-section-header h1,.forecast-heading h1{font-size:28px;letter-spacing:-.9px;margin:6px 0;color:#173B28}.page-section-header p,.forecast-heading p{font-size:12px;color:var(--ap-muted);margin:0;line-height:1.6;max-width:730px}.primary-action,.project-enroll-button,.profile-upload-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:0;border-radius:10px;padding:11px 15px;background:var(--ap-green);color:#fff;text-decoration:none;font-size:11px;font-weight:850;cursor:pointer;box-shadow:0 5px 12px rgba(34,197,94,.15)}.primary-action:hover,.project-enroll-button:hover,.profile-upload-button:hover{background:#16A34A;transform:translateY(-1px)}.primary-action:disabled,.project-enroll-button:disabled{opacity:.55;cursor:not-allowed;transform:none}.my-projects-container{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}.empty-state{border:1px dashed #D8E8DC;background:#FCFEFC;border-radius:14px;padding:25px;text-align:center;color:var(--ap-muted)}.empty-state-icon{display:block;font-size:29px;margin-bottom:8px}.empty-state h3,.empty-state h4{color:#294A35;margin:5px 0 7px}.empty-state p{font-size:11px;line-height:1.55;margin:0 auto 12px;max-width:390px}.compact-empty{padding:15px}.compact-empty .empty-state-icon{font-size:22px}.compact-empty h4{font-size:12px}.compact-empty p{margin-bottom:0}.enrollment-notice{display:flex;gap:11px;align-items:flex-start;background:#F0F9FF;border:1px solid #D7EDFC;color:#38627B;padding:13px 15px;border-radius:13px;margin-bottom:16px}.enrollment-notice>span{font-size:18px;font-weight:900}.enrollment-notice p{font-size:11px;line-height:1.55;margin:0}.agri-project-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}.agri-project-card{overflow:hidden;border:1px solid var(--ap-line);border-radius:16px;background:#fff;box-shadow:0 8px 22px rgba(20,75,44,.035);display:flex;flex-direction:column}.project-image{height:145px;background:#EAF9EF;overflow:hidden}.project-image img{width:100%;height:100%;object-fit:cover}.project-card-content{padding:15px;display:flex;flex-direction:column;flex:1}.project-category{font-size:9px;font-weight:900;letter-spacing:.9px;color:#16A34A}.project-card-content h3{font-size:15px;margin:6px 0;color:#1B3928}.project-card-content p{font-size:11px;line-height:1.55;color:var(--ap-muted);margin:0 0 10px}.project-features{font-size:10px;line-height:1.75;color:#617166;padding-left:17px;margin:0 0 14px}.project-card-footer{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:9px}.project-enroll-button{padding:9px 12px;font-size:10px}
+.performance-metrics-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}.performance-mini-card{padding:16px;border:1px solid var(--ap-line);border-left:4px solid var(--ap-green);border-radius:14px;background:#fff;display:grid;gap:6px}.performance-mini-card span{font-size:10px;color:var(--ap-muted);font-weight:750}.performance-mini-card strong{font-size:22px;letter-spacing:-.5px;color:#183B29}.performance-mini-card small{font-size:9px;color:#89968D}.performance-mini-card.amber{border-left-color:var(--ap-amber)}.performance-mini-card.blue{border-left-color:var(--ap-blue)}.performance-mini-card.purple{border-left-color:var(--ap-violet)}.breakdown-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 1px;border-bottom:1px solid #EEF3EF;font-size:11px}.breakdown-row:last-of-type{border-bottom:0}.breakdown-row span{color:#66776B}.breakdown-row strong{color:#244631;text-align:right}
+.forecast-heading{align-items:center}.forecast-badge{background:#E9FBEF;color:#178344;letter-spacing:.5px}.forecast-hero{padding:23px 25px;border:1px solid #CFF2DA;border-radius:18px;background:#fff;box-shadow:var(--ap-shadow);display:flex;align-items:center;justify-content:space-between;gap:20px;position:relative;overflow:hidden}.forecast-hero:after{content:"";position:absolute;width:180px;height:180px;border:23px solid #E8FBEF;border-radius:50%;right:70px;top:-105px}.forecast-hero>div:first-child{position:relative;z-index:1}.forecast-kicker{font-size:9px;letter-spacing:1.2px;color:#16A34A;font-weight:900}.forecast-hero h2{font-size:clamp(19px,2.4vw,27px);letter-spacing:-.7px;margin:7px 0;color:#173C28;max-width:800px}.forecast-hero p{font-size:11px;color:var(--ap-muted);line-height:1.6;margin:0;max-width:750px}.forecast-hero-mark{position:relative;z-index:1;width:65px;height:65px;border-radius:19px;background:#E6FBEF;color:#16A34A;font-size:42px;display:grid;place-items:center;flex:0 0 auto}.forecast-cost-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:14px 0}.forecast-cost-card{padding:16px;border:1px solid var(--ap-line);border-radius:15px;background:#fff;display:grid;gap:7px;box-shadow:0 6px 17px rgba(20,75,44,.03);min-width:0}.forecast-cost-card span{font-size:10px;color:var(--ap-muted);font-weight:750}.forecast-cost-card strong{font-size:clamp(17px,2vw,23px);letter-spacing:-.6px;color:#244630;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.forecast-cost-card small{font-size:9px;color:#829087;line-height:1.45}.forecast-cost-card.feed{border-top:4px solid var(--ap-green)}.forecast-cost-card.labour{border-top:4px solid var(--ap-blue)}.forecast-cost-card.other{border-top:4px solid var(--ap-orange)}.forecast-cost-card.total{border-top:4px solid var(--ap-violet)}.forecast-panel,.scenario-panel{margin-top:14px}.scenario-pill{background:#F3E8FF;color:#7E22CE;letter-spacing:.5px}.forecast-table{width:100%;border-collapse:collapse;min-width:630px}.forecast-table th,.forecast-table td{padding:12px 13px;text-align:left;border-bottom:1px solid #EEF3EF;font-size:11px;white-space:nowrap}.forecast-table th{background:#F0FDF4;color:#35724A;font-size:9px;letter-spacing:.65px;text-transform:uppercase}.forecast-table td{color:#506357}.forecast-table td strong{color:#21452E}.forecast-table td small{display:block;font-size:9px;color:#8A998E;margin-top:3px}.forecast-table tbody tr:hover{background:#FBFEFC}.table-empty{white-space:normal!important;color:#829087!important;padding:19px!important;line-height:1.5}.scenario-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}.scenario-input{display:grid;gap:7px;padding:13px;border:1px solid #E8F0EA;border-radius:12px;background:#FCFEFC}.scenario-input span{font-size:10px;color:#405A48;font-weight:800}.scenario-input input{width:100%;border:1px solid #DCE9E0;border-radius:9px;padding:10px 11px;background:#fff;color:#183B29;font:inherit;font-size:13px;outline:none}.scenario-input input:focus{border-color:var(--ap-green);box-shadow:0 0 0 3px rgba(34,197,94,.12)}.scenario-input small{font-size:9px;color:#849187}.scenario-input.feed{border-top:3px solid var(--ap-green)}.scenario-input.labour{border-top:3px solid var(--ap-blue)}.scenario-input.other{border-top:3px solid var(--ap-orange)}.scenario-result-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0 14px}.scenario-result-highlight{background:#F0FDF4;border:1px solid #D7F5E1;border-radius:13px;padding:14px;display:grid;gap:5px}.scenario-result-highlight:nth-child(2){background:#F5F3FF;border-color:#E7DEFF}.scenario-result-highlight span{font-size:10px;color:#5F7665;font-weight:750}.scenario-result-highlight strong{font-size:22px;color:#1C7C40}.scenario-result-highlight:nth-child(2) strong{color:#7545BE}.scenario-result-highlight small{font-size:9px;color:#809087}.scenario-actions{display:flex;justify-content:flex-end;margin-top:12px}.secondary-action{border:1px solid #DDE9E0;background:#fff;color:#3C6248;border-radius:9px;padding:9px 13px;font-size:10px;font-weight:800;cursor:pointer}.secondary-action:hover{background:#F0FDF4;border-color:#B8E8C6}.amount-up{color:#D97706!important;font-weight:800}.amount-down{color:#16A34A!important;font-weight:800}.forecast-footnote{margin-top:14px;background:#F8FCF9;border-left:4px solid var(--ap-green);border-radius:0 12px 12px 0;padding:13px 15px}.forecast-footnote strong{font-size:11px;color:#31553B}.forecast-footnote p{margin:5px 0 0;color:#718176;font-size:10px;line-height:1.6}
+.profile-container{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px}.profile-picture-section,.profile-details{border:1px solid var(--ap-line);border-radius:16px;padding:19px;background:#fff}.profile-picture-section{display:flex;align-items:center;gap:15px}.profile-avatar{width:70px;height:70px;font-size:26px}.profile-picture-info h3{margin:0 0 4px;font-size:13px}.profile-picture-info p{font-size:10px;color:var(--ap-muted);line-height:1.5}.profile-upload-button{padding:8px 11px;font-size:10px}.profile-details{display:grid;grid-template-columns:1fr 1fr;gap:14px}.profile-field label{font-size:9px;color:#819086;font-weight:800;display:block;margin-bottom:5px}.profile-field p{font-size:12px;font-weight:700;margin:0;color:#2A4C36}.dashboard-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px clamp(18px,3vw,38px);border-top:1px solid var(--ap-line);color:#829087;font-size:10px;background:#fff}.dashboard-footer p{margin:0}.sidebar-overlay{display:none}
+@media(max-width:1100px){.dashboard-layout{grid-template-columns:230px minmax(0,1fr)}.dashboard-stats-grid,.forecast-cost-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.agri-project-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.quick-actions-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.farm-inventory-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.dashboard-layout{display:block}.dashboard-sidebar{position:fixed;left:0;top:0;bottom:0;width:min(290px,85vw);height:100dvh;transform:translateX(-105%);transition:transform .22s ease;box-shadow:18px 0 45px rgba(20,50,30,.12)}.dashboard-sidebar.active{transform:translateX(0)}.sidebar-close{display:block}.sidebar-overlay.active{display:block;position:fixed;inset:0;background:rgba(18,46,27,.22);z-index:25}.sidebar-toggle{display:block}.dashboard-topbar{min-height:70px;padding:10px 15px}.dashboard-content{padding:18px 14px 28px}.dashboard-overview-grid,.performance-overview-grid{grid-template-columns:1fr}.my-projects-container{grid-template-columns:repeat(2,minmax(0,1fr))}.profile-container{grid-template-columns:1fr}.forecast-heading,.page-section-header{align-items:flex-start;flex-direction:column}.page-section-header .primary-action{align-self:flex-start}.dashboard-datetime{display:none}.dashboard-footer{padding:15px;flex-wrap:wrap}}
+@media(max-width:520px){.welcome-section{padding:20px 17px;border-radius:17px}.welcome-decoration{width:52px;height:52px;font-size:29px;border-radius:16px}.welcome-text h1{font-size:23px}.dashboard-stats-grid{gap:9px}.dashboard-stat-card{padding:13px}.dashboard-stat-card h2{font-size:20px}.stat-description{font-size:9px}.farm-inventory-grid,.forecast-cost-cards,.scenario-controls,.scenario-result-grid{grid-template-columns:1fr}.agri-project-grid,.my-projects-container,.quick-actions-grid{grid-template-columns:1fr}.profile-details{grid-template-columns:1fr}.forecast-hero{padding:19px}.forecast-hero-mark{display:none}.dashboard-panel{padding:15px}.panel-header{align-items:flex-start}.source-pill{white-space:normal;text-align:center}.dashboard-footer{font-size:9px}}
+.daily-spend-mix{display:grid;gap:13px}.mix-row{display:grid;gap:7px}.mix-row-head{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:11px}.mix-row-head span{color:#66776B;font-weight:700}.mix-row-head strong{color:#254B32;font-size:10px;text-align:right}.mix-track{height:10px;border-radius:30px;background:#F0F4F1;overflow:hidden}.mix-track span{display:block;height:100%;min-width:2px;border-radius:30px;transition:width .2s ease}
+
+/* =========================================================
+   AGRIPREDICT VISUAL SYSTEM — BOTANICAL GREEN / WHITE
+   Calm surfaces, confident navigation, restrained accents.
+   ========================================================= */
+:root {
+  --ap-green: #22C55E;
+  --ap-green-strong: #169B50;
+  --ap-green-dark: #174D35;
+  --ap-mint: #E8F7ED;
+  --ap-green-pale: #F5FBF6;
+  --ap-blue: #3189B8;
+  --ap-blue-pale: #EFF7FB;
+  --ap-amber: #C58A2A;
+  --ap-amber-pale: #FBF5E9;
+  --ap-violet: #7667A8;
+  --ap-violet-pale: #F4F1F8;
+  --ap-orange: #C97943;
+  --ap-orange-pale: #FBF2EC;
+  --ap-teal: #258F83;
+  --ap-text: #20372B;
+  --ap-muted: #718077;
+  --ap-line: #E5ECE7;
+  --ap-shadow: 0 10px 28px rgba(24, 77, 53, .065);
+}
+
+/* Sidebar: one deep botanical tone instead of a bright multi-stop gradient. */
+.dashboard-sidebar {
+  background: #174D35 !important;
+  color: #F7FCF8 !important;
+  border-right: 0 !important;
+  box-shadow: 8px 0 28px rgba(18, 65, 43, .10) !important;
+}
+.sidebar-brand { border-bottom: 1px solid rgba(255,255,255,.15) !important; }
+.brand-logo { color: #FFFFFF !important; }
+.brand-highlight { color: #8BE0A5 !important; }
+.brand-icon { background: rgba(255,255,255,.13) !important; color: #FFFFFF !important; }
+.sidebar-user { border-bottom: 1px solid rgba(255,255,255,.12); margin-bottom: 8px; }
+.user-avatar { background: rgba(255,255,255,.13) !important; color: #FFFFFF !important; border: 1px solid rgba(255,255,255,.22); }
+.sidebar-user-info h3 { color: #FFFFFF !important; }
+.sidebar-user-info span { color: #C5DCCB !important; }
+.sidebar-heading { color: #A8C9B3 !important; }
+.sidebar-link { color: #E5F2E9 !important; background: transparent !important; }
+.sidebar-link .nav-icon { background: rgba(255,255,255,.10) !important; color: #D9EBDD !important; }
+.sidebar-link:hover { color: #FFFFFF !important; background: rgba(255,255,255,.10) !important; transform: translateX(2px); }
+.sidebar-link.active { color: #174D35 !important; background: #FFFFFF !important; box-shadow: 0 5px 15px rgba(5,35,20,.16) !important; }
+.sidebar-link.active .nav-icon { color: #FFFFFF !important; background: #22A85A !important; }
+.sidebar-footer { border-top: 1px solid rgba(255,255,255,.15); }
+.sidebar-footer-message { background: rgba(255,255,255,.09) !important; border: 1px solid rgba(255,255,255,.14) !important; }
+.sidebar-footer-message p { color: #E4F2E8 !important; }
+.sidebar-logout { color: #174D35 !important; background: #FFFFFF !important; border: 0 !important; }
+.sidebar-logout:hover { background: #E8F7ED !important; }
+.sidebar-close { background: rgba(255,255,255,.12) !important; color: #FFFFFF !important; }
+
+/* Shared surfaces and hierarchy. */
+.dashboard-topbar { box-shadow: 0 2px 12px rgba(30,60,42,.025); }
+.welcome-section { border-color: #D9EDE0; box-shadow: 0 8px 24px rgba(24,77,53,.045); }
+.welcome-section:after { border-color: #EDF7F0; }
+.dashboard-stat-card, .dashboard-panel, .performance-mini-card,
+.forecast-cost-card, .profile-picture-section, .profile-details,
+.agri-project-card { box-shadow: 0 5px 18px rgba(28,62,42,.045); }
+.dashboard-stat-card { border-color: #E4ECE6; }
+.dashboard-stat-card:before { width: 4px; }
+.stat-projects:before { background: #22A85A; }
+.stat-livestock:before { background: #258F83; }
+.stat-expenses:before { background: #C58A2A; }
+.stat-forecasts:before { background: #7667A8; }
+.stat-projects .stat-icon { background: #E8F7ED; color: #187444; }
+.stat-livestock .stat-icon { background: #E9F5F2; color: #258F83; }
+.stat-expenses .stat-icon { background: #FBF5E9; color: #A87520; }
+.stat-forecasts .stat-icon { background: #F2EFF7; color: #7667A8; }
+
+/* Inventory uses one consistent card surface; only the small icon tile varies. */
+.inventory-card { background: #FFFFFF; border-color: #E5ECE7; }
+.inventory-card-icon { background: #E8F7ED; color: #187444; }
+.inventory-tone-1 .inventory-card-icon { background: #E9F5F2; color: #258F83; }
+.inventory-tone-2 .inventory-card-icon { background: #FBF5E9; color: #A87520; }
+.inventory-tone-3 .inventory-card-icon { background: #EFF7FB; color: #3189B8; }
+.inventory-tone-4 .inventory-card-icon { background: #F4F1F8; color: #7667A8; }
+.inventory-card strong { color: #20372B; }
+
+/* Project cards: photographs lead; the content remains clean and consistent. */
+.agri-project-card { border-color: #E4ECE6; transition: transform .2s ease, box-shadow .2s ease; }
+.agri-project-card:hover { transform: translateY(-3px); box-shadow: 0 13px 28px rgba(24,77,53,.10); }
+.project-image { background: #E8F7ED; }
+.project-card-content { gap: 2px; }
+.project-category { color: #16834A; }
+.project-enroll-button, .primary-action, .profile-upload-button { background: #22A85A; box-shadow: 0 5px 13px rgba(34,168,90,.16); }
+.project-enroll-button:hover, .primary-action:hover, .profile-upload-button:hover { background: #18884A; }
+.project-image-enrolled { height: 168px; position: relative; overflow: hidden; background: #E8F7ED; }
+.project-image-enrolled:after { content: ""; position: absolute; inset: 45% 0 0; background: linear-gradient(transparent, rgba(12,42,27,.36)); pointer-events: none; }
+.project-image-enrolled img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .35s ease; }
+.agri-project-card:hover .project-image-enrolled img { transform: scale(1.04); }
+.project-image-symbol { position: absolute; z-index: 2; left: 12px; bottom: 10px; font-size: 22px; filter: drop-shadow(0 1px 3px rgba(0,0,0,.22)); }
+.project-image-state { position: absolute; z-index: 2; right: 11px; top: 11px; border-radius: 30px; padding: 5px 9px; background: rgba(255,255,255,.96); color: #176B43; font-size: 9px; font-weight: 900; letter-spacing: .5px; }
+.project-summary-item { justify-content: flex-start !important; background: #FBFDFC; }
+.project-summary-photo { width: 49px; height: 49px; object-fit: cover; border-radius: 10px; flex: 0 0 auto; border: 1px solid #DDEAE0; }
+.project-summary-copy { min-width: 0; flex: 1; }
+.project-summary-copy strong { display: block; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.project-summary-copy span { display: block; font-size: 10px; color: var(--ap-muted); margin-top: 3px; }
+.project-summary-item > .enrollment-status { margin-left: auto; }
+
+/* Forecasting: green for operating costs, blue for comparisons, amber for caution. */
+.forecast-hero { border-color: #D8EBDD; background: #FBFEFC; }
+.forecast-hero:after { border-color: #EDF7F0; }
+.forecast-hero-mark { background: #E8F7ED; color: #18884A; }
+.forecast-cost-card { border-color: #E5ECE7; }
+.forecast-cost-card.feed { border-top-color: #22A85A; }
+.forecast-cost-card.labour { border-top-color: #3189B8; }
+.forecast-cost-card.other { border-top-color: #C58A2A; }
+.forecast-cost-card.total { border-top-color: #7667A8; }
+.forecast-table th { background: #F1F7F3; color: #42634F; }
+.scenario-pill { background: #E8F7ED; color: #176B43; }
+.scenario-input { background: #FBFDFC; border-color: #E4ECE6; }
+.scenario-input.feed { border-top-color: #22A85A; }
+.scenario-input.labour { border-top-color: #3189B8; }
+.scenario-input.other { border-top-color: #C58A2A; }
+.scenario-result-highlight { background: #EFF8F1; border-color: #D8EBDD; }
+.scenario-result-highlight:nth-child(2) { background: #F1F7F3; border-color: #DCE9E0; }
+.scenario-result-highlight:nth-child(2) strong { color: #176B43; }
+.forecast-footnote { background: #F6FAF7; }
+
+/* Focus, accessibility and responsive navigation. */
+.sidebar-link:focus-visible, .sidebar-logout:focus-visible,
+.primary-action:focus-visible, .project-enroll-button:focus-visible,
+.secondary-action:focus-visible { outline: 3px solid #A7E8BB; outline-offset: 2px; }
+@media (max-width:760px) {
+  .dashboard-sidebar { box-shadow: 18px 0 42px rgba(10,48,29,.24) !important; }
+}
+
+/* =========================================================
+   AGRIPREDICT COLOUR BALANCE — whole-farm dashboard
+   Forest navigation, white canvas, distinct functional accents.
+   ========================================================= */
+:root {
+  --ap-forest: #174D35;
+  --ap-green: #22C55E;
+  --ap-green-strong: #169B50;
+  --ap-blue: #1689C7;
+  --ap-blue-pale: #EAF6FD;
+  --ap-teal: #0F9D91;
+  --ap-teal-pale: #E8F8F5;
+  --ap-amber: #D58A12;
+  --ap-amber-pale: #FFF5DF;
+  --ap-violet: #7654C8;
+  --ap-violet-pale: #F2EEFF;
+  --ap-orange: #E87522;
+  --ap-orange-pale: #FFF0E5;
+  --ap-red: #D94B50;
+  --ap-red-pale: #FFF0F0;
+}
+
+/* Keep the sidebar recognisably agricultural; use colour elsewhere with purpose. */
+.dashboard-sidebar { background: var(--ap-forest) !important; }
+.sidebar-link.active { background: #FFFFFF !important; color: var(--ap-forest) !important; }
+.sidebar-link.active .nav-icon { background: var(--ap-green) !important; color: #FFFFFF !important; }
+.sidebar-link:hover:not(.active) { background: rgba(255,255,255,.12) !important; color: #FFFFFF !important; }
+.sidebar-heading { color: #B8D9C4 !important; }
+.sidebar-user-info span { color: #D4E9DA !important; }
+.sidebar-footer-message { background: rgba(255,255,255,.09) !important; border-color: rgba(255,255,255,.16) !important; }
+.sidebar-footer-message p { color: #E7F5EB !important; }
+
+/* Dashboard summary: one distinct colour per business measure. */
+.stat-projects:before { background: var(--ap-green) !important; }
+.stat-livestock:before { background: var(--ap-teal) !important; }
+.stat-expenses:before { background: var(--ap-amber) !important; }
+.stat-forecasts:before { background: var(--ap-violet) !important; }
+.stat-projects .stat-icon { background: #E7F8EC !important; color: #15934B !important; }
+.stat-livestock .stat-icon { background: var(--ap-teal-pale) !important; color: #0B8278 !important; }
+.stat-expenses .stat-icon { background: var(--ap-amber-pale) !important; color: #A96808 !important; }
+.stat-forecasts .stat-icon { background: var(--ap-violet-pale) !important; color: #6845B9 !important; }
+
+/* Inventory: alternating subtle colour identities, while card surfaces stay white. */
+.inventory-card { border-color: #E6ECE8 !important; background: #FFFFFF !important; }
+.inventory-card:nth-child(6n+1) .inventory-card-icon { background: #E7F8EC !important; color: #15934B !important; }
+.inventory-card:nth-child(6n+2) .inventory-card-icon { background: var(--ap-teal-pale) !important; color: #0B8278 !important; }
+.inventory-card:nth-child(6n+3) .inventory-card-icon { background: var(--ap-blue-pale) !important; color: #1479B0 !important; }
+.inventory-card:nth-child(6n+4) .inventory-card-icon { background: var(--ap-violet-pale) !important; color: #6845B9 !important; }
+.inventory-card:nth-child(6n+5) .inventory-card-icon { background: var(--ap-amber-pale) !important; color: #A96808 !important; }
+.inventory-card:nth-child(6n) .inventory-card-icon { background: var(--ap-orange-pale) !important; color: #C65D17 !important; }
+
+/* Performance categories have consistent semantic colours. */
+.performance-mini-card { border-top: 3px solid var(--ap-blue) !important; }
+.performance-mini-card.amber { border-top-color: var(--ap-amber) !important; background: #FFFCF5 !important; }
+.performance-mini-card.blue { border-top-color: var(--ap-blue) !important; background: #F7FCFF !important; }
+.performance-mini-card.purple { border-top-color: var(--ap-violet) !important; background: #FBF9FF !important; }
+
+/* Project imagery is the colour source for the enrolled-enterprise cards. */
+.agri-project-card { background: #FFFFFF !important; border-color: #E5EBE7 !important; }
+.project-category { color: #157C9F !important; background: #EAF6FB !important; }
+.agri-project-card:nth-child(3n+1) .project-category { color: #168247 !important; background: #EAF8EE !important; }
+.agri-project-card:nth-child(3n+2) .project-category { color: #117F78 !important; background: #E7F7F5 !important; }
+.agri-project-card:nth-child(3n) .project-category { color: #7654C8 !important; background: #F2EEFF !important; }
+
+/* Financial forecast: feed green, labour blue, other amber, total violet. */
+.forecast-hero { background: linear-gradient(115deg,#F5F0FF 0%,#FFFFFF 58%,#F0F8FF 100%) !important; border-color: #E3DDF5 !important; }
+.forecast-hero:after { border-color: #EDE7FF !important; }
+.forecast-hero-mark { color: #6D4BC0 !important; background: #EEE8FF !important; }
+.forecast-kicker, .forecast-badge { color: #6D4BC0 !important; }
+.forecast-cost-card.feed { border-top-color: var(--ap-green) !important; background: #FAFFFB !important; }
+.forecast-cost-card.labour { border-top-color: var(--ap-blue) !important; background: #F8FCFF !important; }
+.forecast-cost-card.other { border-top-color: var(--ap-amber) !important; background: #FFFCF5 !important; }
+.forecast-cost-card.total { border-top-color: var(--ap-violet) !important; background: #FBF9FF !important; }
+.forecast-table th { background: #F2EEFF !important; color: #5C469A !important; }
+.forecast-footnote { background: #F6F2FF !important; border-left-color: var(--ap-violet) !important; }
+.scenario-pill { background: #FFF0E5 !important; color: #B95313 !important; }
+.scenario-input.feed { border-top-color: var(--ap-green) !important; }
+.scenario-input.labour { border-top-color: var(--ap-blue) !important; }
+.scenario-input.other { border-top-color: var(--ap-amber) !important; }
+.scenario-result-highlight { background: #F2EEFF !important; border-color: #E3DDF5 !important; }
+.scenario-result-highlight:nth-child(2) { background: #EAF6FD !important; border-color: #D8EAF5 !important; }
+.scenario-result-highlight:nth-child(2) strong { color: #1479B0 !important; }
+
+/* Activity and action affordances. */
+.activity-dot { background: var(--ap-teal) !important; }
+.activity-dot.labour { background: var(--ap-blue) !important; }
+.activity-dot.veterinary { background: var(--ap-orange) !important; }
+.activity-dot.other { background: var(--ap-violet) !important; }
+.quick-action-card:nth-child(1) > span { background: #E7F8EC !important; color: #15934B !important; }
+.quick-action-card:nth-child(2) > span { background: var(--ap-teal-pale) !important; color: #0B8278 !important; }
+.quick-action-card:nth-child(3) > span { background: var(--ap-blue-pale) !important; color: #1479B0 !important; }
+.dashboard-message { background: var(--ap-red-pale) !important; border-color: #F5D4D5 !important; color: #A92E35 !important; }

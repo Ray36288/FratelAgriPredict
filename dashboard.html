@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AgriPredict farmer dashboard. Manage agricultural enterprises, monitor whole-farm inventory and expenses, and explore data-led forecasts.">
+  <meta name="theme-color" content="#22C55E">
+  <title>Farmer Dashboard | AgriPredict</title>
+  <link rel="stylesheet" href="dashboard-fresh.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="supabase-config.js" defer></script>
+  <script src="farm-portfolio.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body class="dashboard-page">
+<div class="dashboard-layout">
+  <aside class="dashboard-sidebar" id="dashboardSidebar" aria-label="Dashboard sidebar">
+    <div class="sidebar-brand">
+      <a href="index.html" class="brand-logo" aria-label="AgriPredict homepage"><span class="brand-icon">🌱</span><span>Agri<span class="brand-highlight">Predict</span></span></a>
+      <button class="sidebar-close" id="sidebarClose" type="button" aria-label="Close navigation">&times;</button>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="sidebarAvatar"><img id="sidebarProfileImage" src="" alt="Farmer profile picture" hidden><span id="sidebarAvatarInitial">U</span></div>
+      <div class="sidebar-user-info"><h3 id="sidebarUsername">Farmer</h3><span>Farmer Account</span></div>
+    </div>
+    <nav class="sidebar-navigation" aria-label="Main dashboard navigation">
+      <p class="sidebar-heading">MAIN MENU</p>
+      <a href="#overview" class="sidebar-link active" data-section="overview" aria-current="page"><span class="nav-icon">▦</span><span>Dashboard</span></a>
+      <a href="#myProjects" class="sidebar-link" data-section="myProjects"><span class="nav-icon">▣</span><span>My Projects</span></a>
+      <a href="#availableProjects" class="sidebar-link" data-section="availableProjects"><span class="nav-icon">＋</span><span>Enroll in a Project</span></a>
+      <a href="#farmPerformance" class="sidebar-link" data-section="farmPerformance"><span class="nav-icon">▥</span><span>Farm Performance</span></a>
+      <a href="#forecasts" class="sidebar-link" data-section="forecasts"><span class="nav-icon">⌁</span><span>Forecasting Intelligence</span></a>
+      <p class="sidebar-heading">ACCOUNT</p>
+      <a href="#profile" class="sidebar-link" data-section="profile"><span class="nav-icon">♙</span><span>My Profile</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-footer-message"><span>🌿</span><p>Grow smarter with AgriPredict.</p></div>
+      <button type="button" id="logoutButton" class="sidebar-logout"><span>↪</span><span>Sign Out</span></button>
+    </div>
+  </aside>
+
+  <main class="dashboard-main">
+    <header class="dashboard-topbar">
+      <div class="topbar-left">
+        <button type="button" id="sidebarToggle" class="sidebar-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="dashboardSidebar">☰</button>
+        <div class="topbar-heading"><span class="topbar-label">WHOLE-FARM MANAGEMENT</span><h2>Farmer Dashboard</h2></div>
+      </div>
+      <div class="topbar-right">
+        <div class="dashboard-datetime"><span class="datetime-icon">◷</span><div><time id="dashboardDate" class="dashboard-date">Loading date...</time><time id="dashboardClock" class="dashboard-clock">Loading time...</time></div></div>
+        <div class="topbar-avatar" id="topbarAvatar"><img id="topbarProfileImage" src="" alt="Farmer profile picture" hidden><span id="topbarAvatarInitial">U</span></div>
+      </div>
+    </header>
+
+    <div class="dashboard-content">
+      <div id="dashboardMessage" class="dashboard-message" role="status" aria-live="polite"></div>
+
+      <!-- OVERVIEW -->
+      <section id="overview" class="dashboard-section active-section" aria-labelledby="overviewHeading">
+        <div class="welcome-section">
+          <div class="welcome-text"><span class="section-eyebrow">YOUR FARM AT A GLANCE</span><h1 id="overviewHeading">Welcome back, <span id="welcomeUsername">Farmer</span>!</h1><p>Your whole-farm picture: enrolled enterprises, recorded livestock, farm costs and the outlook ahead.</p></div>
+          <div class="welcome-decoration" aria-hidden="true"><span>🌱</span></div>
+        </div>
+
+        <div class="dashboard-stats-grid">
+          <article class="dashboard-stat-card stat-projects"><div class="stat-card-top"><div class="stat-icon">▣</div><span class="stat-description">Your participation</span></div><h2 id="myProjectsCount">—</h2><p>Enrolled Projects</p></article>
+          <article class="dashboard-stat-card stat-livestock"><div class="stat-card-top"><div class="stat-icon">🐄</div><span class="stat-description">Connected inventory</span></div><h2 id="totalLivestockCount">—</h2><p>Current Livestock</p></article>
+          <article class="dashboard-stat-card stat-expenses"><div class="stat-card-top"><div class="stat-icon">◉</div><span class="stat-description">Recorded to date</span></div><h2 id="totalExpenses">UGX —</h2><p>Recorded Farm Costs</p></article>
+          <article class="dashboard-stat-card stat-forecasts"><div class="stat-card-top"><div class="stat-icon">↗</div><span class="stat-description">Based on connected records</span></div><h2 id="forecastCount">—</h2><p>Available Cost Projections</p></article>
+        </div>
+
+        <div class="dashboard-overview-grid">
+          <article class="dashboard-panel"><div class="panel-header"><div><h3>My Farming Projects</h3><p>Your currently enrolled enterprises</p></div><a href="#myProjects" class="panel-link">View All</a></div><div id="dashboardProjectSummary" class="dashboard-project-summary" aria-live="polite"><div class="empty-state"><span class="empty-state-icon">🌱</span><h4>Loading your projects</h4><p>Your enrolled enterprises will appear here.</p></div></div></article>
+          <article class="dashboard-panel"><div class="panel-header"><div><h3>Recent Farm Activity</h3><p>Latest connected production and cost entries</p></div></div><div id="recentFarmActivity" class="recent-farm-activity" aria-live="polite"><div class="empty-state compact-empty"><span class="empty-state-icon">📋</span><h4>Loading activity</h4><p>Recent records will appear here.</p></div></div></article>
+        </div>
+
+        <article class="dashboard-panel inventory-panel"><div class="panel-header"><div><span class="section-eyebrow">LIVE FARM INVENTORY</span><h3>What is currently on your farm?</h3><p>Counts are derived from connected project records. Unconnected enterprises are identified rather than estimated.</p></div><span class="source-pill" id="inventorySourceStatus">Checking records…</span></div><div id="farmInventoryGrid" class="farm-inventory-grid"><div class="inventory-placeholder">Loading recorded livestock inventory…</div></div><p class="data-note" id="inventorySourceNote">Inventory totals include only records connected to this dashboard.</p></article>
+
+        <section class="quick-actions-section"><div class="section-heading"><div><h3>Quick Actions</h3><p>Get started with your farm management.</p></div></div><div class="quick-actions-grid">
+          <a href="#availableProjects" class="quick-action-card"><span class="quick-action-icon green">＋</span><div><h4>Enroll in a Project</h4><p>Explore agricultural enterprises</p></div></a>
+          <a href="#myProjects" class="quick-action-card"><span class="quick-action-icon blue">▣</span><div><h4>My Projects</h4><p>Manage enrolled enterprises</p></div></a>
+          <a href="#farmPerformance" class="quick-action-card"><span class="quick-action-icon orange">▥</span><div><h4>Farm Performance</h4><p>Review farm records and costs</p></div></a>
+          <a href="#forecasts" class="quick-action-card"><span class="quick-action-icon purple">⌁</span><div><h4>Forecasting Intelligence</h4><p>Explore future farm expenditure</p></div></a>
+        </div></section>
+      </section>
+
+      <!-- MY PROJECTS -->
+      <section id="myProjects" class="dashboard-section" aria-labelledby="myProjectsHeading">
+        <div class="page-section-header"><div><span class="section-eyebrow">YOUR FARMING ACTIVITIES</span><h1 id="myProjectsHeading">My Projects</h1><p>Manage your enrolled agricultural enterprises and monitor their progress.</p></div><a href="#availableProjects" class="primary-action">+ Enroll in a Project</a></div>
+        <div id="myEnrolledProjects" class="my-projects-container" aria-live="polite"><div class="empty-state"><span class="empty-state-icon">🌱</span><h3>Loading enrolled projects</h3><p>Your project list will appear here.</p></div></div>
+      </section>
+
+      <!-- AVAILABLE PROJECTS -->
+      <section id="availableProjects" class="dashboard-section" aria-labelledby="availableProjectsHeading">
+        <div class="page-section-header"><div><span class="section-eyebrow">EXPLORE OPPORTUNITIES</span><h1 id="availableProjectsHeading">Enroll in a Project</h1><p>Choose the agricultural enterprises you want to establish or manage. You can enroll in multiple enterprises.</p></div></div>
+        <div class="enrollment-notice"><span>ℹ</span><p>Each enterprise is managed independently. You can enroll in Broiler, Croiler, Layer, Piggery, Fish, Crop or Dairy Farming. Each enrollment has its own management records and performance information.</p></div>
+        <div class="agri-project-grid">
+          <article class="agri-project-card"><div class="project-image"><img src="images/pigs-d.jpg" alt="Pigs on a farm" loading="lazy" onerror="this.hidden=true"></div><div class="project-card-content"><span class="project-category">LIVESTOCK</span><h3>Piggery Farming</h3><p>Manage pig production, feeding, breeding, growth, expenses and sales.</p><ul class="project-features"><li>Livestock management</li><li>Feed and expense tracking</li><li>Growth and profit analysis</li></ul><div class="project-card-footer"><span class="enrollment-status" id="piggeryStatus">Available</span><button type="button" id="enrollPiggery" class="project-enroll-button">Enroll Now</button></div></div></article>
+          <article class="agri-project-card"><div class="project-image"><img src="images/broiler.webp" alt="Broiler chickens on a farm" loading="lazy" onerror="this.hidden=true"></div><div class="project-card-content"><span class="project-category">LIVESTOCK</span><h3>Broiler Farming</h3><p>Manage meat-producing chickens from placement to market.</p><ul class="project-features"><li>Broiler batch management</li><li>Feed, growth and mortality tracking</li><li>Sales and profit analysis</li></ul><div class="project-card-footer"><span class="enrollment-status" id="broilerStatus">Available</span><button type="button" id="enrollBroiler" class="project-enroll-button">Enroll Now</button></div></div></article>
+          <article class="agri-project-card"><div class="project-image"><img src="images/croiler.jpg" alt="Croiler chickens on a farm" loading="lazy" onerror="this.hidden=true"></div><div class="project-card-content"><span class="project-category">LIVESTOCK</span><h3>Croiler Farming</h3><p>Manage dual-purpose chickens for meat and egg production.</p><ul class="project-features"><li>Croiler batch management</li><li>Growth and egg production tracking</li><li>Feed, expenses and sales</li></ul><div class="project-card-footer"><span class="enrollment-status" id="croilerStatus">Available</span><button type="button" id="enrollCroiler" class="project-enroll-button">Enroll Now</button></div></div></article>
+          <article class="agri-project-card"><div class="project-image"><img src="images/poultry-t.jpg" alt="Laying hens on a poultry farm" loading="lazy" onerror="this.hidden=true"></div><div class="project-card-content"><span class="project-category">LIVESTOCK</span><h3>Layer Farming</h3><p>Manage laying flocks, egg production, feed consumption and egg sales.</p><ul class="project-features"><li>Layer flock management</li><li>Daily egg production records</li><li>Egg sales and financial analysis</li></ul><div class="project-card-footer"><span class="enrollment-status" id="layersStatus">Available</span><button type="button" id="enrollLayers" class="project-enroll-button">Enroll Now</button></div></div></article>
+          <article class="agri-project-card"><div class="project-image"><img src="images/fish.jpg" alt="Fish farming pond" loading="lazy" onerror="this.hidden=true"></div><div class="project-card-content"><span class="project-category">AQUACULTURE</span><h3>Fish Farming</h3><p>Monitor fish stocking, feeding, pond management, growth and harvesting.</p><ul class="project-features"><li>Fish inventory</li><li>Feed and water management</li><li>Harvest and sales records</li></ul><div class="project-card-footer"><span class="enrollment-status" id="fishStatus">Available</span><button type="button" id="enrollFish" class="project-enroll-button">Enroll Now</button></div></div></article>
+          <article class="agri-project-card"><div class="project-image"><img src="images/crops-d.jpg" alt="Agricultural crop field" loading="lazy" onerror="this.hidden=true"></div><div class="project-card-content"><span class="project-category">CROP PRODUCTION</span><h3>Crop Farming</h3><p>Plan crop production, monitor field activities, expenses and harvests.</p><ul class="project-features"><li>Crop and field records</li><li>Planting and harvest tracking</li><li>Production cost analysis</li></ul><div class="project-card-footer"><span class="enrollment-status" id="cropsStatus">Available</span><button type="button" id="enrollCrops" class="project-enroll-button">Enroll Now</button></div></div></article>
+          <article class="agri-project-card"><div class="project-image"><img src="images/cow-d.jpg" alt="Dairy cattle on a farm" loading="lazy" onerror="this.hidden=true"></div><div class="project-card-content"><span class="project-category">LIVESTOCK</span><h3>Dairy Farming</h3><p>Track dairy animals, milk production, feeding, veterinary expenses and sales.</p><ul class="project-features"><li>Animal inventory</li><li>Milk production records</li><li>Expenses and revenue tracking</li></ul><div class="project-card-footer"><span class="enrollment-status" id="dairyStatus">Available</span><button type="button" id="enrollDairy" class="project-enroll-button">Enroll Now</button></div></div></article>.
+        </div>
+      </section>
+
+      <!-- FARM PERFORMANCE -->
+      <section id="farmPerformance" class="dashboard-section" aria-labelledby="farmPerformanceHeading">
+        <div class="page-section-header"><div><span class="section-eyebrow">FARM ANALYSIS</span><h1 id="farmPerformanceHeading">Farm Performance</h1><p>Review livestock inventory and financial performance using recorded farm data.</p></div></div>
+        <div class="performance-metrics-grid">
+          <article class="performance-mini-card green"><span>Current recorded livestock</span><strong id="performanceLivestockTotal">—</strong><small>Connected inventory only</small></article>
+          <article class="performance-mini-card amber"><span>Recorded farm costs</span><strong id="performanceRecordedCosts">UGX —</strong><small>Historical connected transactions</small></article>
+          <article class="performance-mini-card blue"><span>Feed cost in last 30 days</span><strong id="performanceFeedCost30">UGX —</strong><small>Recorded feed use</small></article>
+          <article class="performance-mini-card purple"><span>Daily cost run-rate</span><strong id="performanceDailyRunRate">UGX —</strong><small>30-day recorded average</small></article>
+        </div>
+        <div class="performance-overview-grid">
+          <article class="dashboard-panel"><div class="panel-header"><div><h3>Livestock Inventory</h3><p>Live animals and birds by connected enterprise</p></div></div><div id="financialPerformance" class="performance-detail-list"><div class="empty-state compact-empty"><span class="empty-state-icon">🐄</span><h4>Loading inventory</h4><p>Connected livestock records will appear here.</p></div></div></article>
+          <article class="dashboard-panel"><div class="panel-header"><div><h3>Expenditure Breakdown</h3><p>Recorded farm costs by operating category</p></div></div><div id="productionPerformance" class="performance-detail-list"><div class="empty-state compact-empty"><span class="empty-state-icon">💰</span><h4>Loading expenditure</h4><p>Connected expense records will appear here.</p></div></div></article>
+        </div>
+      </section>
+
+      <!-- FORECASTING INTELLIGENCE -->
+      <section id="forecasts" class="dashboard-section" aria-labelledby="forecastsHeading">
+        <div class="forecast-heading"><div><span class="section-eyebrow">WHOLE-FARM PLANNING</span><h1 id="forecastsHeading">Forecasting Intelligence</h1><p>Estimate future farm spending from your recorded daily costs, then test how a change in spending affects the farm.</p></div><span class="forecast-badge">DATA-LED OUTLOOK</span></div>
+        <div class="forecast-hero"><div><span class="forecast-kicker">CURRENT FARM RUN-RATE</span><h2>What could your farm spend in the days, months and years ahead?</h2><p>Forecasts start with recorded feed use, labour and other operating expenses. They are straight-line spending projections, not future market-price predictions.</p></div><div class="forecast-hero-mark">⌁</div></div>
+        <div class="forecast-cost-cards">
+          <article class="forecast-cost-card feed"><span>Daily feed expenditure</span><strong id="forecastDailyFeed">UGX —</strong><small id="forecastFeedNote">Based on recent recorded feed use</small></article>
+          <article class="forecast-cost-card labour"><span>Daily labour expenditure</span><strong id="forecastDailyLabour">UGX —</strong><small>Based on recorded labour entries</small></article>
+          <article class="forecast-cost-card other"><span>Daily other expenses</span><strong id="forecastDailyOther">UGX —</strong><small>Veterinary, utilities, transport and other costs</small></article>
+          <article class="forecast-cost-card total"><span>Total daily run-rate</span><strong id="forecastDailyTotal">UGX —</strong><small id="forecastDataWindow">Using records from the last 30 days</small></article>
+        </div>
+        <article class="dashboard-panel forecast-panel"><div class="panel-header"><div><span class="section-eyebrow">01 · DAILY COST STRUCTURE</span><h3>Where the daily spend goes</h3><p>Share of recent recorded operating costs by category.</p></div></div><div id="dailySpendMixChart" class="daily-spend-mix"><div class="inventory-placeholder">Waiting for daily cost records…</div></div></article>
+        <article class="dashboard-panel forecast-panel"><div class="panel-header"><div><span class="section-eyebrow">02 · BASELINE PROJECTION</span><h3>Expected farm expenditure</h3><p>Current recorded daily run-rate multiplied by each forecast period.</p></div><span class="source-pill" id="forecastCoverageBadge">Waiting for records</span></div><div class="table-scroll"><table class="forecast-table"><thead><tr><th>Period</th><th>Feed</th><th>Labour</th><th>Other costs</th><th>Total expected spend</th></tr></thead><tbody id="farmForecastRows"><tr><td colspan="5">Waiting for connected cost records…</td></tr></tbody></table></div><p class="data-note">Long-range projections assume the current daily spend remains constant. They do not automatically add inflation, seasonality, future price changes or changes in farm size.</p></article>
+        <article class="dashboard-panel scenario-panel"><div class="panel-header"><div><span class="section-eyebrow">03 · WHAT-IF SIMULATION</span><h3>Change daily expenditure and see the effect</h3><p>Enter an increase or reduction in daily spend. These adjustments are simulated only and will not change your saved transactions.</p></div><span class="scenario-pill">LIVE SIMULATION</span></div>
+          <div class="scenario-controls">
+            <label class="scenario-input feed"><span>Feed change per day (UGX)</span><input type="number" id="scenarioFeedDelta" value="0" step="1000"><small>Use a positive or negative value.</small></label>
+            <label class="scenario-input labour"><span>Labour change per day (UGX)</span><input type="number" id="scenarioLabourDelta" value="0" step="1000"><small>Use a positive or negative value.</small></label>
+            <label class="scenario-input other"><span>Other costs (vet, utilities, transport, etc.) change per day (UGX)</span><input type="number" id="scenarioOtherDelta" value="0" step="1000"><small>Use a positive or negative value.</small></label>
+          </div>
+          <div class="scenario-result-grid"><div class="scenario-result-highlight"><span>New simulated daily spend</span><strong id="scenarioDailyTotal">UGX —</strong><small id="scenarioDailyChange">No adjustment applied</small></div><div class="scenario-result-highlight"><span>Difference over one year</span><strong id="scenarioAnnualImpact">UGX —</strong><small>Compared with current run-rate</small></div></div>
+          <div class="table-scroll"><table class="forecast-table scenario-table"><thead><tr><th>Period</th><th>Current baseline</th><th>Simulated spend</th><th>Difference</th></tr></thead><tbody id="scenarioForecastRows"><tr><td colspan="4">Enter an adjustment to compare scenarios.</td></tr></tbody></table></div>
+          <div class="scenario-actions"><button type="button" class="secondary-action" id="resetScenarioButton">Reset simulation</button></div>
+        </article>
+        <div class="forecast-footnote"><strong>How to interpret this forecast</strong><p>The baseline uses recorded costs from the connected enterprise records. Daily costs are calculated from the last 30 calendar days. If no recent transactions exist for a category, that category is marked as having no recent records. A projection is only as reliable as the completeness of your daily records.</p></div>
+      </section>
+
+      <!-- PROFILE -->
+      <section id="profile" class="dashboard-section" aria-labelledby="profileHeading">
+        <div class="page-section-header"><div><span class="section-eyebrow">ACCOUNT INFORMATION</span><h1 id="profileHeading">My Profile</h1><p>Manage your personal information and farmer account details.</p></div></div>
+        <div class="profile-container"><div class="profile-picture-section"><div class="profile-avatar" id="profileAvatar"><img id="profileImage" src="" alt="Your profile picture" hidden><span id="profileAvatarInitial">U</span></div><div class="profile-picture-info"><h3>Profile Picture</h3><p>Add a picture to personalise your farmer account.</p><label for="profilePictureUpload" class="profile-upload-button">Upload Picture</label><input type="file" id="profilePictureUpload" accept="image/png,image/jpeg,image/webp" hidden></div></div><div class="profile-details"><div class="profile-field"><label>Full Name</label><p id="profileFullName">Not available</p></div><div class="profile-field"><label>Username</label><p id="profileUsername">Not available</p></div><div class="profile-field"><label>Email Address</label><p id="profileEmail">Not available</p></div><div class="profile-field"><label>Phone Number</label><p id="profilePhone">Not available</p></div><div class="profile-field"><label>Account Type</label><p>Farmer</p></div></div></div>
+      </section>
+    </div>
+    <footer class="dashboard-footer"><p>&copy; <span id="dashboardYear"></span> AgriPredict. All rights reserved.</p><span>Empowering smarter agriculture.</span></footer>
+  </main>
+</div>
+<div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+</body>
+</html>

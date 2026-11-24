@@ -1,0 +1,593 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="description"
+        content="AgriPredict helps farmers make smarter agricultural decisions through data-driven forecasting, farm management and profitability analysis.">
+
+    <meta name="theme-color" content="#176b43">
+
+    <title>AgriPredict | Agricultural Intelligence</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- ================= HEADER ================= -->
+
+    <header class="main-header">
+
+        <div class="header-container">
+
+            <a href="#home" class="logo">
+                Agri<span>Predict</span>
+            </a>
+
+            <nav class="main-nav" aria-label="Main navigation">
+                <a href="#home">Home</a>
+                <a href="#projects">Projects</a>
+                <a href="#about">About Us</a>
+            </nav>
+
+            <div class="header-actions">
+
+                <a href="auth.html"
+                    id="loginButton"
+                    class="btn btn-outline">
+                    Login
+                </a>
+
+                <a href="auth.html?mode=register"
+                    id="registerButton"
+                    class="btn btn-primary">
+                    Get Started
+                </a>
+
+            </div>
+
+        </div>
+
+    </header>
+
+
+    <!-- ================= SLIDESHOW ================= -->
+
+    <section class="hero-slider" id="heroSlider"
+        aria-label="Agricultural photographs">
+
+        <div class="slider-track">
+
+            <div class="slide active">
+                <img src="images/poultry-t.jpg"
+                    alt="Poultry farming">
+            </div>
+
+            <div class="slide">
+                <img src="images/fish-t.jpg"
+                    alt="Fish farming">
+            </div>
+
+            <div class="slide">
+                <img src="images/pigs-t.jpg"
+                    alt="Pig farming">
+            </div>
+
+            <div class="slide">
+                <img src="images/crops-t.jpg"
+                    alt="Crop production">
+            </div>
+
+        </div>
+
+        <button class="slider-btn prev"
+            id="prevSlide"
+            type="button"
+            aria-label="Previous picture">
+            &#10094;
+        </button>
+
+        <button class="slider-btn next"
+            id="nextSlide"
+            type="button"
+            aria-label="Next picture">
+            &#10095;
+        </button>
+
+        <div class="slider-dots" id="sliderDots"></div>
+
+    </section>
+
+
+    <!-- ================= MAIN CONTENT ================= -->
+
+    <main>
+
+        <!-- ================= INTRODUCTION ================= -->
+
+        <section class="hero-section" id="home">
+
+            <div class="hero-content">
+
+                <span class="section-tag">
+                    AGRICULTURAL INTELLIGENCE PLATFORM
+                </span>
+
+                <h1>
+                    Make smarter farming decisions.
+                    <span>Understand your future.</span>
+                </h1>
+
+                <p>
+                    AgriPredict empowers farmers and agricultural
+                    businesses with data-driven insights to estimate
+                    production costs, monitor growth, forecast revenue
+                    and make better investment decisions.
+                </p>
+
+                <div class="hero-buttons">
+
+                    <a href="auth.html?mode=register"
+                        id="heroGetStarted"
+                        class="btn btn-primary">
+                        Get Started
+                    </a>
+
+                    <a href="#projects"
+                        class="btn btn-outline">
+                        Explore Projects
+                    </a>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= STATISTICS ================= -->
+
+        <section class="statistics-section" id="statistics">
+
+            <div class="statistics-container">
+
+                <div class="statistics-heading">
+
+                    <span class="section-tag">
+                        AGRIPREDICT AT A GLANCE
+                    </span>
+
+                    <h2>
+                        Growing Agriculture Through Data
+                    </h2>
+
+                    <p>
+                        Explore the activity and reach of the
+                        AgriPredict platform.
+                    </p>
+
+                </div>
+
+
+                <div class="statistics-grid">
+
+                    <div class="stat-card">
+
+                        <div class="stat-icon">
+                            &#127793;
+                        </div>
+
+                        <h3 class="stat-number"
+                            data-counter="farmers">0</h3>
+
+                        <p>Registered Farmers</p>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <div class="stat-icon">
+                            &#127806;
+                        </div>
+
+                        <h3 class="stat-number"
+                            data-counter="projects">0</h3>
+
+                        <p>Active Projects</p>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <div class="stat-icon">
+                            &#128202;
+                        </div>
+
+                        <h3 class="stat-number"
+                            data-counter="farms">0</h3>
+
+                        <p>Farms Monitored</p>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <div class="stat-icon">
+                            &#128200;
+                        </div>
+
+                        <h3 class="stat-number"
+                            data-counter="forecasts">0</h3>
+
+                        <p>Forecasts Generated</p>
+
+                    </div>
+
+                </div>
+
+                <p class="statistics-note">
+                    Platform statistics will update using verified
+                    AgriPredict system records.
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= PROJECTS ================= -->
+
+        <section class="projects-section" id="projects">
+
+            <div class="section-heading">
+
+                <span class="section-tag">
+                    WHAT YOU CAN MANAGE
+                </span>
+
+                <h2>
+                    Explore Agricultural Projects
+                </h2>
+
+                <p>
+                    Choose an agricultural enterprise to manage
+                    production, monitor expenses and generate forecasts.
+                </p>
+
+            </div>
+
+
+            <div class="projects-grid">
+
+                <!-- BROILER FARMING -->
+
+                <article class="project-card">
+
+                    <img src="images/poultry.jpg"
+                        alt="Broiler chicken farming"
+                        class="project-image">
+
+                    <div class="project-content">
+
+                        <h3>Broiler Farming</h3>
+
+                        <p>
+                            Manage meat production, flock growth,
+                            feed consumption, mortality, sales
+                            and profitability.
+                        </p>
+
+                        <a href="auth.html?mode=register"
+                            class="project-link">
+                            Explore Broiler Farming &rarr;
+                        </a>
+
+                    </div>
+
+                </article>
+
+
+                <!-- CROILER FARMING -->
+
+                <article class="project-card">
+
+                    <img src="images/poultry-t.jpg"
+                        alt="Croiler chicken farming"
+                        class="project-image">
+
+                    <div class="project-content">
+
+                        <h3>Croiler Farming</h3>
+
+                        <p>
+                            Monitor dual-purpose chicken production,
+                            growth, feed requirements, egg production
+                            and expected returns.
+                        </p>
+
+                        <a href="auth.html?mode=register"
+                            class="project-link">
+                            Explore Croiler Farming &rarr;
+                        </a>
+
+                    </div>
+
+                </article>
+
+
+                <!-- LAYER FARMING -->
+
+                <article class="project-card">
+
+                    <img src="images/poultry-t.jpg"
+                        alt="Layer chicken farming"
+                        class="project-image">
+
+                    <div class="project-content">
+
+                        <h3>Layer Farming</h3>
+
+                        <p>
+                            Track egg production, flock performance,
+                            feed expenses, egg sales and long-term
+                            profitability.
+                        </p>
+
+                        <a href="auth.html?mode=register"
+                            class="project-link">
+                            Explore Layer Farming &rarr;
+                        </a>
+
+                    </div>
+
+                </article>
+
+
+                <!-- PIGGERY -->
+
+                <article class="project-card">
+
+                    <img src="images/pigs.jpg"
+                        alt="Pig farming"
+                        class="project-image">
+
+                    <div class="project-content">
+
+                        <h3>Piggery Farming</h3>
+
+                        <p>
+                            Monitor feed consumption, animal growth,
+                            production costs, market prices and
+                            expected profitability.
+                        </p>
+
+                        <a href="auth.html?mode=register"
+                            class="project-link">
+                            Explore Piggery &rarr;
+                        </a>
+
+                    </div>
+
+                </article>
+
+
+                <!-- FISH FARMING -->
+
+                <article class="project-card">
+
+                    <img src="images/fish.jpg"
+                        alt="Fish farming"
+                        class="project-image">
+
+                    <div class="project-content">
+
+                        <h3>Fish Farming</h3>
+
+                        <p>
+                            Track stocking levels, feed requirements,
+                            fish growth, operational expenses and
+                            expected returns.
+                        </p>
+
+                        <a href="auth.html?mode=register"
+                            class="project-link">
+                            Explore Fish Farming &rarr;
+                        </a>
+
+                    </div>
+
+                </article>
+
+
+                <!-- CROP FARMING -->
+
+                <article class="project-card">
+
+                    <img src="images/crops.jpg"
+                        alt="Crop farming"
+                        class="project-image">
+
+                    <div class="project-content">
+
+                        <h3>Crop Farming</h3>
+
+                        <p>
+                            Estimate planting costs, input requirements,
+                            crop production, expected yields and
+                            potential profits.
+                        </p>
+
+                        <a href="auth.html?mode=register"
+                            class="project-link">
+                            Explore Crop Farming &rarr;
+                        </a>
+
+                    </div>
+
+                </article>
+
+
+                <!-- DAIRY FARMING -->
+
+                <article class="project-card">
+
+                    <img src="images/pigs.jpg"
+                        alt="Dairy farming"
+                        class="project-image">
+
+                    <div class="project-content">
+
+                        <h3>Dairy Farming</h3>
+
+                        <p>
+                            Monitor milk production, animal health,
+                            feeding expenses, milk sales and
+                            dairy enterprise profitability.
+                        </p>
+
+                        <a href="auth.html?mode=register"
+                            class="project-link">
+                            Explore Dairy Farming &rarr;
+                        </a>
+
+                    </div>
+
+                </article>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= ABOUT ================= -->
+
+        <section class="about-section" id="about">
+
+            <div class="about-content">
+
+                <span class="section-tag">
+                    ABOUT AGRIPREDICT
+                </span>
+
+                <h2>
+                    Turning Agricultural Data Into Better Decisions
+                </h2>
+
+                <p>
+                    AgriPredict is an agricultural intelligence
+                    platform designed to help farmers understand
+                    the financial and production implications of
+                    their farming decisions.
+                </p>
+
+                <p>
+                    By entering actual farm information, users
+                    can calculate costs, estimate feed requirements,
+                    monitor growth, forecast revenue and explore
+                    different farming scenarios.
+                </p>
+
+                <p>
+                    Our goal is to make agricultural planning
+                    more informed, measurable and accessible.
+                </p>
+
+                <div class="hero-buttons">
+
+                    <a href="auth.html?mode=register"
+                        class="btn btn-primary">
+                        Join AgriPredict
+                    </a>
+
+                    <a href="#projects"
+                        class="btn btn-outline">
+                        Explore Projects
+                    </a>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- ================= FOOTER ================= -->
+
+    <footer class="main-footer">
+
+        <div class="footer-container">
+
+            <div class="footer-brand">
+
+                <a href="#home" class="logo">
+                    Agri<span>Predict</span>
+                </a>
+
+                <p>
+                    Smarter agricultural decisions through data.
+                </p>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <h3>Quick Links</h3>
+
+                <a href="#home">Home</a>
+                <a href="#projects">Projects</a>
+                <a href="#about">About Us</a>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <h3>Platform</h3>
+
+                <a href="#projects">Agricultural Projects</a>
+                <a href="#statistics">Platform Statistics</a>
+                <a href="auth.html">Login</a>
+                <a href="auth.html?mode=register">Register</a>
+
+            </div>
+
+        </div>
+
+
+        <div class="footer-bottom">
+
+            <p>
+                &copy; <span id="currentYear"></span>
+                AgriPredict. All rights reserved.
+            </p>
+
+        </div>
+
+    </footer>
+
+
+    <!-- ================= JAVASCRIPT ================= -->
+
+    <!-- Supabase library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+        defer></script>
+
+    <!-- Supabase configuration -->
+    <script src="supabase-config.js" defer></script>
+
+    <!-- Main application JavaScript -->
+    <script src="app.js" defer></script>
+
+</body>
+
+</html>

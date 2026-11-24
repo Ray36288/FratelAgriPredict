@@ -1,0 +1,305 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#176b43">
+    <title>Sign In | Fratel-AgriPredict</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="auth.css">
+</head>
+
+<body>
+    <main class="auth-layout">
+
+        <section class="brand-panel">
+            <a href="index.html" class="brand-logo">
+                <span class="brand-symbol">F</span>
+                <span>Fratel<span class="brand-accent">Agri</span>Predict</span>
+            </a>
+
+            <div class="brand-content">
+                <span class="eyebrow">SMART AGRICULTURE MANAGEMENT</span>
+
+                <h1>Grow smarter.<br>Farm better.</h1>
+
+                <p>
+                    Manage your farm, monitor production,
+                    understand your costs and make better
+                    agricultural decisions with confidence.
+                </p>
+
+                <div class="brand-benefits">
+                    <div class="benefit">
+                        <span class="benefit-icon">↗</span>
+                        <div>
+                            <strong>Track farm performance</strong>
+                            <small>Understand how your farm is performing.</small>
+                        </div>
+                    </div>
+
+                    <div class="benefit">
+                        <span class="benefit-icon">◷</span>
+                        <div>
+                            <strong>Predict production cycles</strong>
+                            <small>Plan ahead using your farm records.</small>
+                        </div>
+                    </div>
+
+                    <div class="benefit">
+                        <span class="benefit-icon">▤</span>
+                        <div>
+                            <strong>Manage farm finances</strong>
+                            <small>Keep production costs and sales organised.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="brand-bottom">
+                Agriculture powered by better information.
+            </p>
+        </section>
+
+        <section class="form-panel">
+            <div class="auth-container">
+
+                <div class="mobile-brand">
+                    <span class="brand-symbol">F</span>
+                    <span>Fratel<span class="brand-accent">Agri</span>Predict</span>
+                </div>
+
+                <div class="auth-heading">
+                    <span class="eyebrow">FARMER ACCOUNT</span>
+                    <h2 id="heading">Welcome back</h2>
+                    <p id="subheading">Sign in to continue to your account.</p>
+                </div>
+
+                <div id="authMessage" class="message" role="status" aria-live="polite" hidden></div>
+
+                <div class="auth-tabs" id="authTabs">
+                    <button type="button" class="tab active" id="loginTab">
+                        Sign in
+                    </button>
+                    <button type="button" class="tab" id="registerTab">
+                        Create account
+                    </button>
+                </div>
+
+                <!-- LOGIN -->
+                <form id="loginForm" class="auth-form">
+                    <div class="form-group">
+                        <label for="loginEmail">Email address</label>
+                        <input
+                            type="email"
+                            id="loginEmail"
+                            name="email"
+                            placeholder="you@example.com"
+                            autocomplete="email"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <div class="password-wrapper">
+                            <input
+                                type="password"
+                                id="loginPassword"
+                                name="password"
+                                placeholder="Enter your password"
+                                autocomplete="current-password"
+                                required
+                            >
+                            <button type="button" class="password-toggle" data-toggle="loginPassword">
+                                Show
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-options">
+                        <label class="check-label">
+                            <input type="checkbox" id="rememberMe">
+                            <span>Remember me</span>
+                        </label>
+
+                        <button type="button" class="link-button" id="forgotLink">
+                            Forgot password?
+                        </button>
+                    </div>
+
+                    <button type="submit" class="primary-button" id="loginButton">
+                        Sign in
+                    </button>
+
+                    <p class="switch-text">
+                        Don't have an account?
+                        <button type="button" class="link-button" id="goRegister">
+                            Create one
+                        </button>
+                    </p>
+                </form>
+
+                <!-- REGISTRATION -->
+                <form id="registerForm" class="auth-form" hidden>
+                    <div class="form-group">
+                        <label for="fullName">Full name</label>
+                        <input
+                            type="text"
+                            id="fullName"
+                            placeholder="Your full name"
+                            autocomplete="name"
+                            maxlength="100"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input
+                            type="text"
+                            id="username"
+                            placeholder="Choose a username"
+                            autocomplete="username"
+                            minlength="3"
+                            maxlength="30"
+                            pattern="[A-Za-z0-9_]+"
+                            title="Use letters, numbers and underscores only."
+                            required
+                        >
+                        <small class="field-hint">Letters, numbers and underscores only.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="registerEmail">Email address</label>
+                        <input
+                            type="email"
+                            id="registerEmail"
+                            placeholder="you@example.com"
+                            autocomplete="email"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone">Phone number</label>
+                        <div class="phone-row">
+                            <select id="countryCode" aria-label="Country calling code">
+                                <option value="+256" selected>🇺🇬 +256</option>
+                                <option value="+254">🇰🇪 +254</option>
+                                <option value="+255">🇹🇿 +255</option>
+                                <option value="+250">🇷🇼 +250</option>
+                                <option value="+211">🇸🇸 +211</option>
+                                <option value="+257">🇧🇮 +257</option>
+                            </select>
+
+                            <input
+                                type="tel"
+                                id="phone"
+                                placeholder="7XX XXX XXX"
+                                autocomplete="tel-national"
+                                inputmode="numeric"
+                                required
+                            >
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="registerPassword">Password</label>
+                        <div class="password-wrapper">
+                            <input
+                                type="password"
+                                id="registerPassword"
+                                placeholder="Create a password"
+                                autocomplete="new-password"
+                                minlength="8"
+                                required
+                            >
+                            <button type="button" class="password-toggle" data-toggle="registerPassword">
+                                Show
+                            </button>
+                        </div>
+                        <small class="field-hint">Use at least 8 characters.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm password</label>
+                        <input
+                            type="password"
+                            id="confirmPassword"
+                            placeholder="Enter your password again"
+                            autocomplete="new-password"
+                            required
+                        >
+                    </div>
+
+                    <label class="check-label terms-label">
+                        <input type="checkbox" id="acceptTerms" required>
+                        <span>I agree to the terms and conditions.</span>
+                    </label>
+
+                    <button type="submit" class="primary-button" id="registerButton">
+                        Create account
+                    </button>
+
+                    <p class="switch-text">
+                        Already registered?
+                        <button type="button" class="link-button" id="goLogin">
+                            Sign in
+                        </button>
+                    </p>
+                </form>
+
+                <!-- PASSWORD RECOVERY -->
+                <form id="recoveryForm" class="auth-form" hidden>
+                    <p class="form-description">
+                        Enter the email address associated with your account.
+                        We will send you a password reset link.
+                    </p>
+
+                    <div class="form-group">
+                        <label for="recoveryEmail">Email address</label>
+                        <input
+                            type="email"
+                            id="recoveryEmail"
+                            placeholder="you@example.com"
+                            autocomplete="email"
+                            required
+                        >
+                    </div>
+
+                    <button type="submit" class="primary-button" id="recoveryButton">
+                        Send reset link
+                    </button>
+
+                    <p class="switch-text">
+                        <button type="button" class="link-button" id="backToLogin">
+                            Back to sign in
+                        </button>
+                    </p>
+                </form>
+
+                <footer class="auth-footer">
+                    <p>© <span id="year"></span> Fratel-AgriPredict</p>
+                    <a href="index.html">Back to website</a>
+                </footer>
+
+            </div>
+        </section>
+    </main>
+
+    <!-- Supabase library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Existing project configuration -->
+    <script src="supabase-config.js"></script>
+
+    <!-- Authentication behaviour -->
+    <script src="auth.js"></script>
+</body>
+</html>
