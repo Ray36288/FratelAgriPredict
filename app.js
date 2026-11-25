@@ -9,6 +9,7 @@
     /* =====================================================
        1. MAIN INITIALIZATION
     ===================================================== */
+   
 
     let initialized = false;
 
@@ -948,7 +949,7 @@
     }
 
 
-    /* =====================================================
+       /* =====================================================
        11. LOAD FARMER PROFILE
     ===================================================== */
 
@@ -956,7 +957,7 @@
         const { data: profile, error } = await supabase
             .from("profiles")
             .select(
-                "full_name, username, email, phone, avatar_url, role"
+                "full_name, username, email, phone, avatar_url, role, account_status"
             )
             .eq("id", user.id)
             .single();
@@ -965,18 +966,57 @@
             console.error("Profile loading error:", error);
 
             showDashboardMessage(
-                "Unable to load your farmer profile. Check that your profile record exists."
+                "Unable to load your profile. Check that your profile record exists."
             );
 
             return false;
         }
 
-        if (!profile || profile.role !== "farmer") {
-            alert("This dashboard is for farmer accounts.");
+        // Verify the administrator's secured role.
+        const { data: securedRole, error: roleError } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+        if (roleError) {
+            console.error("Role verification error:", roleError);
+
+            showDashboardMessage(
+                "Unable to verify your account permissions."
+            );
+
+            return false;
+        }
+
+        // Send administrators to their separate dashboard.
+        if (
+            profile.role === "admin" &&
+            securedRole?.role === "admin" &&
+            profile.account_status === "active"
+        ) {
+            window.location.replace(
+                new URL(
+                    "admin-dashboard.html",
+                    window.location.href
+                ).toString()
+            );
+
+            return false;
+        }
+
+        // Only active farmer accounts can use this dashboard.
+        if (
+            profile.role !== "farmer" ||
+            profile.account_status !== "active"
+        ) {
+            alert("This dashboard is for active farmer accounts.");
 
             await supabase.auth.signOut();
 
-            window.location.replace("auth.html");
+            window.location.replace(
+                new URL("auth.html", window.location.href).toString()
+            );
 
             return false;
         }
@@ -1006,8 +1046,6 @@
 
         return true;
     }
-
-
     /* =====================================================
        12. LOAD FARMER PROJECTS
     ===================================================== */
