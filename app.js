@@ -1520,46 +1520,42 @@
        18. OPEN FARMER PROJECT
     ===================================================== */
 
-    function openFarmerProject(project) {
-        const slug = (
-            typeof project === "string"
-                ? project
-                : project?.slug
-        )?.toLowerCase();
+function openFarmerProject(project) {
+    const rawSlug = typeof project === "string"
+        ? project
+        : (project?.slug || project?.name || "");
+
+    const slug = String(rawSlug)
+        .trim()
+        .toLowerCase()
+        .replace(/[\s_]+/g, "-");
 
     const projectRoutes = {
-    broiler: "broiler-dashboard.html",
-    "broiler-farming": "broiler-dashboard.html",
+        broiler: "broiler-dashboard.html",
+        "broiler-farming": "broiler-dashboard.html",
 
-    croiler: "poultry-dashboard.html",
-    "croiler-farming": "poultry-dashboard.html",
+        croiler: "poultry-dashboard.html",
+        "croiler-farming": "poultry-dashboard.html",
 
-    layers: "layers-dashboard.html",
-    layer: "layers-dashboard.html",
-    "layer-farming": "layers-dashboard.html",
+        layer: "layers-dashboard.html",
+        layers: "layers-dashboard.html",
+        "layer-farming": "layers-dashboard.html",
+        "layers-farming": "layers-dashboard.html",
 
-    poultry: "poultry-dashboard.html"
-};
-};
-        };
+        poultry: "poultry-dashboard.html"
+    };
 
-        const destination = projectRoutes[slug];
+    const destination = projectRoutes[slug];
 
-        if (destination) {
-            window.location.href = destination;
-            return;
-        }
-
-        console.warn(
-            "No dedicated dashboard route configured for:",
-            slug
-        );
-
-        alert(
-            "This farming project page has not been created yet."
-        );
+    if (destination) {
+        window.location.href =
+            new URL(destination, window.location.href).toString();
+        return;
     }
 
+    console.warn("No dedicated dashboard route configured for:", slug);
+    alert("This farming project page has not been created yet.");
+}
 
     /* =====================================================
        19. DASHBOARD PROJECT SUMMARY
