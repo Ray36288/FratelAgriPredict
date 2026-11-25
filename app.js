@@ -483,6 +483,7 @@
                     password,
                     options: {
                         emailRedirectTo:
+                           window.location.origin
                             ,
 
                         data: {
