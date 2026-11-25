@@ -1521,42 +1521,45 @@
     ===================================================== */
 
 function openFarmerProject(project) {
-    const rawSlug = typeof project === "string"
-        ? project
-        : (project?.slug || project?.name || "");
+    const normalise = value =>
+        String(value || "")
+            .trim()
+            .toLowerCase()
+            .replace(/[\s_]+/g, "-");
 
-    const slug = String(rawSlug)
-        .trim()
-        .toLowerCase()
-        .replace(/[\s_]+/g, "-");
+    const slug = normalise(
+        typeof project === "string" ? project : project?.slug
+    );
 
-    const projectRoutes = {
-        broiler: "broiler-dashboard.html",
-        "broiler-farming": "broiler-dashboard.html",
+    const name = normalise(
+        typeof project === "string" ? project : project?.name
+    );
 
-        croiler: "poultry-dashboard.html",
-        "croiler-farming": "poultry-dashboard.html",
+    let destination;
 
-        layer: "layers-dashboard.html",
-        layers: "layers-dashboard.html",
-        "layer-farming": "layers-dashboard.html",
-        "layers-farming": "layers-dashboard.html",
+    // Check both the database slug and project name.
+    if ([slug, name].some(value => value.includes("layer"))) {
+        destination = "layers-dashboard.html";
+    } else {
+        const routes = {
+            broiler: "broiler-dashboard.html",
+            "broiler-farming": "broiler-dashboard.html",
+            croiler: "poultry-dashboard.html",
+            "croiler-farming": "poultry-dashboard.html",
+            poultry: "poultry-dashboard.html"
+        };
 
-        poultry: "poultry-dashboard.html"
-    };
+        destination = routes[slug] || routes[name];
+    }
 
-    const destination = projectRoutes[slug];
-
-    if (destination) {
-        window.location.href =
-            new URL(destination, window.location.href).toString();
+    if (!destination) {
+        alert("No dashboard is configured for this project.");
         return;
     }
 
-    console.warn("No dedicated dashboard route configured for:", slug);
-    alert("This farming project page has not been created yet.");
+    window.location.href =
+        new URL(destination, window.location.href).toString();
 }
-
     /* =====================================================
        19. DASHBOARD PROJECT SUMMARY
     ===================================================== */
