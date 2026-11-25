@@ -615,6 +615,8 @@ $('scenarioFormula').addEventListener('change', renderScenarioIngredients);
 
     // FEED PRODUCTION
     // INGREDIENT PURCHASE
+$('purchaseFormula').addEventListener('change', renderPurchaseIngredients);
+$('scenarioFormula').addEventListener('change', renderScenarioIngredients);
 // INGREDIENT PURCHASE
 $('purchaseFormula').addEventListener('change', renderPurchaseIngredients);
 $('scenarioFormula').addEventListener('change', renderScenarioIngredients);
