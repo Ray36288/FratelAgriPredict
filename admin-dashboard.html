@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#123b2b">
+  <meta name="description" content="AgriPredict administrator console for farmer accounts, agricultural projects, enrolments and farm monitoring.">
+  <title>Administrator Dashboard | AgriPredict</title>
+  <link rel="stylesheet" href="admin-dashboard.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="supabase-config.js" defer></script>
+  <script src="admin-dashboard.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="adminSidebar">
+      <a class="brand" href="index.html" aria-label="AgriPredict home">
+        <span class="brand-mark">🌱</span>
+        <span class="brand-name">Agri<span>Predict</span><small>ADMINISTRATION</small></span>
+      </a>
+      <div class="admin-identity">
+        <div class="avatar" id="adminAvatar">A</div>
+        <div class="identity-copy"><strong id="adminName">Administrator</strong><span>Platform administrator</span></div>
+        <span class="online-dot" title="Signed in"></span>
+      </div>
+      <nav class="side-nav" aria-label="Administrator navigation">
+        <span class="nav-caption">WORKSPACE</span>
+        <button class="nav-link active" data-view="overview"><span>▦</span>Overview</button>
+        <button class="nav-link" data-view="farmers"><span>♙</span>Farmer accounts</button>
+        <button class="nav-link" data-view="projects"><span>▣</span>Projects & milestones</button>
+        <button class="nav-link" data-view="enrolments"><span>⇄</span>Enrolments</button>
+        <button class="nav-link" data-view="requests"><span>▤</span>Exit requests <b class="nav-count" id="requestNavCount">0</b></button>
+        <button class="nav-link" data-view="progress"><span>◷</span>Project progress</button>
+        <span class="nav-caption nav-caption-lower">INSIGHT & CONTROL</span>
+        <button class="nav-link" data-view="operations"><span>◫</span>Farm operations</button>
+        <button class="nav-link" data-view="audit"><span>≋</span>Audit trail</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="sidebar-note"><span>✦</span><p>Clear oversight. Better farming outcomes.</p></div>
+        <button class="signout-button" id="signOutButton"><span>↪</span>Sign out</button>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <div class="topbar-leading">
+          <button class="mobile-menu" id="mobileMenu" aria-label="Open menu">☰</button>
+          <div><div class="eyebrow" id="sectionEyebrow">PLATFORM CONTROL CENTRE</div><h1 id="sectionTitle">Overview</h1></div>
+        </div>
+        <div class="topbar-actions">
+          <div class="system-status"><i></i><span id="connectionLabel">Checking connection</span></div>
+          <button class="icon-button" id="refreshButton" title="Refresh data" aria-label="Refresh data">↻</button>
+          <div class="topbar-date" id="todayLabel"></div>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div id="notice" class="notice" role="status" aria-live="polite"></div>
+
+        <section class="view active-view" id="view-overview">
+          <div class="welcome-banner">
+            <div><span class="banner-kicker">AGRIPREDICT MANAGEMENT</span><h2>Good day, <span id="welcomeAdminName">Administrator</span>.</h2><p>Here is the current picture of farmers, projects and recorded farm activity across the platform.</p></div>
+            <div class="banner-art" aria-hidden="true">🌾</div>
+          </div>
+          <div class="metric-grid">
+            <article class="metric-card metric-farmers"><div class="metric-top"><span>REGISTERED FARMERS</span><i>♙</i></div><strong id="metricFarmers">—</strong><small id="metricFarmersSub">Farmer accounts</small></article>
+            <article class="metric-card metric-active"><div class="metric-top"><span>ACTIVE FARMERS</span><i>✓</i></div><strong id="metricActiveFarmers">—</strong><small>Accounts currently active</small></article>
+            <article class="metric-card metric-projects"><div class="metric-top"><span>ACTIVE PROJECTS</span><i>▣</i></div><strong id="metricProjects">—</strong><small id="metricProjectsSub">Project catalogue</small></article>
+            <article class="metric-card metric-requests"><div class="metric-top"><span>PENDING EXIT REQUESTS</span><i>◷</i></div><strong id="metricRequests">—</strong><small>Require administrator review</small></article>
+          </div>
+          <div class="overview-grid">
+            <article class="panel"><div class="panel-heading"><div><span class="panel-kicker">LATEST REGISTRATIONS</span><h3>Recent farmer accounts</h3></div><button class="text-action" data-go="farmers">View all →</button></div><div id="recentFarmers" class="compact-list"><div class="loading-line">Loading farmer accounts…</div></div></article>
+            <article class="panel"><div class="panel-heading"><div><span class="panel-kicker">NEEDS ATTENTION</span><h3>Exit requests awaiting review</h3></div><button class="text-action" data-go="requests">Review requests →</button></div><div id="overviewRequests" class="compact-list"><div class="loading-line">Loading requests…</div></div></article>
+          </div>
+          <article class="panel insight-panel"><div class="panel-heading"><div><span class="panel-kicker">FARM ACTIVITY SNAPSHOT</span><h3>Across registered farms</h3></div><span class="data-stamp">Based on saved database records</span></div><div class="insight-grid"><div><span>Farms registered</span><strong id="metricFarms">—</strong></div><div><span>Active enterprises</span><strong id="metricEnterprises">—</strong></div><div><span>Active livestock batches</span><strong id="metricBatches">—</strong></div><div><span>Opening livestock quantity</span><strong id="metricOpeningStock">—</strong></div></div><p class="footnote">Livestock quantity is the sum of batch opening quantities. It is not a live headcount; later additions, mortalities and sales must be considered for a current balance.</p></article>
+        </section>
+
+        <section class="view" id="view-farmers">
+          <div class="view-intro"><div><span class="panel-kicker">ACCOUNT ADMINISTRATION</span><h2>Farmer accounts</h2><p>Review farmer profiles, update contact details, control account access and manage administrator roles.</p></div></div>
+          <div class="toolbar"><label class="search-box"><span>⌕</span><input id="farmerSearch" type="search" placeholder="Search name, username or email"></label><select id="farmerStatusFilter" aria-label="Filter by account status"><option value="all">All account statuses</option><option value="active">Active</option><option value="suspended">Suspended</option></select><span class="result-count" id="farmerCount">0 accounts</span></div>
+          <div class="table-panel"><div class="table-wrap"><table><thead><tr><th>FARMER</th><th>CONTACT</th><th>ROLE</th><th>ACCOUNT STATUS</th><th>REGISTERED</th><th class="align-right">ACTIONS</th></tr></thead><tbody id="farmersTable"><tr><td colspan="6" class="table-empty">Loading farmer accounts…</td></tr></tbody></table></div></div>
+        </section>
+
+        <section class="view" id="view-projects">
+          <div class="view-intro intro-with-action"><div><span class="panel-kicker">PROGRAMME MANAGEMENT</span><h2>Projects & milestones</h2><p>Create and maintain the agricultural projects farmers can enrol in. Milestones define the expected project journey.</p></div><button class="primary-button" id="addProjectButton">＋ Create project</button></div>
+          <div class="toolbar"><label class="search-box"><span>⌕</span><input id="projectSearch" type="search" placeholder="Search project name or category"></label><select id="projectStatusFilter" aria-label="Filter projects"><option value="all">All projects</option><option value="active">Active</option><option value="inactive">Inactive</option></select><span class="result-count" id="projectCount">0 projects</span></div>
+          <div class="table-panel"><div class="table-wrap"><table><thead><tr><th>PROJECT</th><th>CATEGORY</th><th>ENROLLED FARMERS</th><th>MILESTONES</th><th>STATUS</th><th class="align-right">ACTIONS</th></tr></thead><tbody id="projectsTable"><tr><td colspan="6" class="table-empty">Loading projects…</td></tr></tbody></table></div></div>
+        </section>
+
+        <section class="view" id="view-enrolments">
+          <div class="view-intro intro-with-action"><div><span class="panel-kicker">FARMER PARTICIPATION</span><h2>Project enrolments</h2><p>View current and historical enrolments, or register a farmer for an active project.</p></div><button class="primary-button" id="addEnrolmentButton">＋ Add enrolment</button></div>
+          <div class="toolbar"><label class="search-box"><span>⌕</span><input id="enrolmentSearch" type="search" placeholder="Search farmer or project"></label><select id="enrolmentStatusFilter" aria-label="Filter enrolments"><option value="all">All enrolments</option><option value="active">Active</option><option value="unenrolled">Unenrolled history</option></select><span class="result-count" id="enrolmentCount">0 enrolments</span></div>
+          <div class="table-panel"><div class="table-wrap"><table><thead><tr><th>FARMER</th><th>PROJECT</th><th>ENROLLED DATE</th><th>STATUS</th><th>EXIT DATE</th></tr></thead><tbody id="enrolmentsTable"><tr><td colspan="5" class="table-empty">Loading enrolments…</td></tr></tbody></table></div></div>
+          <p class="information-note">Enrolment history is retained. Farmers cannot delete their own enrolments; approved exit requests mark the enrolment as unenrolled without removing its history.</p>
+        </section>
+
+        <section class="view" id="view-requests">
+          <div class="view-intro"><div><span class="panel-kicker">ADMINISTRATOR REVIEW</span><h2>Project exit requests</h2><p>Farmers submit a reason when requesting to leave a project. Approve or decline each pending request with an administrator response.</p></div></div>
+          <div class="toolbar"><select id="requestStatusFilter" aria-label="Filter exit requests"><option value="all">All requests</option><option value="pending">Pending review</option><option value="approved">Approved</option><option value="declined">Declined</option></select><span class="result-count" id="requestCount">0 requests</span></div>
+          <div id="requestsList" class="request-list"><div class="loading-line">Loading exit requests…</div></div>
+        </section>
+
+        <section class="view" id="view-progress">
+          <div class="view-intro"><div><span class="panel-kicker">PROJECT DELIVERY</span><h2>Farmer project progress</h2><p>Review milestone updates submitted by farmers and record administrator feedback.</p></div></div>
+          <div class="toolbar"><label class="search-box"><span>⌕</span><input id="progressSearch" type="search" placeholder="Search farmer, project or milestone"></label><select id="progressStatusFilter" aria-label="Filter progress"><option value="all">All progress statuses</option><option value="not_started">Not started</option><option value="in_progress">In progress</option><option value="completed">Completed</option><option value="blocked">Blocked</option></select><span class="result-count" id="progressCount">0 updates</span></div>
+          <div class="table-panel"><div class="table-wrap"><table><thead><tr><th>FARMER / PROJECT</th><th>MILESTONE</th><th>PROGRESS</th><th>STATUS</th><th>LAST UPDATED</th><th class="align-right">REVIEW</th></tr></thead><tbody id="progressTable"><tr><td colspan="6" class="table-empty">Loading project progress…</td></tr></tbody></table></div></div>
+        </section>
+
+        <section class="view" id="view-operations">
+          <div class="view-intro"><div><span class="panel-kicker">WHOLE-FARM MONITORING</span><h2>Farm operations</h2><p>High-level totals from farms, production batches and the financial ledger. These are recorded values, not estimates.</p></div></div>
+          <div class="report-grid"><article class="report-card"><span>Registered farms</span><strong id="reportFarms">—</strong><small>Farm records in Supabase</small></article><article class="report-card"><span>Farm enterprises</span><strong id="reportEnterprises">—</strong><small id="reportActiveEnterprises">— active</small></article><article class="report-card"><span>Livestock batches</span><strong id="reportBatches">—</strong><small id="reportActiveBatches">— active</small></article><article class="report-card"><span>Recorded expenses</span><strong id="reportExpenses">—</strong><small>Sum of expense transactions</small></article><article class="report-card"><span>Recorded income</span><strong id="reportIncome">—</strong><small>Sum of income transactions</small></article><article class="report-card"><span>Net recorded balance</span><strong id="reportNet">—</strong><small>Recorded income less expenses</small></article></div>
+          <article class="panel"><div class="panel-heading"><div><span class="panel-kicker">FINANCIAL DATA</span><h3>Recent farm transactions</h3></div><span class="data-stamp">Latest 30 records</span></div><div class="table-wrap"><table><thead><tr><th>DATE</th><th>DESCRIPTION</th><th>TYPE</th><th>FARM</th><th class="align-right">AMOUNT</th></tr></thead><tbody id="transactionsTable"><tr><td colspan="5" class="table-empty">Loading transactions…</td></tr></tbody></table></div></article>
+          <p class="footnote">Farm financial totals use the <code>farm_transactions</code> ledger only. Detailed sales are not added separately, to avoid double-counting income already linked to a transaction.</p>
+        </section>
+
+        <section class="view" id="view-audit">
+          <div class="view-intro"><div><span class="panel-kicker">ACCOUNTABILITY</span><h2>Administrator audit trail</h2><p>Read-only history of administrator changes recorded by database triggers and protected functions.</p></div></div>
+          <div class="table-panel"><div class="table-wrap"><table><thead><tr><th>WHEN</th><th>ADMINISTRATOR</th><th>ACTION</th><th>TABLE</th><th>RECORD ID</th><th>DETAIL</th></tr></thead><tbody id="auditTable"><tr><td colspan="6" class="table-empty">Loading audit history…</td></tr></tbody></table></div></div>
+        </section>
+
+        <footer class="page-footer"><span>© <span id="footerYear"></span> Fratel-AgriPredict</span><span>Administrator workspace · Secure database access</span></footer>
+      </div>
+    </main>
+  </div>
+
+  <dialog class="editor-dialog" id="editorDialog" aria-labelledby="modalTitle">
+    <div class="dialog-card"><div class="dialog-header"><div><span class="panel-kicker">ADMINISTRATOR ACTION</span><h2 id="modalTitle">Edit record</h2></div><button class="dialog-close" id="closeDialog" type="button" aria-label="Close dialog">×</button></div><form id="editorForm"><div id="modalFields"></div><div class="dialog-actions"><button class="secondary-button" type="button" id="cancelDialog">Cancel</button><button class="primary-button" type="submit" id="saveDialog">Save changes</button></div></form></div>
+  </dialog>
+  <div class="toast-region" id="toastRegion" aria-live="polite"></div>
+</body>
+</html>
