@@ -1527,15 +1527,19 @@
                 : project?.slug
         )?.toLowerCase();
 
-        const projectRoutes = {
+    const projectRoutes = {
     broiler: "broiler-dashboard.html",
     "broiler-farming": "broiler-dashboard.html",
+
     croiler: "poultry-dashboard.html",
     "croiler-farming": "poultry-dashboard.html",
+
     layers: "layers-dashboard.html",
     layer: "layers-dashboard.html",
     "layer-farming": "layers-dashboard.html",
+
     poultry: "poultry-dashboard.html"
+};
 };
         };
 
