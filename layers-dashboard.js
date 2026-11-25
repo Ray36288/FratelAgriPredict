@@ -292,18 +292,107 @@
     $('rawStockTotal').textContent=kg(sum(raw,x=>x.quantity)); $('finishedStockTotal').textContent=kg(sum(lots,x=>x.availableKg)); $('averageFeedCost').textContent=finishedAverageCost()>0?`${money(finishedAverageCost())}/kg`:'—'; $('productionCount').textContent=String(state.production.length);
     $('rawStockTable').innerHTML=raw.length?raw.map(r=>`<tr><td>${esc(r.name)}</td><td>${kg(r.quantity)}</td><td>${money(r.costPerKg)}</td><td>${money(r.stockValue)}</td></tr>`).join(''):'<tr><td colspan="4" class="empty-cell">No ingredient purchases.</td></tr>';
     $('finishedStockTable').innerHTML=lots.length?lots.map(p=>{const f=state.formulas.find(x=>x.id===p.formulaId);return `<tr><td><b>${esc(p.lotName)}</b><small>${fmtDate(p.date)}</small></td><td>${esc(f?.name||'Archived formula')}</td><td>${kg(p.quantityKg)}</td><td><b>${kg(p.availableKg)}</b></td><td>${money(p.costPerKg)}</td></tr>`;}).join(''):'<tr><td colspan="5" class="empty-cell">No feed production.</td></tr>';
-    const ingredients=[...new Set(state.formulas.flatMap(f=>(f.items||[]).map(i=>i.ingredient)))]; $('ingredientOptions').innerHTML=ingredients.map(x=>`<option value="${esc(x)}"></option>`).join('');
+
   }
-  function fillSelect(id,rows,placeholder,selected){const el=$(id);if(!el)return;el.innerHTML=`<option value="">${esc(placeholder)}</option>`+rows.map(x=>`<option value="${esc(x.id)}" ${x.id===selected?'selected':''}>${esc(x.name||x.lotName)}</option>`).join('');}
-  function renderSelectors(){
-    const batches=state.batches.map(b=>({id:b.id,name:`${b.name} · ${liveBirds(b)} live`}));
-    ['consumptionBatch','recordBatch','expenseBatch','forecastBatch','valuationBatch','scenarioBatch'].forEach(id=>fillSelect(id,batches,'Select batch',$(id)?.value));
-    const formulas=state.formulas.map(f=>({id:f.id,name:`${f.name} · ${STAGES.find(s=>s.id===f.stage)?.name||f.stage}`}));
-    ['productionFormula','scenarioFormula'].forEach(id=>fillSelect(id,formulas,'Select formula',$(id)?.value));
-    const scenarioFormula=state.formulas.find(f=>f.id===$('scenarioFormula').value);
-    $('scenarioIngredient').innerHTML=scenarioFormula?(scenarioFormula.items||[]).map(i=>`<option value="${esc(i.ingredient)}">${esc(i.ingredient)}</option>`).join(''):'<option value="">Select formula first</option>';
-    const lots=finishedStock().filter(p=>p.availableKg>0).map(p=>({id:p.id,name:`${p.lotName} · ${p.availableKg.toFixed(1)} kg available`})); fillSelect('consumptionLot',lots,'Select feed lot',$('consumptionLot')?.value);
-  }
+  function fillSelect(id, rows, placeholder, selected) {
+    const el = $(id);
+    if (!el) return;
+
+    el.innerHTML =
+        `<option value="">${esc(placeholder)}</option>` +
+        rows.map(x =>
+            `<option value="${esc(x.id)}">${esc(x.name || x.lotName)}</option>`
+        ).join('');
+
+    el.value = rows.some(x => x.id === selected) ? selected : '';
+}
+
+function renderPurchaseIngredients() {
+    const formula = state.formulas.find(
+        f => f.id === $('purchaseFormula').value
+    );
+
+    const select = $('purchaseIngredient');
+    const ingredients = formula
+        ? [...new Set(formula.items.map(i => i.ingredient))]
+        : [];
+
+    select.innerHTML = ingredients.length
+        ? '<option value="">Select ingredient</option>' +
+          ingredients.map(name =>
+              `<option value="${esc(name)}">${esc(name)}</option>`
+          ).join('')
+        : '<option value="">No ingredients available</option>';
+
+    select.disabled = !ingredients.length;
+}
+
+function renderScenarioIngredients() {
+    const formula = state.formulas.find(
+        f => f.id === $('scenarioFormula').value
+    );
+
+    const select = $('scenarioIngredient');
+    const ingredients = formula
+        ? [...new Set(formula.items.map(i => i.ingredient))]
+        : [];
+
+    select.innerHTML = ingredients.length
+        ? '<option value="">Select ingredient</option>' +
+          ingredients.map(name =>
+              `<option value="${esc(name)}">${esc(name)}</option>`
+          ).join('')
+        : '<option value="">Select formula first</option>';
+
+    select.disabled = !ingredients.length;
+}
+
+function renderSelectors() {
+    const batches = state.batches.map(b => ({
+        id: b.id,
+        name: `${b.name} · ${liveBirds(b)} live`
+    }));
+
+    [
+        'consumptionBatch',
+        'recordBatch',
+        'expenseBatch',
+        'forecastBatch',
+        'valuationBatch',
+        'scenarioBatch'
+    ].forEach(id => {
+        fillSelect(id, batches, 'Select batch', $(id)?.value);
+    });
+
+    const formulas = state.formulas.map(f => ({
+        id: f.id,
+        name: `${f.name} · ${STAGES.find(s => s.id === f.stage)?.name || f.stage}`
+    }));
+
+    const latestFormula = formulas[0]?.id || '';
+
+    fillSelect('productionFormula', formulas, 'Select formula',
+        $('productionFormula').value);
+
+    fillSelect('scenarioFormula', formulas, 'Select formula',
+        $('scenarioFormula').value || latestFormula);
+
+    fillSelect('purchaseFormula', formulas, 'Select formula',
+        $('purchaseFormula').value || latestFormula);
+
+    renderPurchaseIngredients();
+    renderScenarioIngredients();
+
+    const lots = finishedStock()
+        .filter(p => p.availableKg > 0)
+        .map(p => ({
+            id: p.id,
+            name: `${p.lotName} · ${p.availableKg.toFixed(1)} kg available`
+        }));
+
+    fillSelect('consumptionLot', lots, 'Select feed lot',
+        $('consumptionLot').value);
+}
   function renderRecords(){
     const rows=state.events.slice().sort((a,b)=>b.date.localeCompare(a.date));
     $('recordTable').innerHTML=rows.length?rows.slice(0,100).map(e=>{const b=getBatch(e.batchId);const details=e.type==='sale'?money(e.amount):e.type==='weight'?`${num(e.extra)} g average`:e.type==='water'?`${num(e.quantity)} L`:e.type==='management'?e.status:e.type==='eggs'?`${num(e.quantity)} eggs`:e.type==='addition'?money(e.amount):e.description||'—';return `<tr><td>${fmtDate(e.date)}</td><td>${esc(b?.name||'Batch removed')}</td><td>${esc(e.type)}</td><td>${num(e.quantity).toLocaleString('en-UG')}</td><td>${esc(details)}</td></tr>`;}).join(''):'<tr><td colspan="5" class="empty-cell">No records yet.</td></tr>';
@@ -498,6 +587,9 @@
     });
 
     // INGREDIENT PURCHASE
+    $('purchaseFormula').addEventListener('change', renderPurchaseIngredients);
+
+$('scenarioFormula').addEventListener('change', renderScenarioIngredients);
     $('purchaseForm').addEventListener('submit', event => {
         event.preventDefault();
         const v = Object.fromEntries(new FormData(event.currentTarget));
@@ -522,68 +614,56 @@
     });
 
     // FEED PRODUCTION
-    $('productionFormula').addEventListener('change', updateProductionPreview);
-    $('productionForm').elements.quantity.addEventListener('input', updateProductionPreview);
-    $('productionForm').elements.mixQuantity.addEventListener('input', updateProductionPreview);
+    // INGREDIENT PURCHASE
+$('purchaseFormula').addEventListener('change', renderPurchaseIngredients);
 
-    $('productionForm').addEventListener('submit', event => {
-        event.preventDefault();
-        const v = Object.fromEntries(new FormData(event.currentTarget));
-        const formula = state.formulas.find(f => f.id === v.formulaId);
+$('scenarioFormula').addEventListener('change', renderScenarioIngredients);
 
-        if (!formula) return setNotice('Select a saved formula.', 'error');
+$('purchaseForm').addEventListener('submit', event => {
+    event.preventDefault();
 
-        const quantity = num(v.quantity);
-        if (quantity <= 0) return setNotice('Enter a positive production output.', 'error');
+    const v = Object.fromEntries(new FormData(event.currentTarget));
+    const formula = state.formulas.find(f => f.id === v.formulaId);
 
-        const mixQuantity = num(v.mixQuantity) || quantity;
-        const scale = mixQuantity / formula.totalWeight;
+    if (!formula) {
+        return setNotice('Please select a saved formula first.', 'error');
+    }
 
-        const inputs = formula.items.map(item => {
-            const q = item.quantityKg * scale;
-            const stock = rawInventory().find(
-                x => x.name.toLowerCase() === item.ingredient.toLowerCase()
-            );
+    const ingredient = (formula.items || []).find(
+        i => i.ingredient === v.ingredient
+    );
 
-            return {
-                ingredient: item.ingredient,
-                quantityKg: q,
-                unitCost: stock?.costPerKg || 0
-            };
-        });
-
-        const shortage = inputs.find(
-            item => rawAvailable(item.ingredient) + 1e-8 < item.quantityKg
+    if (!ingredient) {
+        return setNotice(
+            'This ingredient is not included in the selected formula.',
+            'error'
         );
+    }
 
-        if (shortage) {
-            return setNotice(
-                `Insufficient ${shortage.ingredient} stock. Purchase ingredients first.`,
-                'error'
-            );
-        }
+    if (num(v.quantity) <= 0 || num(v.unitCost) < 0) {
+        return setNotice(
+            'Enter a positive purchase quantity and valid unit cost.',
+            'error'
+        );
+    }
 
-        const cost = sum(inputs, item => item.quantityKg * item.unitCost);
-
-        state.production.push({
-            id: uid(),
-            formulaId: formula.id,
-            formulaVersion: formula.version,
-            lotName: v.lotName.trim(),
-            mixQuantityKg: mixQuantity,
-            quantityKg: quantity,
-            cost,
-            costPerKg: cost / quantity,
-            inputs,
-            date: v.date,
-            notes: v.notes,
-            createdAt: new Date().toISOString()
-        });
-
-        event.currentTarget.reset();
-        event.currentTarget.elements.date.value = today();
-        changed('Feed production recorded. Inventory updated.');
+    state.purchases.push({
+        id: uid(),
+        formulaId: formula.id,
+        formulaName: formula.name,
+        ingredient: ingredient.ingredient,
+        quantityKg: num(v.quantity),
+        unitCost: num(v.unitCost),
+        date: v.date,
+        supplier: v.supplier.trim(),
+        createdAt: new Date().toISOString()
     });
+
+    event.currentTarget.reset();
+    event.currentTarget.elements.date.value = today();
+
+    changed(`Purchase of ${ingredient.ingredient} saved.`);
+});
 
     // DAILY FEED INTAKE AND FEED LOSSES
     $('consumptionForm').elements.kind.addEventListener('change', updateConsumptionFields);
@@ -761,45 +841,91 @@
     });
 
     // INGREDIENT PRICE SCENARIO
-    $('priceScenarioForm').addEventListener('submit', event => {
-        event.preventDefault();
-        const v = Object.fromEntries(new FormData(event.currentTarget));
-        const formula = state.formulas.find(f => f.id === v.formulaId);
-        const batch = getBatch(v.batchId);
+    
+// INGREDIENT PRICE SCENARIO
+$('priceScenarioForm').addEventListener('submit', event => {
+    event.preventDefault();
 
-        if (!formula || !batch) {
-            return setNotice('Select a formula and batch.', 'error');
-        }
+    const v = Object.fromEntries(new FormData(event.currentTarget));
 
-        const ingredient = formula.items.find(i => i.ingredient === v.ingredient);
-        if (!ingredient) return setNotice('Select an ingredient.', 'error');
+    const formula = state.formulas.find(f => f.id === v.formulaId);
+    const batch = getBatch(v.batchId);
 
-        const percent = num(v.changePct) / 100;
-        const changePerKg =
-            (ingredient.quantityKg / formula.totalWeight) *
-            ingredient.unitPrice * percent;
+    if (!formula) {
+        return setNotice(
+            'No saved formula is selected. Please select a formula.',
+            'error'
+        );
+    }
 
-        const days = periodDays(v.periodAmount, v.periodUnit);
-        const result = forecastBatch(batch, days);
-        const impact = result.feedKg * changePerKg;
+    if (!batch) {
+        return setNotice('Please select a bird batch.', 'error');
+    }
 
-        $('priceScenarioResult').innerHTML = `
-            <div class="forecast-card-grid">
-                <div class="forecast-card">
-                    <span>Current formula cost/kg</span>
-                    <strong>${money(formula.costPerKg)}</strong>
-                </div>
-                <div class="forecast-card">
-                    <span>Scenario formula cost/kg</span>
-                    <strong>${money(formula.costPerKg + changePerKg)}</strong>
-                </div>
-                <div class="forecast-card">
-                    <span>Estimated expenditure impact</span>
-                    <strong>${money(impact)}</strong>
-                </div>
+    const ingredient = (formula.items || []).find(
+        i => i.ingredient === v.ingredient
+    );
+
+    if (!ingredient) {
+        return setNotice(
+            'Select an ingredient belonging to this formula.',
+            'error'
+        );
+    }
+
+    const totalWeight = num(formula.totalWeight);
+
+    if (totalWeight <= 0) {
+        return setNotice('The selected formula has no valid recipe weight.', 'error');
+    }
+
+    const percent = num(v.changePct) / 100;
+
+    const changePerKg =
+        (num(ingredient.quantityKg) / totalWeight) *
+        num(ingredient.unitPrice) *
+        percent;
+
+    const days = periodDays(v.periodAmount, v.periodUnit);
+    const result = forecastBatch(batch, days);
+
+    // Count only forecast feed assigned to this particular formula.
+    const formulaFeedKg = Object.values(result.byStage || {})
+        .filter(stage => stage.formulaId === formula.id)
+        .reduce((total, stage) => total + num(stage.kg), 0);
+
+    const impact = formulaFeedKg * changePerKg;
+    const scenarioCost = num(formula.costPerKg) + changePerKg;
+
+    $('priceScenarioResult').innerHTML = `
+        <div class="forecast-card-grid">
+            <div class="forecast-card">
+                <span>Current formula cost/kg</span>
+                <strong>${money(formula.costPerKg)}</strong>
             </div>
-        `;
-    });
+
+            <div class="forecast-card">
+                <span>Scenario formula cost/kg</span>
+                <strong>${money(scenarioCost)}</strong>
+            </div>
+
+            <div class="forecast-card">
+                <span>Forecast feed using this formula</span>
+                <strong>${kg(formulaFeedKg)}</strong>
+            </div>
+
+            <div class="forecast-card">
+                <span>Estimated spending change</span>
+                <strong>${money(impact)}</strong>
+            </div>
+        </div>
+
+        ${formulaFeedKg <= 0
+            ? '<p class="form-hint">This formula is not currently assigned to a stage in this batch forecast period. Check the stage plan.</p>'
+            : `<p class="form-hint">Based on ${kg(formulaFeedKg)} of forecast feed using ${esc(formula.name)}.</p>`
+        }
+    `;
+});
 
     // INITIAL FORM VALUES
     $('productionForm').elements.date.value = today();
