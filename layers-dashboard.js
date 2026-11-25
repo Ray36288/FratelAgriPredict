@@ -615,8 +615,8 @@ $('scenarioFormula').addEventListener('change', renderScenarioIngredients);
 
     // FEED PRODUCTION
     // INGREDIENT PURCHASE
+// INGREDIENT PURCHASE
 $('purchaseFormula').addEventListener('change', renderPurchaseIngredients);
-
 $('scenarioFormula').addEventListener('change', renderScenarioIngredients);
 
 $('purchaseForm').addEventListener('submit', event => {
@@ -641,10 +641,7 @@ $('purchaseForm').addEventListener('submit', event => {
     }
 
     if (num(v.quantity) <= 0 || num(v.unitCost) < 0) {
-        return setNotice(
-            'Enter a positive purchase quantity and valid unit cost.',
-            'error'
-        );
+        return setNotice('Enter a positive quantity and valid unit cost.', 'error');
     }
 
     state.purchases.push({
@@ -663,6 +660,77 @@ $('purchaseForm').addEventListener('submit', event => {
     event.currentTarget.elements.date.value = today();
 
     changed(`Purchase of ${ingredient.ingredient} saved.`);
+});
+
+// FEED PRODUCTION
+$('productionFormula').addEventListener('change', updateProductionPreview);
+$('productionForm').elements.quantity.addEventListener('input', updateProductionPreview);
+$('productionForm').elements.mixQuantity.addEventListener('input', updateProductionPreview);
+
+$('productionForm').addEventListener('submit', event => {
+    event.preventDefault();
+
+    const v = Object.fromEntries(new FormData(event.currentTarget));
+    const formula = state.formulas.find(f => f.id === v.formulaId);
+
+    if (!formula) {
+        return setNotice('Select a saved formula.', 'error');
+    }
+
+    const quantity = num(v.quantity);
+
+    if (quantity <= 0) {
+        return setNotice('Enter a positive production output.', 'error');
+    }
+
+    const mixQuantity = num(v.mixQuantity) || quantity;
+    const scale = mixQuantity / formula.totalWeight;
+
+    const inputs = formula.items.map(item => {
+        const q = item.quantityKg * scale;
+        const stock = rawInventory().find(
+            x => x.name.toLowerCase() === item.ingredient.toLowerCase()
+        );
+
+        return {
+            ingredient: item.ingredient,
+            quantityKg: q,
+            unitCost: stock?.costPerKg || 0
+        };
+    });
+
+    const shortage = inputs.find(
+        item => rawAvailable(item.ingredient) + 1e-8 < item.quantityKg
+    );
+
+    if (shortage) {
+        return setNotice(
+            `Insufficient ${shortage.ingredient} stock. Purchase ingredients first.`,
+            'error'
+        );
+    }
+
+    const cost = sum(inputs, item => item.quantityKg * item.unitCost);
+
+    state.production.push({
+        id: uid(),
+        formulaId: formula.id,
+        formulaVersion: formula.version,
+        lotName: v.lotName.trim(),
+        mixQuantityKg: mixQuantity,
+        quantityKg: quantity,
+        cost,
+        costPerKg: cost / quantity,
+        inputs,
+        date: v.date,
+        notes: v.notes,
+        createdAt: new Date().toISOString()
+    });
+
+    event.currentTarget.reset();
+    event.currentTarget.elements.date.value = today();
+
+    changed('Feed production recorded. Inventory updated.');
 });
 
     // DAILY FEED INTAKE AND FEED LOSSES
