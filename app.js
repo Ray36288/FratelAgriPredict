@@ -545,14 +545,19 @@
             );
 
             try {
-                const { error } = await supabase.auth.resend({
-                    type: "signup",
-                    email,
-                    options: {
-                        emailRedirectTo:
-                            new URL("auth.html", window.location.href).toString()
-                    }
-                });
+                const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+        emailRedirectTo: window.location.origin,
+
+        data: {
+            full_name: fullName,
+            username,
+            phone
+        }
+    }
+});
 
                 if (error) throw error;
 
