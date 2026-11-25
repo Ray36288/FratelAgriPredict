@@ -297,7 +297,15 @@
         if (!loginForm && !registerForm) return;
 
         const supabase = getSupabase();
-        if (!supabase) return;
+        if (!supabase) {
+            const message = document.getElementById("authMessage");
+            if (message) {
+                message.textContent = "Authentication is unavailable. Check that supabase-config.js loads before app.js.";
+                message.className = "auth-message error";
+                message.style.display = "block";
+            }
+            return;
+        }
 
         const authMessage =
             document.getElementById("authMessage");
@@ -546,19 +554,15 @@
             );
 
             try {
-                const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-        emailRedirectTo: window.location.origin,
-
-        data: {
-            full_name: fullName,
-            username,
-            phone
-        }
-    }
-});
+                // Supabase's resend API sends a fresh signup confirmation
+                // without attempting to create the account a second time.
+                const { error } = await supabase.auth.resend({
+                    type: "signup",
+                    email,
+                    options: {
+                        emailRedirectTo: window.location.origin
+                    }
+                });
 
                 if (error) throw error;
 
@@ -771,7 +775,7 @@
             );
 
             showDashboardMessage(
-                "Unable to initialize your dashboard. Please refresh the page."
+                `Unable to initialize your dashboard: ${getErrorMessage(error, "unknown error")}`
             );
         }
     }
@@ -782,6 +786,9 @@
     ===================================================== */
 
     function initializeDashboardClock() {
+        if (window.__agriDashboardClockStarted) return;
+        window.__agriDashboardClockStarted = true;
+
         const dateElement =
             document.getElementById("dashboardDate");
 
@@ -960,98 +967,94 @@
     ===================================================== */
 
     async function loadFarmerProfile(supabase, user) {
-        const { data: profile, error } = await supabase
-            .from("profiles")
-            .select(
-                "full_name, username, email, phone, avatar_url, role, account_status"
-            )
-            .eq("id", user.id)
-            .single();
-
-        if (error) {
-            console.error("Profile loading error:", error);
-
-            showDashboardMessage(
-                "Unable to load your profile. Check that your profile record exists."
-            );
-
+        if (!user?.id) {
+            showDashboardMessage("Your login session is missing. Please sign in again.");
             return false;
         }
 
-        // Verify the administrator's secured role.
-        const { data: securedRole, error: roleError } = await supabase
+        // maybeSingle() lets us show a useful message when the profile row
+        // has not been created, instead of throwing an opaque single-row error.
+        const { data: profile, error: profileError } = await supabase
+            .from("profiles")
+            .select("full_name, username, email, phone, avatar_url, role, account_status")
+            .eq("id", user.id)
+            .maybeSingle();
+
+        if (profileError) {
+            console.error("Profile loading error:", profileError);
+            showDashboardMessage(
+                `Unable to load your farmer profile: ${getErrorMessage(profileError, "database request failed")}`
+            );
+            return false;
+        }
+
+        if (!profile) {
+            showDashboardMessage(
+                "Your account exists, but its farmer profile record was not found. Please contact the administrator to create or link your profile."
+            );
+            return false;
+        }
+
+        // user_roles is an additional role source. A missing row or an RLS
+        // restriction must not stop a valid farmer profile from loading.
+        let securedRole = null;
+        const { data: roleRecord, error: roleError } = await supabase
             .from("user_roles")
             .select("role")
             .eq("user_id", user.id)
             .maybeSingle();
 
         if (roleError) {
-            console.error("Role verification error:", roleError);
+            console.warn("Could not read user_roles; using profiles.role:", roleError);
+        } else {
+            securedRole = roleRecord?.role || null;
+        }
 
+        const profileRole = String(profile.role || "").trim().toLowerCase();
+        const verifiedRole = String(securedRole || "").trim().toLowerCase();
+        const accountStatus = String(profile.account_status || "active").trim().toLowerCase();
+
+        // Redirect only when both sources identify an active administrator.
+        if (profileRole === "admin" && verifiedRole === "admin" && accountStatus === "active") {
+            window.location.replace(new URL("admin-dashboard.html", window.location.href).toString());
+            return false;
+        }
+
+        if (profileRole !== "farmer") {
             showDashboardMessage(
-                "Unable to verify your account permissions."
+                `This account is not registered as a farmer (profile role: ${profile.role || "not set"}). Please contact the administrator if this is incorrect.`
             );
-
             return false;
         }
 
-        // Send administrators to their separate dashboard.
-        if (
-            profile.role === "admin" &&
-            securedRole?.role === "admin" &&
-            profile.account_status === "active"
-        ) {
-            window.location.replace(
-                new URL(
-                    "admin-dashboard.html",
-                    window.location.href
-                ).toString()
+        if (accountStatus !== "active") {
+            showDashboardMessage(
+                `Your farmer account is currently ${profile.account_status || "not active"}. Please contact the administrator.`
             );
-
             return false;
         }
 
-        // Only active farmer accounts can use this dashboard.
-        if (
-            profile.role !== "farmer" ||
-            profile.account_status !== "active"
-        ) {
-            alert("This dashboard is for active farmer accounts.");
-
-            await supabase.auth.signOut();
-
-            window.location.replace(
-                new URL("auth.html", window.location.href).toString()
-            );
-
-            return false;
-        }
-
-        const fullName = profile.full_name || "Farmer";
+        const fullName = profile.full_name || profile.username || user.email || "Farmer";
         const username = profile.username || "";
         const email = profile.email || user.email || "";
         const phone = profile.phone || "";
 
         setText("welcomeUsername", fullName);
         setText("sidebarUsername", fullName);
-
         setText("profileFullName", fullName);
         setText("profileUsername", username);
         setText("profileEmail", email);
         setText("profilePhone", phone);
 
-        const initial = fullName.charAt(0).toUpperCase();
-
+        const initial = fullName.trim().charAt(0).toUpperCase() || "F";
         setText("sidebarAvatarInitial", initial);
         setText("topbarAvatarInitial", initial);
         setText("profileAvatarInitial", initial);
 
-        if (profile.avatar_url) {
-            setProfileImages(profile.avatar_url);
-        }
-
+        if (profile.avatar_url) setProfileImages(profile.avatar_url);
         return true;
     }
+
     /* =====================================================
        12. LOAD FARMER PROJECTS
     ===================================================== */
@@ -1073,7 +1076,7 @@
             );
 
             showDashboardMessage(
-                "Unable to load available projects."
+                `Unable to load available projects: ${getErrorMessage(projectError, "database request failed")}`
             );
 
             return;
@@ -1107,7 +1110,7 @@
             );
 
             showDashboardMessage(
-                "Unable to load your enrolled projects."
+                `Unable to load your enrolled projects: ${getErrorMessage(enrollmentError, "database request failed")}`
             );
 
             return;
@@ -1452,9 +1455,12 @@
 
             container.querySelector("button")
                 ?.addEventListener("click", () => {
-                    document.querySelector(
-                        '.sidebar-link[href="#availableProjects"]'
-                    )?.click();
+                    const link = document.querySelector('.sidebar-link[href="#availableProjects"]');
+                    if (link) link.click();
+                    else {
+                        const target = document.getElementById("availableProjects");
+                        target?.classList.add("active-section");
+                    }
                 });
 
             return;
@@ -1747,6 +1753,9 @@ function openFarmerProject(project) {
             if (image) {
                 image.src = imageUrl;
                 image.style.display = "block";
+                image.onerror = () => {
+                    image.style.display = "none";
+                };
             }
         });
 
