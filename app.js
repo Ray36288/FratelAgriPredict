@@ -482,7 +482,7 @@
                     password,
                     options: {
                         emailRedirectTo:
-                            window.location.origin + "/auth.html",
+                            ,
 
                         data: {
                             full_name: fullName,
@@ -549,7 +549,7 @@
                     email,
                     options: {
                         emailRedirectTo:
-                            window.location.origin + "/auth.html"
+                            new URL("auth.html", window.location.href).toString()
                     }
                 });
 
