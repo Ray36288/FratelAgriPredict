@@ -230,7 +230,7 @@
   function renderFarmers() {
     const query = ($('farmerSearch').value || '').toLowerCase().trim();
     const status = $('farmerStatusFilter').value;
-    const entries = state.profiles.filter(profile => {
+    const entries = farmersOnly().filter(profile => {
       const match = [profile.full_name, profile.username, profile.email, profile.phone].some(value => String(value || '').toLowerCase().includes(query));
       return match && (status === 'all' || profile.account_status === status);
     });
