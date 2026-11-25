@@ -327,35 +327,496 @@
   function formulaTotals(items){const weight=sum(items,x=>x.quantityKg),cost=sum(items,x=>x.quantityKg*x.unitPrice),protein=items.length&&items.every(x=>x.crudeProtein!==null)?sum(items,x=>x.quantityKg*x.crudeProtein)/weight:null,energy=items.length&&items.every(x=>x.energyKcal!==null)?sum(items,x=>x.quantityKg*x.energyKcal)/weight:null;return {weight,cost,costPerKg:weight>0?cost/weight:0,protein,energy};}
   function updateFormulaPreview(){const x=formulaTotals(formulaItemsFromForm());$('formulaPreview').innerHTML=`<span>Total mix <b>${kg(x.weight)}</b></span><span>Total cost <b>${money(x.cost)}</b></span><span>Cost per kg <b>${money(x.costPerKg)}</b></span><span>Crude protein <b>${x.protein===null?'Not fully specified':`${x.protein.toFixed(2)}%`}</b></span><span>Energy <b>${x.energy===null?'Not fully specified':`${Math.round(x.energy)} kcal/kg`}</b></span>`;}
 
-  function bind(){
-    document.querySelectorAll('.nav-link').forEach(b=>b.addEventListener('click',()=>openView(b.dataset.view)));
-    document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>openView(b.dataset.go)));
-    $('mobileMenu').addEventListener('click',()=>$('sidebar').classList.toggle('open'));
-    $('refreshButton').addEventListener('click',async()=>{try{await loadCloud();renderAll();setSync('● Synced');setNotice('Records refreshed from your Supabase account.');}catch(e){setNotice(e.message,'error');}});
-    $('signOutButton').addEventListener('click',async()=>{if(!confirm('Sign out of Layers Management?'))return;await client.auth.signOut();location.replace(new URL('auth.html',location.href).toString());});
-    $('batchForm').addEventListener('submit',e=>{e.preventDefault();const v=Object.fromEntries(new FormData(e.currentTarget));const start=v.arrivalDate;const batch={id:uid(),name:v.name.trim(),house:v.house.trim(),breed:v.breed.trim(),initialBirds:num(v.birds),arrivalDate:start,arrivalAgeDays:num(v.arrivalAgeDays),birdCost:num(v.birdCost),harvestDate:v.harvestDate||isoPlusDays(start,730),capacity:num(v.capacity),targetWaterMl:num(v.targetWaterMl),notes:v.notes,createdAt:new Date().toISOString()};if(!batch.name||!batch.arrivalDate||batch.initialBirds<=0)return setNotice('Enter a batch name, arrival date and positive bird count.','error');state.batches.push(batch);e.currentTarget.reset();$('batchForm').elements.arrivalDate.value=today();$('batchForm').elements.arrivalAgeDays.value='0';$('batchForm').elements.harvestDate.value=isoPlusDays(today(),730);changed('Batch created. The starting birds and purchase value are now included in flock and expenditure calculations.');openView('batches');});
-    $('stageTargetsForm').addEventListener('submit',e=>{e.preventDefault();const v=Object.fromEntries(new FormData(e.currentTarget));STAGES.forEach(s=>{state.stageTargets[s.id]={gramsPerBirdDay:num(v[s.id]),targetWeightG:num(v[`${s.id}Weight`]),targetEggRate:num(v[`${s.id}Egg`]),formulaId:v[`${s.id}Formula`]||''};});changed('Stage reference targets, body-weight or egg-production targets, and selected formulas saved. Feed-demand forecasts use actual daily intake records, not these reference targets.');});
-    $('addIngredientRow').addEventListener('click',()=>addIngredientRow());
-    $('formulaItemsBody').addEventListener('input',updateFormulaPreview);
-    $('formulaItemsBody').addEventListener('click',e=>{if(e.target.closest('.remove-ingredient')){e.target.closest('tr').remove();updateFormulaPreview();}});
-    $('formulaForm').addEventListener('submit',e=>{e.preventDefault();const v=Object.fromEntries(new FormData(e.currentTarget));const items=formulaItemsFromForm();if(!items.length)return setNotice('Add at least one valid ingredient.','error');if(items.some(i=>i.unitPrice<0))return setNotice('Ingredient prices cannot be negative.','error');const t=formulaTotals(items);if(t.weight<=0)return setNotice('Formula quantity must be positive.','error');const prior=state.formulas.filter(f=>f.name.toLowerCase()===v.name.trim().toLowerCase()&&f.stage===v.stage);const f={id:uid(),name:v.name.trim(),stage:v.stage,version:prior.length?Math.max(...prior.map(x=>num(x.version)))+1:1,status:'active',items,totalWeight:t.weight,totalCost:t.cost,costPerKg:t.costPerKg,nutrients:{crudeProtein:t.protein,energyKcal:t.energy},notes:v.notes,createdAt:new Date().toISOString()};state.formulas.push(f);e.currentTarget.reset();$('formulaItemsBody').innerHTML='';addIngredientRow();changed(`Formula ${f.name} saved as version ${f.version}. No feed stock was created; record production to add finished feed inventory.`);});
-    $('purchaseForm').addEventListener('submit',e=>{e.preventDefault();const v=Object.fromEntries(new FormData(e.currentTarget));if(num(v.quantity)<=0||num(v.unitCost)<0)return setNotice('Enter a positive purchase quantity and a valid unit cost.','error');state.purchases.push({id:uid(),ingredient:v.ingredient.trim(),quantityKg:num(v.quantity),unitCost:num(v.unitCost),date:v.date,supplier:v.supplier.trim(),createdAt:new Date().toISOString()});e.currentTarget.reset();e.currentTarget.elements.date.value=today();changed('Ingredient purchase saved. Raw stock and actual cash expenditure have been updated.');});
-    $('productionFormula').addEventListener('change',updateProductionPreview);
-    $('scenarioFormula').addEventListener('change',renderSelectors);
-    $('productionForm').elements.quantity.addEventListener('input',updateProductionPreview);
-    $('productionForm').elements.mixQuantity.addEventListener('input',updateProductionPreview);
-    $('productionForm').addEventListener('submit',e=>{e.preventDefault();const v=Object.fromEntries(new FormData(e.currentTarget));const formula=state.formulas.find(f=>f.id===v.formulaId);if(!formula)return setNotice('Select a saved formula.','error');const quantity=num(v.quantity);if(quantity<=0)return setNotice('Enter a positive production output.','error');const mixQuantity=num(v.mixQuantity)||quantity;const scale=mixQuantity/formula.totalWeight;const inputs=formula.items.map(i=>{const q=i.quantityKg*scale;const stock=rawInventory().find(x=>x.name.toLowerCase()===i.ingredient.toLowerCase());return {ingredient:i.ingredient,quantityKg:q,unitCost:stock?.costPerKg||0};});const shortage=inputs.find(i=>rawAvailable(i.ingredient)+1e-8<i.quantityKg);if(shortage)return setNotice(`Insufficient ${shortage.ingredient} stock. Need ${kg(shortage.quantityKg)}; available ${kg(rawAvailable(shortage.ingredient))}. Purchase ingredients first.`,'error');const cost=sum(inputs,i=>i.quantityKg*i.unitCost);const p={id:uid(),formulaId:formula.id,formulaVersion:formula.version,lotName:v.lotName.trim(),mixQuantityKg:mixQuantity,quantityKg:quantity,cost,costPerKg:cost/quantity,inputs,date:v.date,notes:v.notes,createdAt:new Date().toISOString()};state.production.push(p);e.currentTarget.reset();e.currentTarget.elements.date.value=today();changed(`Production recorded: ${p.lotName}, ${kg(quantity)}. Raw ingredients were deducted and finished feed inventory increased.`);});
-    $('consumptionForm').elements.kind.addEventListener('change',updateConsumptionFields);
-    $('consumptionForm').addEventListener('submit',e=>{e.preventDefault();const v=Object.fromEntries(new FormData(e.currentTarget));const lot=finishedStock().find(p=>p.id===v.productionId);const q=num(v.quantity);if(!lot||q<=0)return setNotice('Select an available feed lot and enter a positive quantity.','error');if(q>lot.availableKg+1e-8)return setNotice(`Only ${kg(lot.availableKg)} remains in this feed lot.`,'error');state.feedConsumption.push({id:uid(),batchId:v.batchId,productionId:v.productionId,quantityKg:q,costPerKg:lot.costPerKg,kind:v.kind||'consumption',date:v.date,createdAt:new Date().toISOString()});e.currentTarget.reset();e.currentTarget.elements.date.value=today();changed(v.kind==='loss'?'Feed loss recorded. It reduces stock but is excluded from bird intake and demand forecasts.':'Daily feed intake recorded. This now drives daily, weekly, monthly and custom feed requirements.');});
-    $('recordType').addEventListener('change',updateRecordFields);
-    $('recordForm').addEventListener('submit',e=>{e.preventDefault();const v=Object.fromEntries(new FormData(e.currentTarget));const type=v.type,quantity=num(v.quantity);if(!v.batchId||!v.date)return setNotice('Select a batch and date.','error');if(['sale','addition','eggs','water'].includes(type)&&quantity<=0)return setNotice('Enter a positive quantity or measurement.','error');if(type==='mortality'&&quantity<0)return setNotice('Mortality cannot be negative. Enter 0 when no birds died.','error');if(type==='weight'&&num(v.extra)<=0)return setNotice('Enter a positive average sample weight in grams.','error');if(type==='sale'&&num(v.amount)<=0)return setNotice('Enter the total income received from this bird sale.','error');const b=getBatch(v.batchId);if(['mortality','sale'].includes(type)&&quantity>liveBirds(b,v.date))return setNotice(`This batch has only ${liveBirds(b,v.date)} live birds on that date.`,'error');if(type==='addition'){const unit=num(v.unitValue);state.events.push({id:uid(),batchId:v.batchId,type,date:v.date,quantity,amount:quantity*unit,description:v.description,createdAt:new Date().toISOString()});}else state.events.push({id:uid(),batchId:v.batchId,type,date:v.date,quantity: type==='weight'?1:quantity,amount:num(v.amount),extra:num(v.extra),unitValue:num(v.unitValue),status:v.status||'pass',description:v.description,createdAt:new Date().toISOString()});e.currentTarget.reset();e.currentTarget.elements.date.value=today();updateRecordFields();changed(`${type[0].toUpperCase()+type.slice(1)} record saved. Flock numbers and forecasts have been updated where applicable.`);});
-    $('expenseForm').addEventListener('submit',e=>{e.preventDefault();const v=Object.fromEntries(new FormData(e.currentTarget));if(num(v.amount)<=0)return setNotice('Expense amount must be greater than zero.','error');state.expenses.push({id:uid(),category:v.category,batchId:v.batchId||null,amount:num(v.amount),date:v.date,recurring:v.recurring,description:v.description.trim(),createdAt:new Date().toISOString()});e.currentTarget.reset();e.currentTarget.elements.date.value=today();changed('Expenditure recorded. Overall expenditure and daily spending have been recalculated.');});
-    $('forecastForm').addEventListener('submit',e=>{e.preventDefault();const v=Object.fromEntries(new FormData(e.currentTarget));const b=getBatch(v.batchId);if(!b)return setNotice('Select a batch.','error');const days=periodDays(v.amount,v.unit);const f=forecastBatch(b,days);renderForecastResult(f,b,v.amount,v.unit);});
-    $('valuationForm').addEventListener('submit',e=>{e.preventDefault();const v=Object.fromEntries(new FormData(e.currentTarget));const b=getBatch(v.batchId);const calc=estimateBirdCost(b,periodDays(v.age,v.ageUnit));if(calc.error){$('valuationResults').innerHTML=`<div class="forecast-note">${esc(calc.error)}</div>`;return;}const expected=num(v.salePrice)*(v.basis==='kg'?num(v.weightKg):1);const difference=expected>0?expected-calc.costPerBird:null;$('valuationResults').innerHTML=`<div class="forecast-card-grid"><div class="forecast-card"><span>Estimated cost per bird at ${calc.age} days</span><strong>${money(calc.costPerBird)}</strong><small>${calc.future?'Projected to selected age':'Based on recorded costs'} · ${fmtDate(calc.date)}</small></div><div class="forecast-card"><span>Estimated sale value</span><strong>${expected>0?money(expected):'Not entered'}</strong><small>${v.basis==='kg'?'Price/kg × estimated live weight':'Farmer-entered price per bird'}</small></div><div class="forecast-card"><span>Estimated margin per bird</span><strong>${difference===null?'—':money(difference)}</strong><small>${difference===null?'Enter a buyer price to compare':difference>=0?'Above estimated cost':'Below estimated cost'}</small></div></div><div class="forecast-note">${calc.future?'Future cost assumes the present live flock remains unchanged, and uses recent recorded daily feed intake plus recurring expenses.':'Historical cost divides recorded batch costs to this age by the birds remaining at that date. Mortality losses are therefore carried by the surviving flock.'} Cost is not the same as market value.</div>`;});
-    $('priceScenarioForm').addEventListener('submit',e=>{e.preventDefault();const v=Object.fromEntries(new FormData(e.currentTarget));const f=state.formulas.find(x=>x.id===v.formulaId);const b=getBatch(v.batchId);if(!f||!b)return setNotice('Select a formula and batch.','error');const pct=num(v.changePct)/100;const chosen=f.items.find(i=>i.ingredient===v.ingredient);if(!chosen)return setNotice('Select an ingredient in the chosen formula.','error');const deltaPerKg=(chosen.quantityKg/f.totalWeight)*chosen.unitPrice*pct;const horizon=periodDays(v.periodAmount,v.periodUnit);const harvest=b.harvestDate||isoPlusDays(b.arrivalDate,730);const days=Math.min(horizon,Math.max(0,dayDiff(today(),harvest)));let projectedKg=0,unconfigured=[];for(let d=1;d<=days;d++){const stage=stageForAge(ageDays(b)+d-1);const stageFormula=feedUnitCost(stage.id).formula;if(stageFormula?.id===f.id){const rate=stageRateDefaultFor(b,stage.id);if(rate.grams>0)projectedKg+=liveBirds(b)*rate.grams/1000;else if(!unconfigured.includes(stage.name))unconfigured.push(stage.name);}}const newCost=f.costPerKg+deltaPerKg;const impact=projectedKg*deltaPerKg;$('priceScenarioResult').innerHTML=`<div class="forecast-card-grid"><div class="forecast-card"><span>Current formula cost/kg</span><strong>${money(f.costPerKg)}</strong></div><div class="forecast-card"><span>Scenario formula cost/kg</span><strong>${money(newCost)}</strong></div><div class="forecast-card"><span>Change per kg</span><strong>${money(deltaPerKg)}</strong></div></div><div class="forecast-card-grid" style="margin-top:10px"><div class="forecast-card"><span>Feed of this formula in period</span><strong>${kg(projectedKg)}</strong></div><div class="forecast-card"><span>Estimated expenditure impact</span><strong>${money(impact)}</strong></div><div class="forecast-card"><span>Prediction period</span><strong>${num(v.periodAmount)} ${esc(v.periodUnit)}</strong><small>${days} days included</small></div></div>${unconfigured.length?`<div class="forecast-note">Record actual daily feed intake for: ${esc(unconfigured.join(', '))}. The projected expenditure impact may be incomplete.</div>`:''}<p class="form-hint">Only ${esc(chosen.ingredient)} changes by ${num(v.changePct)}% in this scenario. The result estimates how that price change affects future use of ${esc(f.name)}. It does not alter saved purchase prices, stock valuation or historical batches. Future bird numbers are held constant.</p>`;});
-    $('productionForm').elements.date.value=today();$('purchaseForm').elements.date.value=today();$('consumptionForm').elements.date.value=today();updateConsumptionFields();$('recordForm').elements.date.value=today();$('expenseForm').elements.date.value=today();$('batchForm').elements.arrivalDate.value=today();$('batchForm').elements.harvestDate.value=isoPlusDays(today(),730);
-    document.addEventListener('click',e=>{const btn=e.target.closest('[data-export]');if(btn)exportData(btn.dataset.export);});
-  }
+  function bindNavigation() {
+    document.querySelectorAll('.nav-link').forEach(button => {
+        button.addEventListener('click', () => {
+            openView(button.dataset.view);
+        });
+    });
+
+    document.querySelectorAll('[data-go]').forEach(button => {
+        button.addEventListener('click', () => {
+            openView(button.dataset.go);
+        });
+    });
+
+    $('mobileMenu').addEventListener('click', () => {
+        $('sidebar').classList.toggle('open');
+    });
+}
+  function bind() {
+    if (document.body.dataset.layersEventsBound === 'true') return;
+    document.body.dataset.layersEventsBound = 'true';
+
+    // MAIN MENU NAVIGATION
+    document.addEventListener('click', event => {
+        const nav = event.target.closest('.nav-link');
+        const go = event.target.closest('[data-go]');
+
+        if (nav) {
+            openView(nav.dataset.view);
+            return;
+        }
+
+        if (go) {
+            openView(go.dataset.go);
+        }
+    });
+
+    // MOBILE MENU
+    $('mobileMenu').addEventListener('click', () => {
+        $('sidebar').classList.toggle('open');
+    });
+
+    // REFRESH
+    $('refreshButton').addEventListener('click', async () => {
+        try {
+            await loadCloud();
+            renderAll();
+            setSync('● Synced');
+            clearNotice();
+        } catch (error) {
+            setSync('Refresh failed', true);
+            setNotice(error.message, 'error');
+        }
+    });
+
+    // SIGN OUT
+    $('signOutButton').addEventListener('click', async () => {
+        if (!confirm('Sign out of Layers Management?')) return;
+        await client.auth.signOut();
+        location.replace(new URL('auth.html', location.href).toString());
+    });
+
+    // CREATE BATCH
+    $('batchForm').addEventListener('submit', event => {
+        event.preventDefault();
+        const v = Object.fromEntries(new FormData(event.currentTarget));
+        const batch = {
+            id: uid(),
+            name: v.name.trim(),
+            house: v.house.trim(),
+            breed: v.breed.trim(),
+            initialBirds: num(v.birds),
+            arrivalDate: v.arrivalDate,
+            arrivalAgeDays: num(v.arrivalAgeDays),
+            birdCost: num(v.birdCost),
+            harvestDate: v.harvestDate || isoPlusDays(v.arrivalDate, 730),
+            capacity: num(v.capacity),
+            targetWaterMl: num(v.targetWaterMl),
+            notes: v.notes,
+            createdAt: new Date().toISOString()
+        };
+
+        if (!batch.name || !batch.arrivalDate || batch.initialBirds <= 0) {
+            return setNotice('Enter a batch name, arrival date and positive bird count.', 'error');
+        }
+
+        state.batches.push(batch);
+        event.currentTarget.reset();
+        $('batchForm').elements.arrivalDate.value = today();
+        $('batchForm').elements.arrivalAgeDays.value = '0';
+        $('batchForm').elements.harvestDate.value = isoPlusDays(today(), 730);
+
+        changed('Batch created successfully.');
+        openView('batches');
+    });
+
+    // STAGE PLANNING
+    $('stageTargetsForm').addEventListener('submit', event => {
+        event.preventDefault();
+        const v = Object.fromEntries(new FormData(event.currentTarget));
+
+        STAGES.forEach(stage => {
+            state.stageTargets[stage.id] = {
+                gramsPerBirdDay: num(v[stage.id]),
+                targetWeightG: num(v[`${stage.id}Weight`]),
+                targetEggRate: num(v[`${stage.id}Egg`]),
+                formulaId: v[`${stage.id}Formula`] || ''
+            };
+        });
+
+        changed('Stage targets and selected feed formulas saved.');
+    });
+
+    // FORMULA INGREDIENTS
+    $('addIngredientRow').addEventListener('click', () => addIngredientRow());
+    $('formulaItemsBody').addEventListener('input', updateFormulaPreview);
+
+    $('formulaItemsBody').addEventListener('click', event => {
+        if (event.target.closest('.remove-ingredient')) {
+            event.target.closest('tr').remove();
+            updateFormulaPreview();
+        }
+    });
+
+    // CREATE FORMULA
+    $('formulaForm').addEventListener('submit', event => {
+        event.preventDefault();
+        const v = Object.fromEntries(new FormData(event.currentTarget));
+        const items = formulaItemsFromForm();
+
+        if (!items.length) return setNotice('Add at least one valid ingredient.', 'error');
+        if (items.some(item => item.unitPrice < 0)) {
+            return setNotice('Ingredient prices cannot be negative.', 'error');
+        }
+
+        const totals = formulaTotals(items);
+        if (totals.weight <= 0) return setNotice('Formula quantity must be positive.', 'error');
+
+        const previous = state.formulas.filter(
+            f => f.name.toLowerCase() === v.name.trim().toLowerCase()
+                && f.stage === v.stage
+        );
+
+        const formula = {
+            id: uid(),
+            name: v.name.trim(),
+            stage: v.stage,
+            version: previous.length
+                ? Math.max(...previous.map(f => num(f.version))) + 1
+                : 1,
+            status: 'active',
+            items,
+            totalWeight: totals.weight,
+            totalCost: totals.cost,
+            costPerKg: totals.costPerKg,
+            nutrients: {
+                crudeProtein: totals.protein,
+                energyKcal: totals.energy
+            },
+            notes: v.notes,
+            createdAt: new Date().toISOString()
+        };
+
+        state.formulas.push(formula);
+        event.currentTarget.reset();
+        $('formulaItemsBody').innerHTML = '';
+        addIngredientRow();
+
+        changed(`Formula ${formula.name} saved. Record production to create feed stock.`);
+    });
+
+    // INGREDIENT PURCHASE
+    $('purchaseForm').addEventListener('submit', event => {
+        event.preventDefault();
+        const v = Object.fromEntries(new FormData(event.currentTarget));
+
+        if (num(v.quantity) <= 0 || num(v.unitCost) < 0) {
+            return setNotice('Enter a positive purchase quantity and valid unit cost.', 'error');
+        }
+
+        state.purchases.push({
+            id: uid(),
+            ingredient: v.ingredient.trim(),
+            quantityKg: num(v.quantity),
+            unitCost: num(v.unitCost),
+            date: v.date,
+            supplier: v.supplier.trim(),
+            createdAt: new Date().toISOString()
+        });
+
+        event.currentTarget.reset();
+        event.currentTarget.elements.date.value = today();
+        changed('Ingredient purchase saved.');
+    });
+
+    // FEED PRODUCTION
+    $('productionFormula').addEventListener('change', updateProductionPreview);
+    $('productionForm').elements.quantity.addEventListener('input', updateProductionPreview);
+    $('productionForm').elements.mixQuantity.addEventListener('input', updateProductionPreview);
+
+    $('productionForm').addEventListener('submit', event => {
+        event.preventDefault();
+        const v = Object.fromEntries(new FormData(event.currentTarget));
+        const formula = state.formulas.find(f => f.id === v.formulaId);
+
+        if (!formula) return setNotice('Select a saved formula.', 'error');
+
+        const quantity = num(v.quantity);
+        if (quantity <= 0) return setNotice('Enter a positive production output.', 'error');
+
+        const mixQuantity = num(v.mixQuantity) || quantity;
+        const scale = mixQuantity / formula.totalWeight;
+
+        const inputs = formula.items.map(item => {
+            const q = item.quantityKg * scale;
+            const stock = rawInventory().find(
+                x => x.name.toLowerCase() === item.ingredient.toLowerCase()
+            );
+
+            return {
+                ingredient: item.ingredient,
+                quantityKg: q,
+                unitCost: stock?.costPerKg || 0
+            };
+        });
+
+        const shortage = inputs.find(
+            item => rawAvailable(item.ingredient) + 1e-8 < item.quantityKg
+        );
+
+        if (shortage) {
+            return setNotice(
+                `Insufficient ${shortage.ingredient} stock. Purchase ingredients first.`,
+                'error'
+            );
+        }
+
+        const cost = sum(inputs, item => item.quantityKg * item.unitCost);
+
+        state.production.push({
+            id: uid(),
+            formulaId: formula.id,
+            formulaVersion: formula.version,
+            lotName: v.lotName.trim(),
+            mixQuantityKg: mixQuantity,
+            quantityKg: quantity,
+            cost,
+            costPerKg: cost / quantity,
+            inputs,
+            date: v.date,
+            notes: v.notes,
+            createdAt: new Date().toISOString()
+        });
+
+        event.currentTarget.reset();
+        event.currentTarget.elements.date.value = today();
+        changed('Feed production recorded. Inventory updated.');
+    });
+
+    // DAILY FEED INTAKE AND FEED LOSSES
+    $('consumptionForm').elements.kind.addEventListener('change', updateConsumptionFields);
+
+    $('consumptionForm').addEventListener('submit', event => {
+        event.preventDefault();
+        const v = Object.fromEntries(new FormData(event.currentTarget));
+        const lot = finishedStock().find(p => p.id === v.productionId);
+        const quantity = num(v.quantity);
+
+        if (!lot || quantity <= 0) {
+            return setNotice('Select an available feed lot and enter a positive quantity.', 'error');
+        }
+
+        if (quantity > lot.availableKg + 1e-8) {
+            return setNotice('The selected feed lot does not have enough stock.', 'error');
+        }
+
+        state.feedConsumption.push({
+            id: uid(),
+            batchId: v.batchId,
+            productionId: v.productionId,
+            quantityKg: quantity,
+            costPerKg: lot.costPerKg,
+            kind: v.kind || 'consumption',
+            date: v.date,
+            createdAt: new Date().toISOString()
+        });
+
+        event.currentTarget.reset();
+        event.currentTarget.elements.date.value = today();
+
+        changed(v.kind === 'loss'
+            ? 'Feed loss recorded.'
+            : 'Daily feed intake recorded. Forecasts updated.');
+    });
+
+    // FARM RECORDS
+    $('recordType').addEventListener('change', updateRecordFields);
+
+    $('recordForm').addEventListener('submit', event => {
+        event.preventDefault();
+        const v = Object.fromEntries(new FormData(event.currentTarget));
+        const type = v.type;
+        const quantity = num(v.quantity);
+        const batch = getBatch(v.batchId);
+
+        if (!batch || !v.date) return setNotice('Select a batch and date.', 'error');
+
+        if (['sale', 'addition', 'eggs', 'water'].includes(type) && quantity <= 0) {
+            return setNotice('Enter a positive quantity or measurement.', 'error');
+        }
+
+        if (type === 'mortality' && quantity < 0) {
+            return setNotice('Mortality cannot be negative.', 'error');
+        }
+
+        if (type === 'weight' && num(v.extra) <= 0) {
+            return setNotice('Enter a positive average sample weight.', 'error');
+        }
+
+        if (type === 'sale' && num(v.amount) <= 0) {
+            return setNotice('Enter the total sale income.', 'error');
+        }
+
+        if (['mortality', 'sale'].includes(type) && quantity > liveBirds(batch, v.date)) {
+            return setNotice('The recorded number exceeds the live flock.', 'error');
+        }
+
+        if (type === 'addition') {
+            state.events.push({
+                id: uid(),
+                batchId: v.batchId,
+                type,
+                date: v.date,
+                quantity,
+                amount: quantity * num(v.unitValue),
+                description: v.description,
+                createdAt: new Date().toISOString()
+            });
+        } else {
+            state.events.push({
+                id: uid(),
+                batchId: v.batchId,
+                type,
+                date: v.date,
+                quantity: type === 'weight' ? 1 : quantity,
+                amount: num(v.amount),
+                extra: num(v.extra),
+                unitValue: num(v.unitValue),
+                status: v.status || 'pass',
+                description: v.description,
+                createdAt: new Date().toISOString()
+            });
+        }
+
+        event.currentTarget.reset();
+        event.currentTarget.elements.date.value = today();
+        updateRecordFields();
+        changed('Farm record saved. Relevant totals and forecasts updated.');
+    });
+
+    // OTHER EXPENDITURE
+    $('expenseForm').addEventListener('submit', event => {
+        event.preventDefault();
+        const v = Object.fromEntries(new FormData(event.currentTarget));
+
+        if (num(v.amount) <= 0) return setNotice('Expense must be greater than zero.', 'error');
+
+        state.expenses.push({
+            id: uid(),
+            category: v.category,
+            batchId: v.batchId || null,
+            amount: num(v.amount),
+            date: v.date,
+            recurring: v.recurring,
+            description: v.description.trim(),
+            createdAt: new Date().toISOString()
+        });
+
+        event.currentTarget.reset();
+        event.currentTarget.elements.date.value = today();
+        changed('Expenditure recorded. Farm totals updated.');
+    });
+
+    // FORECASTS
+    $('forecastForm').addEventListener('submit', event => {
+        event.preventDefault();
+        const v = Object.fromEntries(new FormData(event.currentTarget));
+        const batch = getBatch(v.batchId);
+
+        if (!batch) return setNotice('Select a batch.', 'error');
+
+        const days = periodDays(v.amount, v.unit);
+        const result = forecastBatch(batch, days);
+        renderForecastResult(result, batch, v.amount, v.unit);
+    });
+
+    // COST PER BIRD AND SELLING VALUE
+    $('valuationForm').addEventListener('submit', event => {
+        event.preventDefault();
+        const v = Object.fromEntries(new FormData(event.currentTarget));
+        const batch = getBatch(v.batchId);
+        if (!batch) return setNotice('Select a batch.', 'error');
+
+        const calc = estimateBirdCost(batch, periodDays(v.age, v.ageUnit));
+
+        if (calc.error) {
+            $('valuationResults').innerHTML =
+                `<div class="forecast-note">${esc(calc.error)}</div>`;
+            return;
+        }
+
+        const expected = num(v.salePrice) * (v.basis === 'kg' ? num(v.weightKg) : 1);
+        const difference = expected > 0 ? expected - calc.costPerBird : null;
+
+        $('valuationResults').innerHTML = `
+            <div class="forecast-card-grid">
+                <div class="forecast-card">
+                    <span>Estimated cost per bird at ${calc.age} days</span>
+                    <strong>${money(calc.costPerBird)}</strong>
+                    <small>${calc.future ? 'Projected to selected age' : 'Based on recorded costs'} · ${fmtDate(calc.date)}</small>
+                </div>
+                <div class="forecast-card">
+                    <span>Estimated sale value</span>
+                    <strong>${expected > 0 ? money(expected) : 'Not entered'}</strong>
+                </div>
+                <div class="forecast-card">
+                    <span>Estimated margin per bird</span>
+                    <strong>${difference === null ? '—' : money(difference)}</strong>
+                </div>
+            </div>
+            <div class="forecast-note">Production cost and market value are different measures.</div>
+        `;
+    });
+
+    // INGREDIENT PRICE SCENARIO
+    $('priceScenarioForm').addEventListener('submit', event => {
+        event.preventDefault();
+        const v = Object.fromEntries(new FormData(event.currentTarget));
+        const formula = state.formulas.find(f => f.id === v.formulaId);
+        const batch = getBatch(v.batchId);
+
+        if (!formula || !batch) {
+            return setNotice('Select a formula and batch.', 'error');
+        }
+
+        const ingredient = formula.items.find(i => i.ingredient === v.ingredient);
+        if (!ingredient) return setNotice('Select an ingredient.', 'error');
+
+        const percent = num(v.changePct) / 100;
+        const changePerKg =
+            (ingredient.quantityKg / formula.totalWeight) *
+            ingredient.unitPrice * percent;
+
+        const days = periodDays(v.periodAmount, v.periodUnit);
+        const result = forecastBatch(batch, days);
+        const impact = result.feedKg * changePerKg;
+
+        $('priceScenarioResult').innerHTML = `
+            <div class="forecast-card-grid">
+                <div class="forecast-card">
+                    <span>Current formula cost/kg</span>
+                    <strong>${money(formula.costPerKg)}</strong>
+                </div>
+                <div class="forecast-card">
+                    <span>Scenario formula cost/kg</span>
+                    <strong>${money(formula.costPerKg + changePerKg)}</strong>
+                </div>
+                <div class="forecast-card">
+                    <span>Estimated expenditure impact</span>
+                    <strong>${money(impact)}</strong>
+                </div>
+            </div>
+        `;
+    });
+
+    // INITIAL FORM VALUES
+    $('productionForm').elements.date.value = today();
+    $('purchaseForm').elements.date.value = today();
+    $('consumptionForm').elements.date.value = today();
+    updateConsumptionFields();
+    $('recordForm').elements.date.value = today();
+    $('expenseForm').elements.date.value = today();
+    $('batchForm').elements.arrivalDate.value = today();
+    $('batchForm').elements.harvestDate.value = isoPlusDays(today(), 730);
+
+    // CSV EXPORTS
+    document.addEventListener('click', event => {
+        const button = event.target.closest('[data-export]');
+        if (button) exportData(button.dataset.export);
+    });
+}
   function updateConsumptionFields(){
     const loss=$('consumptionForm').elements.kind.value==='loss';
     $('consumptionQuantityText').textContent=loss?'Feed wastage / loss (kg)':'Actual daily feed intake by flock (kg)';
