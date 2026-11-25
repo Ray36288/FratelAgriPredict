@@ -99,7 +99,49 @@
           <div class="section-intro"><div><span class="panel-kicker">FEED INVENTORY CONTROL</span><h2>Feed & inventory</h2><p>Purchase raw ingredients, manufacture feed using a saved formula, and issue finished feed to a flock.</p></div></div>
           <div class="metrics-grid compact-metrics"><article class="metric"><span>RAW INGREDIENT STOCK</span><strong id="rawStockTotal">0 kg</strong><small>Purchased less ingredients used in production</small></article><article class="metric"><span>FINISHED FEED STOCK</span><strong id="finishedStockTotal">0 kg</strong><small>Produced less consumption and losses</small></article><article class="metric"><span>AVERAGE FEED COST</span><strong id="averageFeedCost">—</strong><small>Weighted cost per kg of available feed</small></article><article class="metric"><span>PRODUCTION BATCHES</span><strong id="productionCount">0</strong><small>Actual production records</small></article></div>
           <div class="two-column">
-            <article class="panel"><div class="panel-head"><div><h3>Purchase ingredients</h3><p>Purchases add to raw stock and are counted once as cash expenditure.</p></div></div><form id="purchaseForm" class="stack-form"><label>Ingredient<input name="ingredient" list="ingredientOptions" required placeholder="Ingredient name"></label><datalist id="ingredientOptions"></datalist><label>Quantity purchased (kg)<input name="quantity" type="number" min="0.001" step="any" required></label><label>Landed cost per kg (UGX)<input name="unitCost" type="number" min="0" step="any" required></label><label>Purchase date<input name="date" type="date" required></label><label>Supplier / receipt reference<input name="supplier" placeholder="Optional"></label><button class="btn btn-primary" type="submit">Record ingredient purchase</button></form></article>
+            <article class="panel"><div class="panel-head"><div><h3>Purchase ingredients</h3><p>Purchases add to raw stock and are counted once as cash expenditure.</p></div></div>
+            <form id="purchaseForm" class="stack-form">
+    <label>
+        Formula being purchased for
+        <select name="formulaId" id="purchaseFormula" required></select>
+    </label>
+
+    <label>
+        Ingredient
+        <select name="ingredient" id="purchaseIngredient" required>
+            <option value="">Select a formula first</option>
+        </select>
+    </label>
+
+    <p class="form-hint">
+        Only ingredients included in the selected saved formula can be purchased.
+    </p>
+
+    <label>
+        Quantity purchased (kg)
+        <input name="quantity" type="number" min="0.001" step="any" required>
+    </label>
+
+    <label>
+        Landed cost per kg (UGX)
+        <input name="unitCost" type="number" min="0" step="any" required>
+    </label>
+
+    <label>
+        Purchase date
+        <input name="date" type="date" required>
+    </label>
+
+    <label>
+        Supplier / receipt reference
+        <input name="supplier" placeholder="Optional">
+    </label>
+
+    <button class="btn btn-primary" type="submit">
+        Record ingredient purchase
+    </button>
+</form>  
+            </article>
             <article class="panel"><div class="panel-head"><div><h3>Produce finished feed</h3><p>Raw ingredients are deducted using the selected formula proportions; finished stock is added only after production is recorded.</p></div></div><form id="productionForm" class="stack-form"><label>Formula<select name="formulaId" id="productionFormula" required></select></label><label>Feed production batch name<input name="lotName" required placeholder="e.g. Intraco 1"></label><label>Ingredient mix quantity (kg)<input name="mixQuantity" type="number" min="0.001" step="any" placeholder="Defaults to output quantity"></label><label>Actual finished feed output (kg)<input name="quantity" type="number" min="0.001" step="any" required></label><label>Production date<input name="date" type="date" required></label><label>Notes<input name="notes" placeholder="Optional"></label><div id="productionEstimate" class="inline-estimate">Choose a formula to preview ingredient requirements.</div><button class="btn btn-primary" type="submit">Record production</button></form></article>
           </div>
           <article class="panel"><div class="panel-head"><div><h3>Record daily feed intake</h3><p>Record the actual feed eaten by each batch after the feed formula has been produced. This is the source used for demand forecasts.</p></div></div><form id="consumptionForm" class="form-grid"><label>Farm batch<select name="batchId" id="consumptionBatch" required></select></label><label>Finished feed lot<select name="productionId" id="consumptionLot" required></select></label><label><span id="consumptionQuantityText">Actual daily feed intake by flock (kg)</span><input name="quantity" type="number" min="0.001" step="any" required></label><label>Date<input name="date" type="date" required></label><label>Movement type<select name="kind"><option value="consumption">Feed consumed / issued</option><option value="loss">Feed loss / wastage</option></select></label><p class="form-hint span-2" id="consumptionHint">Record the net quantity actually eaten by this batch for the date. If several lots are used, record each lot on the same date. Record wastage separately.</p><div class="form-actions span-2"><button class="btn btn-primary" type="submit">Record daily intake / loss</button></div></form></article>
