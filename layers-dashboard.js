@@ -849,22 +849,161 @@
     const keys=[...new Set(data.flatMap(x=>Object.keys(x)))];const cell=v=>`"${String(typeof v==='object'?JSON.stringify(v):v??'').replace(/"/g,'""')}"`;
     const csv=[keys.map(cell).join(','),...data.map(row=>keys.map(k=>cell(row[k])).join(','))].join('\r\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`layers-${type}-${today()}.csv`;a.click();URL.revokeObjectURL(url);
   }
+async function start() {
+    try {
+        if (!window.supabaseClient) {
+            throw new Error(
+                'Supabase client was not initialized. Check supabase-config.js.'
+            );
+        }
 
-  async function start(){
-    try{
-      if(!window.supabaseClient)throw new Error('Supabase client was not initialized. Check supabase-config.js and script loading order.');
-      client=window.supabaseClient;const {data,error}=await client.auth.getSession();if(error)throw error;user=data.session?.user;
-      if(!user){location.replace(new URL('auth.html',location.href).toString());return;}
-      const {data:profile,error:profileError}=await client.from('profiles').select('full_name,role,account_status').eq('id',user.id).maybeSingle();
-      if(profileError)throw new Error(`Could not verify farmer profile: ${profileError.message}`);
-      if(profile?.account_status==='suspended')throw new Error('This account is suspended. Contact the platform administrator.');
-      const name=profile?.full_name||user.user_metadata?.full_name||user.email||'Farmer';$('farmerName').textContent=name;$('farmerAvatar').textContent=name.trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();$('welcomeHeading').textContent=`Welcome, ${name.split(/\s+/)[0]}.`;$('todayLabel').textContent=new Intl.DateTimeFormat('en-UG',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}).format(new Date());$('footerYear').textContent=new Date().getFullYear();
-      await loadCloud();bind();renderAll();$('loadingScreen').hidden=true;$('appShell').hidden=false;setSync('● Saved to cloud');
-      // The formula editor starts with one empty ingredient row.
-      if(!$('formulaItemsBody').children.length)addIngredientRow();updateRecordFields();
-      client.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'||!session){location.replace(new URL('auth.html',location.href).toString());}});
-    }catch(error){console.error('[Layers dashboard]',error);$('loadingScreen').innerHTML=`<div class="panel" style="max-width:560px;margin:24px"><h2>Layers Dashboard could not start</h2><p>${esc(error.message||'Unexpected error')}</p><p>Check that the Layers database setup has been run in Supabase, then reload this page.</p><a class="btn btn-light" href="dashboard.html">Return to farmer dashboard</a></div>`;}
-  }
+        client = window.supabaseClient;
+
+        const { data, error } = await client.auth.getSession();
+
+        if (error) throw error;
+
+        user = data.session?.user;
+
+        if (!user) {
+            location.replace(
+                new URL('auth.html', location.href).toString()
+            );
+            return;
+        }
+
+        // Attach navigation and application events FIRST.
+        bind();
+
+        // Show the application before loading database records.
+        $('loadingScreen').hidden = true;
+        $('appShell').hidden = false;
+
+        // Protect records from accidental editing until cloud data loads.
+        const setEntryControlsEnabled = enabled => {
+            document.querySelectorAll(
+                '#appShell form input, ' +
+                '#appShell form select, ' +
+                '#appShell form textarea, ' +
+                '#appShell form button'
+            ).forEach(element => {
+                element.disabled = !enabled;
+            });
+        };
+
+        setEntryControlsEnabled(false);
+        setSync('Loading farm records…');
+
+        // Keep authentication active.
+        client.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT' || !session) {
+                location.replace(
+                    new URL('auth.html', location.href).toString()
+                );
+            }
+        });
+
+        try {
+            // Load farmer profile.
+            const { data: profile, error: profileError } =
+                await client
+                    .from('profiles')
+                    .select('full_name,role,account_status')
+                    .eq('id', user.id)
+                    .maybeSingle();
+
+            if (profileError) {
+                throw new Error(
+                    `Profile could not be loaded: ${profileError.message}`
+                );
+            }
+
+            if (profile?.account_status === 'suspended') {
+                await client.auth.signOut();
+                return;
+            }
+
+            const name =
+                profile?.full_name ||
+                user.user_metadata?.full_name ||
+                user.email ||
+                'Farmer';
+
+            $('farmerName').textContent = name;
+
+            $('farmerAvatar').textContent = name
+                .trim()
+                .split(/\s+/)
+                .slice(0, 2)
+                .map(x => x[0])
+                .join('')
+                .toUpperCase();
+
+            $('welcomeHeading').textContent =
+                `Welcome, ${name.split(/\s+/)[0]}.`;
+
+            $('todayLabel').textContent =
+                new Intl.DateTimeFormat('en-UG', {
+                    weekday: 'short',
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric'
+                }).format(new Date());
+
+            $('footerYear').textContent =
+                new Date().getFullYear();
+
+            // Load existing farmer records.
+            await loadCloud();
+
+            renderAll();
+
+            if (!$('formulaItemsBody').children.length) {
+                addIngredientRow();
+            }
+
+            updateRecordFields();
+
+            // Enable data entry only after records load successfully.
+            setEntryControlsEnabled(true);
+
+            setSync('● Saved to cloud');
+            clearNotice();
+
+        } catch (error) {
+            console.error('[Layers data loading]', error);
+
+            try {
+                renderAll();
+            } catch (renderError) {
+                console.error('[Layers rendering]', renderError);
+            }
+
+            setEntryControlsEnabled(false);
+
+            setSync('Database unavailable', true);
+
+            setNotice(
+                `${error.message}. Menu navigation is available, ` +
+                'but data entry is paused until the database connection is restored.',
+                'error'
+            );
+        }
+
+    } catch (error) {
+        console.error('[Layers startup]', error);
+
+        $('loadingScreen').innerHTML = `
+            <div class="panel" style="max-width:560px;margin:24px">
+                <h2>Layers Dashboard could not start</h2>
+                <p>${esc(error.message || 'Unexpected error')}</p>
+                <a class="btn btn-light" href="dashboard.html">
+                    Return to farmer dashboard
+                </a>
+            </div>
+        `;
+    }
+}
 
   document.addEventListener('DOMContentLoaded',start);
 })();
