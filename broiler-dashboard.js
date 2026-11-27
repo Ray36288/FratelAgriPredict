@@ -1856,7 +1856,7 @@ function renderPriceSimulation() {
   $("#profileBtn")?.addEventListener("click", () => {
     const batch=getBatch();
     const details=batch?`${batch.name} · ${formatNumber(calculate(batch).alive)} birds currently alive`:"No active batch selected";
-    notify(`${details}. AgriPredict is using local browser storage; cloud account sign-in is not configured in this standalone version.`);
+    notify(`${details}. Your broiler records are linked to your signed-in AgriPredict account.`);
   });
 
   window.addEventListener("agripredict:broiler-data-updated", () => {
@@ -1906,6 +1906,7 @@ function renderPriceSimulation() {
 
       if (!data.batches.length) {
         activeBatchId = "";
+        await saveData();
         return;
       }
 
