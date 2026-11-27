@@ -22,8 +22,8 @@
     ["Knurse Meal",8900,0,0,0,null],
     ["Romelko",5100,0,0,0,null],
     ["hendrix 5%",4800,60,60,50,null],
-    ["intraco 20%",4100,0,0,0,null],
-    ["hendrix 5%",4800,0,0,0,null],
+    ["intraco 20%",4100,0,0,null,null],
+    ["hendrix 5%",4800,0,0,null,null],
     ["Maize Broken",1000,180,180,200,null],
     ["Maize Bran",600,520,520,530,null],
     ["Limestone/Shells",400,20,20,20,null],
@@ -99,13 +99,14 @@
     const lines=(model.ingredients||[]).map(item=>{
       const raw=item.quantities?.[stageId];
       const quantity=raw===null || raw===undefined ? null : Number(raw);
+      const effectiveQuantity=quantity===null?0:quantity; // Excel SUM and multiplication treat blank cells as zero.
       const price=Object.prototype.hasOwnProperty.call(priceOverrides,item.id) ? Number(priceOverrides[item.id]) : Number(item.pricePerKg);
-      return {id:item.id,name:item.name,sourceRow:item.sourceRow,quantityKg:quantity,pricePerKg:price,lineCost:quantity===null?null:quantity*price,inclusionPercent:null};
+      return {id:item.id,name:item.name,sourceRow:item.sourceRow,quantityKg:quantity,effectiveQuantityKg:effectiveQuantity,pricePerKg:price,lineCost:effectiveQuantity*price,inclusionPercent:null};
     });
-    if(lines.some(line=>line.quantityKg===null)) return {stageId,complete:false,lines,totalWeightKg:null,totalCost:null,costPerKg:null,costPerTonne:null,reason:"The source workbook has blank ingredient quantities for this stage."};
-    const totalWeightKg=lines.reduce((sum,line)=>sum+line.quantityKg,0);
-    const totalCost=lines.reduce((sum,line)=>sum+(line.lineCost||0),0);
-    lines.forEach(line=>line.inclusionPercent=totalWeightKg>0?line.quantityKg/totalWeightKg*100:0);
+    const totalWeightKg=lines.reduce((sum,line)=>sum+line.effectiveQuantityKg,0);
+    const totalCost=lines.reduce((sum,line)=>sum+line.lineCost,0);
+    lines.forEach(line=>line.inclusionPercent=totalWeightKg>0?line.effectiveQuantityKg/totalWeightKg*100:0);
+    if(totalWeightKg<=0) return {stageId,complete:false,lines,totalWeightKg,totalCost,costPerKg:null,costPerTonne:null,reason:"The source workbook has no ingredient quantities for this stage."};
     return {stageId,complete:totalWeightKg>0,lines,totalWeightKg,totalCost,costPerKg:totalWeightKg>0?totalCost/totalWeightKg:null,costPerTonne:totalWeightKg>0?totalCost/totalWeightKg*1000:null,reason:totalWeightKg>0?"":"Formula total weight is zero."};
   }
 
