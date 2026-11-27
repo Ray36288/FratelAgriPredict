@@ -62,7 +62,7 @@ test("keeps egg-production days separate from feed-consumption days",()=>{
  const r=E.calculate(m);close(r.weeks[0].dailyEggs,75,1e-12);close(r.weeks[0].weeklyEggs,375,1e-12);
 });
 
-test("matches every ingredient-by-week quantity and cost cell from the workbook",()=>{
+test("matches every ingredient-by-week quantity and cost cell from the workbook",async()=>{
  const benchmark=JSON.parse(await readFile(new URL("./broiler-workbook-benchmark.json",import.meta.url),"utf8"));
  const result=E.calculate(E.createDefaultModel());
  const closeRelative=(actual,expected)=>{
