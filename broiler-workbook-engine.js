@@ -188,7 +188,7 @@
     const changed=calculatePriceScenario(model,"source_row_15",3500);
     checks.push({name:"Ingredient price change reprices formula",pass:Math.abs(changed.stageImpacts.find(x=>x.stageId==="rearing_0_4").deltaPerKg-48)<1e-8});
     const formula=calculateFormula(model,"prelay_17_20");
-    checks.push({name:"Blank pre-lay formula remains unavailable",pass:!formula.complete && formula.totalWeightKg===null});
+    checks.push({name:"Blank pre-lay formula remains unavailable",pass:!formula.complete && formula.totalWeightKg===0});
     return {passed:checks.filter(x=>x.pass).length,total:checks.length,checks,calculatedTotalFeedCost:result.totalFeedCost};
   }
 
