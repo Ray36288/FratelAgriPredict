@@ -68,7 +68,7 @@
   }
 
   function normaliseEnterpriseType(type) {
-    const value = String(type || "").trim().toLowerCase().replace(/[\\s-]+/g, "_");
+    const value = String(type || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
     const aliases = {
       broiler: "broiler_farming", broiler_farm: "broiler_farming",
       croiler: "croiler_farming", croiler_farm: "croiler_farming",
