@@ -59,3 +59,19 @@ test("keeps egg-production days separate from feed-consumption days",()=>{
  const m=E.createDefaultModel();m.birdCountByWeek[0]=100;m.layingPercentages[0]=.75;m.layingDaysPerWeek[0]=5;
  const r=E.calculate(m);close(r.weeks[0].dailyEggs,75,1e-12);close(r.weeks[0].weeklyEggs,375,1e-12);
 });
+
+test("matches every ingredient-by-week quantity and cost cell from the workbook",()=>{
+ const benchmark=require("./broiler-workbook-benchmark.json");
+ const result=E.calculate(E.createDefaultModel());
+ const closeRelative=(actual,expected)=>{
+  const tolerance=Math.max(1e-14,Math.abs(expected)*1e-10);
+  assert.ok(Math.abs(actual-expected)<=tolerance,actual+" differs from workbook cell "+expected+" by more than "+tolerance);
+ };
+ benchmark.ingredientExcelRows.forEach((excelRow,rowIndex)=>{
+  for(let weekIndex=0;weekIndex<7;weekIndex++){
+   const item=result.weeks[weekIndex].ingredientRows.find(x=>x.excelRow===excelRow);
+   closeRelative(item.quantityKg,benchmark.feedKg[rowIndex][weekIndex]);
+   closeRelative(item.totalCost,benchmark.feedCost[rowIndex][weekIndex]);
+  }
+ });
+});
