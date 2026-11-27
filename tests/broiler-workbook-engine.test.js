@@ -118,3 +118,31 @@ test("source week labels remain distinct from the formula stages used", () => {
   assert.equal(result.weeks[6].stageId, "pullet_8_17");
   assert.equal(model.source.weeklyIntakeHeading, "Weekly intake Per Pig");
 });
+
+test("all 17 source ingredient rows, duplicate names and tiny inclusions are retained", () => {
+  const model = math.createSourceModel();
+  assert.equal(model.ingredients.length, 17);
+  assert.equal(model.ingredients.filter(x => x.name === "hendrix 5%").length, 2);
+  assert.equal(model.ingredients.find(x => x.sourceRow === 20).quantities.rearing_0_4, 1e-10);
+  assert.equal(model.ingredients.find(x => x.sourceRow === 20).quantities.rearing_4_8, 0.0001);
+  assert.equal(model.ingredients.find(x => x.sourceRow === 20).quantities.pullet_8_17, 1e-13);
+  assert.equal(model.ingredients.find(x => x.sourceRow === 7).quantities.pullet_8_17, null);
+});
+
+test("ingredient-level weekly quantities and costs reconcile to the weekly totals", () => {
+  const result = math.calculateWorkbook(math.createSourceModel());
+  for (const week of result.sourceWeeks) {
+    const ingredientKg = week.ingredients.reduce((sum, row) => sum + row.quantityKg, 0);
+    const ingredientCost = week.ingredients.reduce((sum, row) => sum + row.cost, 0);
+    assert.ok(Math.abs(ingredientKg - week.totalFeedKg) < 1e-8);
+    assert.ok(Math.abs(ingredientCost - week.totalFeedCost) < 0.01);
+  }
+});
+
+test("calculator is included additively in the existing forecasting page", () => {
+  const html = fs.readFileSync(path.join(here, "..", "broiler-dashboard.html"), "utf8");
+  assert.match(html, /id="broilerWorkbookPanel"/);
+  assert.match(html, /broiler-workbook-engine.js/);
+  assert.match(html, /broiler-workbook-engine.css/);
+  assert.match(html, /data-page="forecasting"/);
+});
