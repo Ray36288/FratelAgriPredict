@@ -3,7 +3,7 @@
    AGRIPREDICT — BROILER FEED MANAGEMENT ENGINE
    Production-oriented frontend module
    Version: 1.0
-   Database: Supabase integration will be added later
+   Database: authenticated Supabase storage with a local recovery cache
 
    STORAGE:
    - Feed operations are saved in browser localStorage.
