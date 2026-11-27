@@ -448,13 +448,20 @@
     const saved=Array.isArray(records)?records:[];
     const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     saved.forEach(item=>{if(item && typeof item==="object"){if(!uuidPattern.test(String(item.id||"")))item.id=crypto.randomUUID();(Array.isArray(item.movements)?item.movements:[]).forEach(m=>{if(m && typeof m==="object" && !uuidPattern.test(String(m.id||"")))m.id=crypto.randomUUID();});}});
-    try { localStorage.setItem(KEYS.inventory,JSON.stringify(saved)); } catch(error) { console.warn("Local inventory cache unavailable:",error); }
-    if (window.FratelCloud) {
-      window.FratelCloud.savePortfolioInventory(saved).then(() => { cloudPortfolioPromise=null; return hydrateCloudPortfolio(); }).catch(error => {
-        console.error("Farm inventory cloud save failed:",error);
-        document.dispatchEvent(new CustomEvent("agripredict:cloud-save-error",{detail:{module:"portfolio",message:error.message}}));
-      });
-    }
+    const persist=async()=>{
+      if(!window.FratelCloud){try{localStorage.setItem(KEYS.inventory,JSON.stringify(saved));}catch{}return;}
+      const {user}=await window.FratelCloud.ready();
+      if(portfolioOwnerId && portfolioOwnerId!==user.id)throw new Error("The inventory cache belongs to a different farmer account. Reload the dashboard.");
+      portfolioOwnerId=user.id;
+      try{localStorage.setItem(OWNER_KEY,user.id);localStorage.setItem(KEYS.inventory,JSON.stringify(saved));}catch(error){console.warn("Local inventory cache unavailable:",error);}
+      await window.FratelCloud.savePortfolioInventory(saved);
+      cloudPortfolioPromise=null;
+      await hydrateCloudPortfolio();
+    };
+    persist().catch(error=>{
+      console.error("Farm inventory cloud save failed:",error);
+      document.dispatchEvent(new CustomEvent("agripredict:cloud-save-error",{detail:{module:"portfolio",message:error.message}}));
+    });
     window.dispatchEvent(new CustomEvent("agripredict:farm-records-updated"));
     return saved;
   }
@@ -462,13 +469,20 @@
     const saved=Array.isArray(records)?records:[];
     const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     saved.forEach(item=>{if(item && typeof item==="object" && !uuidPattern.test(String(item.id||"")))item.id=crypto.randomUUID();});
-    try { localStorage.setItem(KEYS.expenses,JSON.stringify(saved)); } catch(error) { console.warn("Local expense cache unavailable:",error); }
-    if (window.FratelCloud) {
-      window.FratelCloud.savePortfolioExpenses(saved).then(() => { cloudPortfolioPromise=null; return hydrateCloudPortfolio(); }).catch(error => {
-        console.error("Farm expense cloud save failed:",error);
-        document.dispatchEvent(new CustomEvent("agripredict:cloud-save-error",{detail:{module:"portfolio",message:error.message}}));
-      });
-    }
+    const persist=async()=>{
+      if(!window.FratelCloud){try{localStorage.setItem(KEYS.expenses,JSON.stringify(saved));}catch{}return;}
+      const {user}=await window.FratelCloud.ready();
+      if(portfolioOwnerId && portfolioOwnerId!==user.id)throw new Error("The expense cache belongs to a different farmer account. Reload the dashboard.");
+      portfolioOwnerId=user.id;
+      try{localStorage.setItem(OWNER_KEY,user.id);localStorage.setItem(KEYS.expenses,JSON.stringify(saved));}catch(error){console.warn("Local expense cache unavailable:",error);}
+      await window.FratelCloud.savePortfolioExpenses(saved);
+      cloudPortfolioPromise=null;
+      await hydrateCloudPortfolio();
+    };
+    persist().catch(error=>{
+      console.error("Farm expense cloud save failed:",error);
+      document.dispatchEvent(new CustomEvent("agripredict:cloud-save-error",{detail:{module:"portfolio",message:error.message}}));
+    });
     window.dispatchEvent(new CustomEvent("agripredict:farm-records-updated"));
     return saved;
   }
