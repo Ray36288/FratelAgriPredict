@@ -62,10 +62,9 @@
   async function hydrateCloudPortfolio() {
     if (cloudPortfolioPromise) return cloudPortfolioPromise;
     if (!window.FratelCloud) {
-      const error = new Error("Supabase data service is unavailable.");
       const status = document.getElementById("inventorySourceNote");
-      if (status) status.textContent = error.message;
-      throw error;
+      if (status) status.textContent = "Supabase data service is unavailable.";
+      return false;
     }
     cloudPortfolioPromise = (async () => {
       const { user } = await window.FratelCloud.ready();
@@ -88,7 +87,7 @@
       console.warn("Farm portfolio could not load cloud records:", error);
       const status = document.getElementById("inventorySourceNote");
       if (status) status.textContent = "Online farm records could not be loaded. Please check your sign-in and internet connection.";
-      throw error;
+      return false;
     });
     return cloudPortfolioPromise;
   }
