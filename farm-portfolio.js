@@ -260,7 +260,7 @@
     const placeholders = enrolledSlugs.filter(slug=>enterpriseGroup(slug)!=="crop" && !knownGroups.has(enterpriseGroup(slug)));
     const cards = model.inventory.map((row,index)=>`<article class="inventory-card inventory-tone-${index%5}"><span class="inventory-card-icon">${row.slug.includes("fish")?"🐟":row.slug.includes("dairy")||row.slug.includes("cattle")?"🐄":row.slug.includes("pig")?"🐖":row.slug.includes("layer")||row.slug.includes("chicken")?"🐔":"🐤"}</span><div><span class="inventory-label">${escapeHTML(row.label)}</span><strong>${Math.round(row.count).toLocaleString("en-UG")}</strong><small>${escapeHTML(row.detail)}</small></div></article>`);
     const missing = placeholders.map(slug=>`<article class="inventory-card inventory-pending"><span class="inventory-card-icon">＋</span><div><span class="inventory-label">${escapeHTML(projectLabel(slug))}</span><strong>—</strong><small>Project enrolled · inventory records not connected</small></div></article>`);
-    grid.innerHTML = cards.concat(missing).join("") || `<div class="inventory-placeholder">No livestock inventory records have been connected yet. Broiler batches are read from this browser's saved farm records.</div>`;
+    grid.innerHTML = cards.concat(missing).join("") || `<div class="inventory-placeholder">No livestock inventory records have been connected yet. Broiler batches are read from your Supabase farm records.</div>`;
     const status = document.getElementById("inventorySourceStatus");
     if(status) { status.textContent=model.inventory.length?`${model.inventory.length} connected stock group${model.inventory.length===1?"":"s"}`:"No inventory source"; status.classList.toggle("source-ready",model.inventory.length>0); }
     text("inventorySourceNote",model.inventory.length?`Recorded inventory totals ${Math.round(knownTotal).toLocaleString("en-UG")} live animals/birds across connected records. Enrolled projects without inventory data are shown as not connected, not counted as zero.`:"No inventory module has published livestock counts yet. Project enrolments alone are not used to invent animal quantities.");
@@ -413,7 +413,7 @@
     return saved;
   }
 
-  window.AgriPredictFarmPortfolio = {render,setProjects,registerSource,publishInventory,publishExpenses,getSnapshot:()=>latestModel||buildModel(),keys:{...KEYS},periods:[...PERIODS],refreshCloud:hydrateCloudPortfolio};
+  window.AgriPredictFarmPortfolio = {render,setProjects,registerSource,publishInventory,publishExpenses,getSnapshot:()=>latestModel||buildModel(),periods:[...PERIODS],refreshCloud:hydrateCloudPortfolio};
   hydrateCloudPortfolio();
   window.addEventListener("focus", () => { cloudPortfolioPromise = null; hydrateCloudPortfolio(); });
 })();
