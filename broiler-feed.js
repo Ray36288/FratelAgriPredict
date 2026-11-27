@@ -1302,6 +1302,7 @@
     state,
     save: saveState,
     reload: loadState,
+    hydrate: hydrateFromCloud,
     setBatches(batches, selectedId = "") {
       state.batches = Array.isArray(batches) ? batches : [];
       state.selectedBatch = state.batches.some(batch => batch.id === selectedId)
