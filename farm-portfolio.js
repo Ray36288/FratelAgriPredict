@@ -409,9 +409,11 @@
   }
   function publishInventory(records) {
     const saved=Array.isArray(records)?records:[];
+    const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    saved.forEach(item=>{if(item && typeof item==="object"){if(!uuidPattern.test(String(item.id||"")))item.id=crypto.randomUUID();(Array.isArray(item.movements)?item.movements:[]).forEach(m=>{if(m && typeof m==="object" && !uuidPattern.test(String(m.id||"")))m.id=crypto.randomUUID();});}});
     try { localStorage.setItem(KEYS.inventory,JSON.stringify(saved)); } catch(error) { console.warn("Local inventory cache unavailable:",error); }
     if (window.FratelCloud) {
-      window.FratelCloud.savePortfolioInventory(saved).then(() => hydrateCloudPortfolio()).catch(error => {
+      window.FratelCloud.savePortfolioInventory(saved).then(() => { cloudPortfolioPromise=null; return hydrateCloudPortfolio(); }).catch(error => {
         console.error("Farm inventory cloud save failed:",error);
         document.dispatchEvent(new CustomEvent("agripredict:cloud-save-error",{detail:{module:"portfolio",message:error.message}}));
       });
@@ -421,9 +423,11 @@
   }
   function publishExpenses(records) {
     const saved=Array.isArray(records)?records:[];
+    const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    saved.forEach(item=>{if(item && typeof item==="object" && !uuidPattern.test(String(item.id||"")))item.id=crypto.randomUUID();});
     try { localStorage.setItem(KEYS.expenses,JSON.stringify(saved)); } catch(error) { console.warn("Local expense cache unavailable:",error); }
     if (window.FratelCloud) {
-      window.FratelCloud.savePortfolioExpenses(saved).then(() => hydrateCloudPortfolio()).catch(error => {
+      window.FratelCloud.savePortfolioExpenses(saved).then(() => { cloudPortfolioPromise=null; return hydrateCloudPortfolio(); }).catch(error => {
         console.error("Farm expense cloud save failed:",error);
         document.dispatchEvent(new CustomEvent("agripredict:cloud-save-error",{detail:{module:"portfolio",message:error.message}}));
       });
