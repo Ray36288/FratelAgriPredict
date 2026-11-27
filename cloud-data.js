@@ -67,6 +67,20 @@
     return farmPromise;
   }
 
+  function normaliseEnterpriseType(type) {
+    const value = String(type || "").trim().toLowerCase().replace(/[\\s-]+/g, "_");
+    const aliases = {
+      broiler: "broiler_farming", broiler_farm: "broiler_farming",
+      croiler: "croiler_farming", croiler_farm: "croiler_farming",
+      layer: "layer_farming", layers: "layer_farming", layer_farm: "layer_farming",
+      crop: "crop_farming", crops: "crop_farming", crop_farm: "crop_farming",
+      dairy: "dairy_farming", dairy_farm: "dairy_farming",
+      fish: "fish_farming", fish_farm: "fish_farming",
+      pig: "piggery", pigs: "piggery", pig_farming: "piggery"
+    };
+    return aliases[value] || value;
+  }
+
   async function findFarm() {
     const { user, client: db } = await ready();
     const { data, error } = await db.from("farms")
@@ -81,14 +95,14 @@
     if (!farm) return null;
     const { data, error } = await client().from("farm_enterprises")
       .select("id,farm_id,enterprise_type,name,status")
-      .eq("farm_id", farm.id).eq("enterprise_type", String(type || "").trim().toLowerCase())
+      .eq("farm_id", farm.id).eq("enterprise_type", normaliseEnterpriseType(type))
       .eq("status", "active").order("created_at", { ascending: true }).limit(1).maybeSingle();
     if (error) throw error;
     return data || null;
   }
 
   async function ensureEnterprise(type, displayName) {
-    const enterpriseType = String(type || "").trim().toLowerCase();
+    const enterpriseType = normaliseEnterpriseType(type);
     if (!enterpriseType) throw new Error("An enterprise type is required.");
     if (enterprisePromises.has(enterpriseType)) return enterprisePromises.get(enterpriseType);
 
