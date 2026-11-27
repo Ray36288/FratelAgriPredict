@@ -815,8 +815,9 @@
       return {
         ...metadata, id: row.id, name: row.name, category: row.category, unit: row.unit,
         reorderLevel: Number(row.reorder_level || 0), active: row.is_active,
-        currentQuantity: movementsByItem.has(row.id)
-          ? movementTotals.get(row.id) : Number(metadata.currentQuantity || 0)
+        currentQuantity: metadata.currentQuantity != null
+          ? Number(metadata.currentQuantity)
+          : movementsByItem.has(row.id) ? movementTotals.get(row.id) : 0
       };
     });
     const expenses = transactionRows.map(row => ({
