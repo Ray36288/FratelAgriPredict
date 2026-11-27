@@ -65,11 +65,8 @@
     else alert(message);
   }
   function currentBatch() {
-    let saved = {};
-    try { saved = JSON.parse(localStorage.getItem("agripredict_broiler_v1") || "{}"); }
-    catch (error) { console.error("Could not read broiler batches for feed management:", error); }
-    const activeId = localStorage.getItem("agripredict_broiler_active") || "";
-    const batches = (Array.isArray(saved.batches) ? saved.batches : []).map(b => {
+    const batches = window.FratelAgriPredictDashboard?.getBatches?.() || [];
+    const mapped = batches.map(b => {
       const records=Array.isArray(b.records)?b.records:[];
       const mortality=records.filter(r=>r.type==="mortality").reduce((sum,r)=>sum+n(r.quantity),0);
       const sold=records.filter(r=>r.type==="sale").reduce((sum,r)=>sum+n(r.quantity),0);
@@ -79,10 +76,11 @@
         targetAgeDays:n(b.targetAgeDays)||28,targetWeight:n(b.targetWeight),targetFeedPerBird:3,active:true
       };
     });
-    const batch = batches.find(b => b.id === activeId) || batches[0];
-    if (batches.length) APP.setBatches(batches, activeId);
-    return batch || null;
+    const selectedId = mapped[0]?.id || "";
+    APP.setBatches(mapped, selectedId);
+    return mapped[0] || null;
   }
+
   function ensureDialog() {
     if (dialog) return dialog;
     dialog = document.createElement("dialog");
@@ -105,7 +103,18 @@
     $("#feedEntryTitle",d).textContent=title;
     $("#feedEntryFields",d).innerHTML=fields.join("");
     $("#feedEntryError",d).textContent="";
-    form.onsubmit=e=>{e.preventDefault(); try { const values=Object.fromEntries(new FormData(form).entries()); onSave(values); d.close(); refresh(); notify("Feed record saved."); } catch(err) { $("#feedEntryError",d).textContent=err.message || "Could not save record."; } };
+    form.onsubmit=async e=>{
+      e.preventDefault();
+      const submit=form.querySelector('button[type="submit"]');
+      if(submit)submit.disabled=true;
+      try {
+        const values=Object.fromEntries(new FormData(form).entries());
+        await onSave(values);
+        d.close(); refresh(); notify("Feed record saved to Supabase.");
+      } catch(err) {
+        $("#feedEntryError",d).textContent=err.message || "Could not save record online.";
+      } finally { if(submit)submit.disabled=false; }
+    };
     d.showModal();
   }
   const ingredientOptions=()=>state.ingredients.filter(x=>x.active).map(x=>({value:x.id,label:x.name}));
@@ -175,8 +184,7 @@
     }),"No feed consumption recorded.");
     set("#feedTotalExpenditure",money(state.purchases.reduce((s,x)=>s+n(x.totalCost),0)));
     set("#feedCostBirdAnalysis",money(activeSummary&&activeSummary.liveBirds>0?activeSummary.feedCost/activeSummary.liveBirds:0));
-    const mainStore=(()=>{try{return JSON.parse(localStorage.getItem("agripredict_broiler_v1")||"{}");}catch{return {};}})();
-    const mainBatch=(mainStore.batches||[]).find(b=>b.id===activeBatch?.id);
+    const mainBatch=(window.FratelAgriPredictDashboard?.getBatches?.()||[]).find(b=>b.id===activeBatch?.id);
     const weightRecords=(mainBatch?.records||[]).filter(x=>x.type==="weight").sort((a,b)=>String(a.date).localeCompare(String(b.date)));
     const latestWeight=weightRecords[weightRecords.length-1];
     const weightGain=latestWeight&&n(mainBatch?.initialWeight)>0?(n(latestWeight.averageWeight)-n(mainBatch.initialWeight))*APP.liveBirds(activeBatch.id):0;
@@ -192,24 +200,20 @@
   }
 
   function syncFeedConsumptionToBroiler(record) {
-    try {
-      const saved=JSON.parse(localStorage.getItem("agripredict_broiler_v1")||"{}");
-      const batch=(saved.batches||[]).find(x=>x.id===record.batchId);
-      if(!batch)return;
-      batch.records=Array.isArray(batch.records)?batch.records:[];
-      if(batch.records.some(x=>x.id===record.id))return;
-      const allocation=state.allocations.find(x=>x.id===record.allocationId);
-      const formula=state.formulas.find(x=>x.id===allocation?.formulaId);
-      const unitPrice=n(allocation?.costPerKg);
-      batch.records.push({
-        id:record.id,type:"feed",date:record.date,quantity:n(record.quantity),
-        feedType:formula?.name||"Feed management allocation",unitPrice,
-        totalCost:n(record.quantity)*unitPrice,source:"feed-management",
-        notes:"Recorded through Feed Management"
-      });
-      localStorage.setItem("agripredict_broiler_v1",JSON.stringify(saved));
-      window.dispatchEvent(new CustomEvent("agripredict:broiler-data-updated"));
-    } catch(error) { console.warn("Feed consumption saved, but the broiler dashboard summary could not be refreshed:",error); }
+    const batch=(window.FratelAgriPredictDashboard?.getBatches?.()||[]).find(x=>x.id===record.batchId);
+    if(!batch)return;
+    batch.records=Array.isArray(batch.records)?batch.records:[];
+    if(batch.records.some(x=>x.id===record.id))return;
+    const allocation=state.allocations.find(x=>x.id===record.allocationId);
+    const formula=state.formulas.find(x=>x.id===allocation?.formulaId);
+    const unitPrice=n(allocation?.costPerKg);
+    batch.records.push({
+      id:record.id,type:"feed",date:record.date,quantity:n(record.quantity),
+      feedType:formula?.name||"Feed management allocation",unitPrice,
+      totalCost:n(record.quantity)*unitPrice,source:"feed-management",
+      notes:"Recorded through Feed Management"
+    });
+    window.dispatchEvent(new CustomEvent("agripredict:broiler-data-updated"));
   }
 
   function switchTab(name) {
@@ -263,7 +267,7 @@
       }
       if(button.id==="saveFormulaDraftBtn"){
         const draft={name:$("#formulaName")?.value||"",stage:$("#formulaStage")?.value||"",targetWeight:$("#formulaTargetWeight")?.value||"",notes:$("#formulaNotes")?.value||"",items:draftFormulaItems,editingFormulaId,savedAt:new Date().toISOString()};
-        localStorage.setItem("agripredict_feed_formula_draft",JSON.stringify(draft));notify("Formula draft saved on this device.");return;
+        draftFormulaItems=Array.isArray(draft.items)?draft.items:[];editingFormulaId=draft.editingFormulaId||null;notify("Draft remains temporary in this page. Save the formula to store it in Supabase.");return;
       }
       if(button.id==="saveFeedFormulaBtn"){
         const name=$("#formulaName")?.value?.trim()||"",stage=$("#formulaStage")?.value||"custom";
@@ -271,7 +275,7 @@
         if(!draftFormulaItems.length)return notify("Add at least one ingredient before saving the formula.");
         const payload={name,stage,targetWeight:n($("#formulaTargetWeight")?.value),notes:$("#formulaNotes")?.value||"",items:draftFormulaItems.map(x=>({ingredientId:x.ingredientId,quantity:n(x.quantity),unitPrice:n(x.unitPrice)}))};
         const wasEditing=!!editingFormulaId;
-        try{const saved=wasEditing?APP.reviseFormula(editingFormulaId,payload):APP.createFormula(payload);localStorage.removeItem("agripredict_feed_formula_draft");clearFormulaEditor();refresh();notify(`${saved.name} ${wasEditing?"revised":"saved"} successfully.`);}catch(err){notify(err.message||"Could not save formula.");}
+        (async()=>{try{const saved=await (wasEditing?APP.reviseFormula(editingFormulaId,payload):APP.createFormula(payload));clearFormulaEditor();refresh();notify(`${saved.name} ${wasEditing?"revised":"saved"} to Supabase.`);}catch(err){notify(err.message||"Could not save formula online.");}})();
         return;
       }
       if(button.id==="addIngredientBtn") openForm("Add ingredient",[field("name","Ingredient name"),field("category","Category","select",{options:["energy","protein","minerals","vitamins","amino_acids","additives"].map(x=>({value:x,label:x}))}),field("currentPrice","Current price per kg (UGX)","number",{min:0,step:"0.01"}),field("protein","Crude protein (%)","number",{required:false,min:0,step:"0.01"}),field("energy","Metabolizable energy (kcal/kg)","number",{required:false,min:0,step:"0.01"})],v=>APP.addIngredient(v));
@@ -280,7 +284,7 @@
       if(button.id==="addStockAdjustmentBtn") openForm("Adjust raw-material stock",[field("ingredientId","Ingredient","select",{options:ingredientOptions()}),field("type","Movement","select",{options:[{value:"adjustment_in",label:"Stock increase"},{value:"adjustment_out",label:"Stock decrease"}]}),field("quantity","Quantity (kg)","number",{min:0.01,step:"0.01"}),field("reference","Reference / reason","text",{required:false})],v=>APP.addRawMovement(v));
       if(button.id==="addProductionRecordBtn"||button.id==="recordFeedProductionBtn") openForm("Record feed production",[field("formulaId","Formula","select",{options:formulaOptions()}),field("quantity","Quantity produced (kg)","number",{min:0.01,step:"0.01"}),field("batchNumber","Production lot","text",{required:false}),field("date","Production date","date",{value:new Date().toISOString().slice(0,10)})],v=>APP.produceFeed(v));
       if(button.id==="allocateFeedBtn") openForm("Allocate feed to batch",[field("batchId","Broiler batch","select",{options:batchOptions()}),field("formulaId","Feed formula","select",{options:formulaOptions()}),field("quantity","Quantity (kg)","number",{min:0.01,step:"0.01"}),field("costPerKg","Cost per kg (UGX)","number",{min:0,step:"0.01",value:0}),field("date","Allocation date","date",{value:new Date().toISOString().slice(0,10)})],v=>APP.allocateFeed(v));
-      if(button.id==="recordDailyFeedBtn") {const allocations=state.allocations.map(x=>({value:x.id,label:`${APP.getBatch(x.batchId)?.name||"Batch"} · ${state.formulas.find(f=>f.id===x.formulaId)?.name||"Feed"} · ${fmt(x.quantity)} kg`})); openForm("Record feed consumption",[field("batchId","Batch","select",{options:batchOptions()}),field("allocationId","Feed allocation","select",{options:allocations}),field("quantity","Quantity consumed (kg)","number",{min:0.01,step:"0.01"}),field("date","Date","date",{value:new Date().toISOString().slice(0,10)})],v=>{const record=APP.recordConsumption(v);syncFeedConsumptionToBroiler(record);});}
+      if(button.id==="recordDailyFeedBtn") {const allocations=state.allocations.map(x=>({value:x.id,label:`${APP.getBatch(x.batchId)?.name||"Batch"} · ${state.formulas.find(f=>f.id===x.formulaId)?.name||"Feed"} · ${fmt(x.quantity)} kg`})); openForm("Record feed consumption",[field("batchId","Batch","select",{options:batchOptions()}),field("allocationId","Feed allocation","select",{options:allocations}),field("quantity","Quantity consumed (kg)","number",{min:0.01,step:"0.01"}),field("date","Date","date",{value:new Date().toISOString().slice(0,10)})],async v=>{const record=await APP.recordConsumption(v);syncFeedConsumptionToBroiler(record);});}
     });
     $("#runFeedSensitivityBtn")?.addEventListener("click",()=>{const id=$("#sensitivityIngredient")?.value;const change=n($("#sensitivityPriceChange")?.value);const formula=state.formulas.find(f=>f.status==="active");const out=$("#feedSensitivityResults");if(!out)return;if(!formula)return out.textContent="Create a formula first.";try{const result=APP.formulaPriceSimulation(formula.id,{[id]:change});out.textContent=`Estimated formula cost: ${money(result.simulatedCostPerKg)} per kg (${result.percentageChange>=0?"+":""}${fmt(result.percentageChange)}%).`; }catch(err){out.textContent=err.message;}});
     $("#calculateFeedForecastBtn")?.addEventListener("click",()=>{
@@ -377,17 +381,7 @@
     document.addEventListener("agripredict:cloud-load-error", event => {
       if (event.detail?.module === "feed") notify("Feed records could not be loaded online: " + (event.detail.message || "Check your connection."));
     });
-    try {
-      const draft=JSON.parse(localStorage.getItem("agripredict_feed_formula_draft")||"null");
-      if(draft){
-        if($("#formulaName"))$("#formulaName").value=draft.name||"";
-        if($("#formulaStage"))$("#formulaStage").value=draft.stage||"";
-        if($("#formulaTargetWeight"))$("#formulaTargetWeight").value=draft.targetWeight||"";
-        if($("#formulaNotes"))$("#formulaNotes").value=draft.notes||"";
-        draftFormulaItems=Array.isArray(draft.items)?draft.items:[];
-        editingFormulaId=draft.editingFormulaId||null;
-      }
-    } catch(error) { console.warn("Could not restore feed formula draft:",error); }
+
     const savedTab=state.activeTab;
     switchTab($("#feedTab-"+savedTab)?savedTab:"dashboard");
     const raw=$("#inventoryTab-raw");
