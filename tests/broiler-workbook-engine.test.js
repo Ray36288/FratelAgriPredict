@@ -97,3 +97,14 @@ test("cumulative feed cost per bird follows the source weekly schedule", () => {
   assert.ok(Math.abs(result.weeks[6].cumulativeFeedCostPerBird - expected) < 1e-8);
   assert.equal(result.weeks[7].cumulativeFeedCostPerBird, null);
 });
+
+test("feed days and egg-production days remain independent like the worksheet", () => {
+  const model = math.createSourceModel();
+  model.weeklyIntake[0].days = 5;
+  model.eggDaysPerWeek[0] = 7;
+  model.layingPercentages[0] = 50;
+  const result = math.calculateWorkbook(model, 5000);
+  assert.equal(result.weeks[0].weeklyKgPerBird, 0.05);
+  assert.equal(result.weeks[0].dailyEggs, 2500);
+  assert.equal(result.weeks[0].weeklyEggs, 17500);
+});
