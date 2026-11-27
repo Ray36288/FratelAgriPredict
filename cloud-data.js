@@ -539,7 +539,7 @@
     await ready();
     const enterprise = await ensureEnterprise("broiler", "Broiler Farming");
     const farm = await ensureFarm();
-    const [ingredientRows, supplierRows, purchaseRows, movementRows, formulaRows, versionRows, itemRows, productionRows, finishedRows, allocationRows, consumptionRows] = await Promise.all([
+    const [ingredientRows, supplierRows, purchaseRows, movementRows, formulaRows, versionRows, itemRows, productionRows, finishedRows, allocationRows, consumptionRows, priceHistoryRows] = await Promise.all([
       select("feed_ingredients", "*", q => q.eq("enterprise_id", enterprise.id)),
       select("feed_suppliers", "*", q => q.eq("farm_id", farm.id)),
       select("feed_purchases", "*", q => q.eq("enterprise_id", enterprise.id)),
@@ -550,7 +550,8 @@
       select("feed_production", "*", q => q.eq("enterprise_id", enterprise.id)),
       select("finished_feed_movements", "*", q => q.eq("enterprise_id", enterprise.id)),
       select("feed_allocations", "*", q => q.eq("enterprise_id", enterprise.id)),
-      select("feed_consumption", "*", q => q.eq("enterprise_id", enterprise.id))
+      select("feed_consumption", "*", q => q.eq("enterprise_id", enterprise.id)),
+      select("farm_price_history", "*", q => q.eq("enterprise_id", enterprise.id).eq("price_category", "feed_ingredient"))
     ]);
 
     const ingredients = ingredientRows.map(row => ({
@@ -585,6 +586,11 @@
       quantity: Number(row.quantity_change), unitCost: Number(row.unit_cost),
       reference: row.reference || "", date: row.occurred_on,
       notes: row.notes || "", createdAt: row.created_at
+    }));
+    const priceHistory = priceHistoryRows.map(row => ({
+      id: row.id, ingredientName: row.item_name, unit: row.unit,
+      price: Number(row.price), date: row.effective_date,
+      category: row.price_category, notes: row.notes || ""
     }));
 
     const itemsByVersion = new Map();
@@ -642,7 +648,7 @@
 
     return {
       ingredients, suppliers, purchases, rawMovements, formulas, production,
-      finishedMovements, allocations, consumption, batches,
+      finishedMovements, allocations, consumption, priceHistory, batches,
       selectedBatch: batches[0]?.id || "", activeTab: "overview"
     };
   }
