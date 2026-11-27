@@ -363,9 +363,11 @@
     if (versionRows.length) await upsert("feed_formula_versions", versionRows, "id");
 
     for (const formula of formulas) {
-      await remove("feed_formula_items", query => query.eq("formula_version_id", formula.id));
+      const existingItems = await select("feed_formula_items", "id,ingredient_id",
+        query => query.eq("formula_version_id", formula.id));
+      const existingByIngredient = new Map(existingItems.map(item => [item.ingredient_id, item]));
       const itemRows = (Array.isArray(formula.items) ? formula.items : []).map(item => ({
-        id: crypto.randomUUID(),
+        id: existingByIngredient.get(item.ingredientId)?.id || crypto.randomUUID(),
         formula_version_id: formula.id,
         ingredient_id: item.ingredientId,
         quantity: Number(item.quantity || 0),
@@ -374,7 +376,10 @@
         inclusion_rate: item.inclusionRate == null ? null : Number(item.inclusionRate),
         nutrient_snapshot: item.nutrients || {}
       }));
-      if (itemRows.length) await insert("feed_formula_items", itemRows);
+      if (itemRows.length) await upsert("feed_formula_items", itemRows, "id");
+      const keep = new Set(itemRows.map(item => item.id));
+      const staleIds = existingItems.filter(item => !keep.has(item.id)).map(item => item.id);
+      if (staleIds.length) await remove("feed_formula_items", query => query.in("id", staleIds));
     }
 
     if (purchases.length) {
