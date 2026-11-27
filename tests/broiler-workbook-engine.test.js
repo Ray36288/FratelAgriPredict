@@ -108,3 +108,13 @@ test("feed days and egg-production days remain independent like the worksheet", 
   assert.equal(result.weeks[0].dailyEggs, 2500);
   assert.equal(result.weeks[0].weeklyEggs, 17500);
 });
+
+test("source week labels remain distinct from the formula stages used", () => {
+  const model = math.createSourceModel();
+  const result = math.calculateWorkbook(model);
+  assert.equal(result.weeks[0].sourceLabel, "REARING");
+  assert.equal(result.weeks[1].sourceLabel, "REARING");
+  assert.equal(result.weeks[6].sourceLabel, "STARTER");
+  assert.equal(result.weeks[6].stageId, "pullet_8_17");
+  assert.equal(model.source.weeklyIntakeHeading, "Weekly intake Per Pig");
+});
