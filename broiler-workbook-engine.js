@@ -197,8 +197,8 @@
     const model=createSourceModel(),result=calculateWorkbook(model);
     const checks=[];
     checks.push({name:"Seven daily intake values preserved",pass:model.weeklyIntake.map(x=>x.dailyKg).join(",")==="0.01,0.01,0.02,0.03,0.04,0.04,0.045"});
-    checks.push({name:"Weekly flock kilograms match Excel",pass:result.weeks.every((w,i)=>Math.abs(w.totalFeedKg-EXCEL_BENCHMARKS.weeklyFeedKg[i])<1e-8)});
-    checks.push({name:"Weekly feed costs match Excel",pass:result.weeks.every((w,i)=>Math.abs(w.totalFeedCost-EXCEL_BENCHMARKS.weeklyFeedCost[i])<0.01)});
+    checks.push({name:"Weekly flock kilograms match Excel",pass:result.sourceWeeks.every((w,i)=>Math.abs(w.totalFeedKg-EXCEL_BENCHMARKS.weeklyFeedKg[i])<1e-8)});
+    checks.push({name:"Weekly feed costs match Excel",pass:result.sourceWeeks.every((w,i)=>Math.abs(w.totalFeedCost-EXCEL_BENCHMARKS.weeklyFeedCost[i])<0.01)});
     checks.push({name:"Seven-week total feed matches Excel",pass:Math.abs(result.totalFeedKg-EXCEL_BENCHMARKS.totalFeedKg)<1e-8});
     checks.push({name:"Seven-week total feed cost matches Excel",pass:Math.abs(result.totalFeedCost-EXCEL_BENCHMARKS.totalFeedCost)<0.02});
     const small=calculateWorkbook(model,100);
