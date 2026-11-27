@@ -243,10 +243,354 @@
     );
   }
 
+
+  function ensureUuid(record) {
+    if (UUID_RE.test(record?.id || "")) return record.id;
+    if (!record || typeof record !== "object") throw new Error("A feed record is invalid.");
+    record.id = crypto.randomUUID();
+    return record.id;
+  }
+
+  function rootFormulaId(formula, byId) {
+    let current = formula;
+    const visited = new Set();
+    while (current?.previousVersionId && byId.has(current.previousVersionId) && !visited.has(current.id)) {
+      visited.add(current.id);
+      current = byId.get(current.previousVersionId);
+    }
+    return current?.id || formula.id;
+  }
+
+  async function cloudBatchesForFeed() {
+    let batches = await loadLivestockBatches("broiler");
+    const local = (() => {
+      try {
+        const saved = JSON.parse(localStorage.getItem("agripredict_broiler_v1") || "{}");
+        return Array.isArray(saved.batches) ? saved.batches : [];
+      } catch { return []; }
+    })();
+
+    const known = new Set(batches.map(batch => String(batch.id)));
+    for (const batch of local) {
+      if (!known.has(String(batch.id))) {
+        await saveLivestockBatch(batch, "broiler");
+      }
+    }
+    if (local.length) batches = await loadLivestockBatches("broiler");
+    return batches;
+  }
+
+  async function saveFeedState(feedState) {
+    if (!feedState || typeof feedState !== "object") throw new Error("Feed data is missing.");
+    const { user } = await ready();
+    const farm = await ensureFarm();
+    const enterprise = await ensureEnterprise("broiler", "Broiler Farming");
+    const db = client();
+    const now = new Date().toISOString();
+    const batches = await cloudBatchesForFeed();
+    const batchIdByLocal = new Map(batches.map(batch => [String(batch.id), batch.cloudId || batch.id]));
+
+    const ingredients = Array.isArray(feedState.ingredients) ? feedState.ingredients : [];
+    const suppliers = Array.isArray(feedState.suppliers) ? feedState.suppliers : [];
+    const purchases = Array.isArray(feedState.purchases) ? feedState.purchases : [];
+    const rawMovements = Array.isArray(feedState.rawMovements) ? feedState.rawMovements : [];
+    const formulas = Array.isArray(feedState.formulas) ? feedState.formulas : [];
+    const production = Array.isArray(feedState.production) ? feedState.production : [];
+    const finishedMovements = Array.isArray(feedState.finishedMovements) ? feedState.finishedMovements : [];
+    const allocations = Array.isArray(feedState.allocations) ? feedState.allocations : [];
+    const consumption = Array.isArray(feedState.consumption) ? feedState.consumption : [];
+
+    for (const list of [ingredients, suppliers, purchases, rawMovements, formulas, production, finishedMovements, allocations, consumption]) {
+      list.forEach(ensureUuid);
+    }
+
+    if (ingredients.length) {
+      const rows = ingredients.map(item => ({
+        id: item.id, enterprise_id: enterprise.id, name: String(item.name || "Ingredient"),
+        category: String(item.category || "other"), unit: item.unit || "kg",
+        current_price: Number(item.currentPrice || 0),
+        protein: item.protein == null ? null : Number(item.protein),
+        energy: item.energy == null ? null : Number(item.energy),
+        fibre: item.fibre == null ? null : Number(item.fibre),
+        calcium: item.calcium == null ? null : Number(item.calcium),
+        phosphorus: item.phosphorus == null ? null : Number(item.phosphorus),
+        lysine: item.lysine == null ? null : Number(item.lysine),
+        methionine: item.methionine == null ? null : Number(item.methionine),
+        nutrient_profile: item.nutrientProfile || {},
+        is_active: item.active !== false, updated_at: now
+      }));
+      await upsert("feed_ingredients", rows, "id");
+    }
+
+    if (suppliers.length) {
+      const rows = suppliers.map(item => ({
+        id: item.id, farm_id: farm.id, name: String(item.name || "Supplier"),
+        contact_person: item.contact || null, telephone: item.telephone || null,
+        address: item.address || null, notes: item.notes || null,
+        is_active: item.active !== false, updated_at: now
+      }));
+      await upsert("feed_suppliers", rows, "id");
+    }
+
+    const formulaById = new Map(formulas.map(item => [item.id, item]));
+    const rootIds = new Set(formulas.map(item => rootFormulaId(item, formulaById)));
+    const rootRows = [...rootIds].map(rootId => {
+      const versions = formulas.filter(item => rootFormulaId(item, formulaById) === rootId);
+      const newest = versions.reduce((a, b) => Number(a.version || 1) >= Number(b.version || 1) ? a : b);
+      return {
+        id: rootId, enterprise_id: enterprise.id, name: newest.name || "Feed formula",
+        stage: newest.stage || "custom",
+        status: versions.some(item => item.status === "active") ? "active" : "archived",
+        notes: newest.notes || null, created_by: user.id, updated_at: now
+      };
+    });
+    if (rootRows.length) await upsert("feed_formulas", rootRows, "id");
+
+    const versionRows = formulas.map(item => ({
+      id: item.id,
+      formula_id: rootFormulaId(item, formulaById),
+      version_number: Math.max(1, Number(item.version) || 1),
+      status: ["active", "superseded", "archived"].includes(item.status) ? item.status : "active",
+      total_weight: Number(item.totalWeight || 0),
+      total_cost: Number(item.totalCost || 0),
+      cost_per_kg: Number(item.costPerKg || 0),
+      nutrient_profile: item.nutrients || {},
+      target_weight: item.targetWeight == null ? null : Number(item.targetWeight),
+      notes: item.notes || null,
+      previous_version_id: UUID_RE.test(item.previousVersionId || "") ? item.previousVersionId : null,
+      created_by: user.id
+    }));
+    if (versionRows.length) await upsert("feed_formula_versions", versionRows, "id");
+
+    for (const formula of formulas) {
+      await remove("feed_formula_items", query => query.eq("formula_version_id", formula.id));
+      const itemRows = (Array.isArray(formula.items) ? formula.items : []).map(item => ({
+        id: crypto.randomUUID(),
+        formula_version_id: formula.id,
+        ingredient_id: item.ingredientId,
+        quantity: Number(item.quantity || 0),
+        unit_price: Number(item.unitPrice || 0),
+        line_cost: Number(item.cost ?? (Number(item.quantity || 0) * Number(item.unitPrice || 0))),
+        inclusion_rate: item.inclusionRate == null ? null : Number(item.inclusionRate),
+        nutrient_snapshot: item.nutrients || {}
+      }));
+      if (itemRows.length) await insert("feed_formula_items", itemRows);
+    }
+
+    if (purchases.length) {
+      const rows = purchases.map(item => ({
+        id: item.id, enterprise_id: enterprise.id,
+        ingredient_id: item.ingredientId,
+        supplier_id: item.supplierId || null,
+        invoice_number: item.invoiceNumber || null,
+        purchased_on: item.date,
+        quantity: Number(item.quantity || 0),
+        unit_price: Number(item.unitPrice || 0),
+        transport_cost: Number(item.transportCost || 0),
+        other_cost: Number(item.otherCost || 0),
+        total_cost: Number(item.totalCost || 0),
+        landed_unit_cost: Number(item.landedUnitCost || 0),
+        notes: item.notes || null, recorded_by: user.id
+      }));
+      await upsert("feed_purchases", rows, "id");
+
+      const priceRows = purchases.filter(item => Number(item.landedUnitCost) >= 0).map(item => {
+        const ingredient = ingredients.find(x => x.id === item.ingredientId);
+        return {
+          id: item.id, farm_id: farm.id, enterprise_id: enterprise.id,
+          price_category: "feed_ingredient", item_name: ingredient?.name || "Feed ingredient",
+          unit: ingredient?.unit || "kg", price: Number(item.landedUnitCost || 0),
+          currency: "UGX", effective_date: item.date, recorded_by: user.id,
+          notes: "Landed cost recorded from feed purchase"
+        };
+      });
+      if (priceRows.length) await upsert("farm_price_history", priceRows, "id");
+    }
+
+    if (rawMovements.length) {
+      await upsert("feed_stock_movements", rawMovements.map(item => ({
+        id: item.id, enterprise_id: enterprise.id, ingredient_id: item.ingredientId,
+        movement_type: item.type, quantity_change: Number(item.quantity || 0),
+        unit_cost: Number(item.unitCost || 0), reference: item.reference || null,
+        occurred_on: item.date, notes: item.notes || null, recorded_by: user.id
+      })), "id");
+    }
+
+    if (production.length) {
+      await upsert("feed_production", production.map(item => ({
+        id: item.id, enterprise_id: enterprise.id,
+        formula_version_id: item.formulaId, quantity: Number(item.quantity || 0),
+        production_cost: Number(item.productionCost || 0),
+        cost_per_kg: Number(item.costPerKg || 0),
+        produced_on: item.date, batch_number: item.batchNumber || null,
+        notes: item.notes || null, recorded_by: user.id
+      })), "id");
+    }
+
+    if (finishedMovements.length) {
+      await upsert("finished_feed_movements", finishedMovements.map(item => ({
+        id: item.id, enterprise_id: enterprise.id,
+        formula_version_id: item.formulaId, movement_type: item.type,
+        quantity_change: Number(item.quantity || 0),
+        unit_cost: Number(item.unitCost || 0), reference: item.reference || null,
+        occurred_on: item.date, notes: item.notes || null, recorded_by: user.id
+      })), "id");
+    }
+
+    if (allocations.length) {
+      const rows = allocations.map(item => {
+        const cloudBatchId = batchIdByLocal.get(String(item.batchId));
+        if (!cloudBatchId) throw new Error("A feed allocation refers to a batch that has not been synchronised to the cloud.");
+        return {
+          id: item.id, enterprise_id: enterprise.id,
+          livestock_batch_id: cloudBatchId,
+          formula_version_id: item.formulaId,
+          quantity: Number(item.quantity || 0),
+          cost_per_kg: Number(item.costPerKg || 0),
+          total_cost: Number(item.totalCost || 0),
+          allocated_on: item.date, notes: item.notes || null,
+          recorded_by: user.id
+        };
+      });
+      await upsert("feed_allocations", rows, "id");
+    }
+
+    if (consumption.length) {
+      const rows = consumption.map(item => {
+        const cloudBatchId = batchIdByLocal.get(String(item.batchId));
+        if (!cloudBatchId) throw new Error("A feed consumption record refers to a batch that has not been synchronised to the cloud.");
+        return {
+          id: item.id, enterprise_id: enterprise.id,
+          allocation_id: item.allocationId,
+          livestock_batch_id: cloudBatchId,
+          quantity: Number(item.quantity || 0),
+          consumed_on: item.date, notes: item.notes || null,
+          recorded_by: user.id
+        };
+      });
+      await upsert("feed_consumption", rows, "id");
+    }
+
+    return { farmId: farm.id, enterpriseId: enterprise.id, syncedAt: now };
+  }
+
+  async function loadFeedState() {
+    await ready();
+    const enterprise = await ensureEnterprise("broiler", "Broiler Farming");
+    const farm = await ensureFarm();
+    const [ingredientRows, supplierRows, purchaseRows, movementRows, formulaRows, versionRows, itemRows, productionRows, finishedRows, allocationRows, consumptionRows] = await Promise.all([
+      select("feed_ingredients", "*", q => q.eq("enterprise_id", enterprise.id)),
+      select("feed_suppliers", "*", q => q.eq("farm_id", farm.id)),
+      select("feed_purchases", "*", q => q.eq("enterprise_id", enterprise.id)),
+      select("feed_stock_movements", "*", q => q.eq("enterprise_id", enterprise.id)),
+      select("feed_formulas", "*", q => q.eq("enterprise_id", enterprise.id)),
+      select("feed_formula_versions", "*"),
+      select("feed_formula_items", "*"),
+      select("feed_production", "*", q => q.eq("enterprise_id", enterprise.id)),
+      select("finished_feed_movements", "*", q => q.eq("enterprise_id", enterprise.id)),
+      select("feed_allocations", "*", q => q.eq("enterprise_id", enterprise.id)),
+      select("feed_consumption", "*", q => q.eq("enterprise_id", enterprise.id))
+    ]);
+
+    const ingredients = ingredientRows.map(row => ({
+      id: row.id, name: row.name, category: row.category, unit: row.unit,
+      currentPrice: Number(row.current_price || 0),
+      protein: row.protein == null ? null : Number(row.protein),
+      energy: row.energy == null ? null : Number(row.energy),
+      fibre: row.fibre == null ? null : Number(row.fibre),
+      calcium: row.calcium == null ? null : Number(row.calcium),
+      phosphorus: row.phosphorus == null ? null : Number(row.phosphorus),
+      lysine: row.lysine == null ? null : Number(row.lysine),
+      methionine: row.methionine == null ? null : Number(row.methionine),
+      nutrientProfile: row.nutrient_profile || {}, active: row.is_active,
+      createdAt: row.created_at
+    }));
+    const suppliers = supplierRows.map(row => ({
+      id: row.id, name: row.name, contact: row.contact_person || "",
+      telephone: row.telephone || "", address: row.address || "",
+      notes: row.notes || "", active: row.is_active, createdAt: row.created_at
+    }));
+    const purchases = purchaseRows.map(row => ({
+      id: row.id, supplierId: row.supplier_id, ingredientId: row.ingredient_id,
+      invoiceNumber: row.invoice_number || "", date: row.purchased_on,
+      quantity: Number(row.quantity), unitPrice: Number(row.unit_price),
+      transportCost: Number(row.transport_cost), otherCost: Number(row.other_cost),
+      totalCost: Number(row.total_cost), landedUnitCost: Number(row.landed_unit_cost),
+      paidAmount: 0, balanceDue: Number(row.total_cost), paymentStatus: "Not tracked",
+      payments: [], notes: row.notes || "", createdAt: row.created_at
+    }));
+    const rawMovements = movementRows.map(row => ({
+      id: row.id, ingredientId: row.ingredient_id, type: row.movement_type,
+      quantity: Number(row.quantity_change), unitCost: Number(row.unit_cost),
+      reference: row.reference || "", date: row.occurred_on,
+      notes: row.notes || "", createdAt: row.created_at
+    }));
+
+    const itemsByVersion = new Map();
+    itemRows.forEach(row => {
+      if (!itemsByVersion.has(row.formula_version_id)) itemsByVersion.set(row.formula_version_id, []);
+      const ingredient = ingredients.find(item => item.id === row.ingredient_id);
+      itemsByVersion.get(row.formula_version_id).push({
+        ingredientId: row.ingredient_id, name: ingredient?.name || "Ingredient",
+        quantity: Number(row.quantity), unitPrice: Number(row.unit_price),
+        cost: Number(row.line_cost), inclusionRate: Number(row.inclusion_rate || 0),
+        nutrients: row.nutrient_snapshot || {}
+      });
+    });
+    const formulas = versionRows.map(row => ({
+      id: row.id,
+      name: formulaRows.find(formula => formula.id === row.formula_id)?.name || "Feed formula",
+      stage: formulaRows.find(formula => formula.id === row.formula_id)?.stage || "custom",
+      version: Number(row.version_number), status: row.status,
+      items: itemsByVersion.get(row.id) || [],
+      totalWeight: Number(row.total_weight), totalCost: Number(row.total_cost),
+      costPerKg: Number(row.cost_per_kg), nutrients: row.nutrient_profile || {},
+      targetWeight: row.target_weight == null ? null : Number(row.target_weight),
+      notes: row.notes || "", previousVersionId: row.previous_version_id || null,
+      createdAt: row.created_at
+    }));
+
+    const production = productionRows.map(row => ({
+      id: row.id, formulaId: row.formula_version_id,
+      formulaVersion: Number(formulas.find(f => f.id === row.formula_version_id)?.version || 1),
+      quantity: Number(row.quantity), productionCost: Number(row.production_cost),
+      costPerKg: Number(row.cost_per_kg), date: row.produced_on,
+      batchNumber: row.batch_number || "", notes: row.notes || "", createdAt: row.created_at
+    }));
+    const finishedMovements = finishedRows.map(row => ({
+      id: row.id, formulaId: row.formula_version_id, type: row.movement_type,
+      quantity: Number(row.quantity_change), unitCost: Number(row.unit_cost),
+      reference: row.reference || "", date: row.occurred_on,
+      notes: row.notes || "", createdAt: row.created_at
+    }));
+
+    const batches = await loadLivestockBatches("broiler");
+    const localBatchIdByCloud = new Map(batches.map(batch => [String(batch.cloudId || batch.id), String(batch.id)]));
+    const allocations = allocationRows.map(row => ({
+      id: row.id, batchId: localBatchIdByCloud.get(String(row.livestock_batch_id)) || row.livestock_batch_id,
+      formulaId: row.formula_version_id, quantity: Number(row.quantity),
+      costPerKg: Number(row.cost_per_kg), totalCost: Number(row.total_cost),
+      date: row.allocated_on, notes: row.notes || "", createdAt: row.created_at
+    }));
+    const consumption = consumptionRows.map(row => ({
+      id: row.id, type: "feed",
+      batchId: localBatchIdByCloud.get(String(row.livestock_batch_id)) || row.livestock_batch_id,
+      allocationId: row.allocation_id, quantity: Number(row.quantity),
+      date: row.consumed_on, notes: row.notes || "", createdAt: row.created_at
+    }));
+
+    return {
+      ingredients, suppliers, purchases, rawMovements, formulas, production,
+      finishedMovements, allocations, consumption, batches,
+      selectedBatch: batches[0]?.id || "", activeTab: "overview"
+    };
+  }
+
   window.FratelCloud = Object.freeze({
     ready, getUser, ensureFarm, ensureEnterprise,
     select, insert, upsert, update, remove,
-    loadLivestockBatches, saveLivestockBatch, deleteLivestockBatch
+    loadLivestockBatches, saveLivestockBatch, deleteLivestockBatch,
+    saveFeedState, loadFeedState
   });
 
   client().auth.onAuthStateChange((_event, session) => {
