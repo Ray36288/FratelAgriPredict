@@ -37,6 +37,7 @@
     finishedMovements: [],
     allocations: [],
     consumption: [],
+    priceHistory: [],
     batches: [],
     selectedBatch: "",
     activeTab: "overview"
@@ -62,7 +63,7 @@
   function saveState() {
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     ["ingredients", "suppliers", "purchases", "rawMovements", "formulas",
-      "production", "finishedMovements", "allocations", "consumption"].forEach(key => {
+      "production", "finishedMovements", "allocations", "consumption", "priceHistory"].forEach(key => {
       state[key].forEach(item => {
         if (!uuidPattern.test(String(item.id || ""))) item.id = crypto.randomUUID();
       });
@@ -114,7 +115,7 @@
       const remote = await window.FratelCloud.loadFeedState();
       const arrayKeys = [
         "ingredients", "suppliers", "purchases", "rawMovements", "formulas",
-        "production", "finishedMovements", "allocations", "consumption"
+        "production", "finishedMovements", "allocations", "consumption", "priceHistory"
       ];
       const remoteHasRecords = arrayKeys.some(key => Array.isArray(remote[key]) && remote[key].length);
       const localSnapshot = JSON.parse(JSON.stringify(state));
