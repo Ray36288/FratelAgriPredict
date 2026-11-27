@@ -16,6 +16,7 @@
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
   const HORIZONS = [7, 14, 30, 60, 90];
   const BROILER_KEY = "agripredict_broiler_v1";
+  let latestForecastSnapshot = null;
   const fmt = value => Number(value || 0).toLocaleString("en-UG", { maximumFractionDigits: 2 });
   const money = value => `UGX ${Math.round(Number(value || 0)).toLocaleString("en-UG")}`;
   function horizonSettings() {
@@ -392,6 +393,7 @@
     if (simInput && chosen) {
       if (simInput.dataset.ingredientId !== String(chosen.ingredient.id)) {
         simInput.dataset.ingredientId = String(chosen.ingredient.id);
+        simInput.dataset.scenarioEdited = "false";
         simInput.value = Number(chosen.latestPrice ?? chosen.forecastPrice ?? 0).toFixed(2);
       }
     }
@@ -478,6 +480,89 @@
 
     const knowledge = $("#afiKnowledgeStatus");
     if(knowledge) knowledge.innerHTML = `<div><strong>Poultry nutrition</strong><span>${formulas.length?"Formula nutrient profiles can be analysed where ingredient composition is recorded.":"Awaiting feed formulations."}</span></div><div><strong>Growth science</strong><span>${production.recordedWeightPoints?`${production.recordedWeightPoints} dated weight records available.`:"Awaiting repeated weight measurements."}</span></div><div><strong>Health and biosecurity</strong><span>${production.batches.reduce((s,b)=>s+b.mortalityEvents,0)} mortality event(s) recorded; diagnosis is not inferred from mortality alone.</span></div><div><strong>Environment and climate</strong><span>Temperature, humidity and ventilation data are not yet connected.</span></div><div><strong>Agricultural economics</strong><span>${pricePoints} dated landed-cost observations available for ingredient price modelling.</span></div><div><strong>Wider agriculture</strong><span>Framework is extensible to crop and other livestock enterprises; no crop records are currently connected.</span></div>`;
+
+    const revenueSupported = production.batches.length > 0 && production.batches.every(batch => batch.expectedRevenue != null);
+    const profitSupported = production.batches.length > 0 && production.batches.every(batch => batch.projectedProfit != null);
+    const projectedRevenue = revenueSupported
+      ? production.batches.reduce((sum, batch) => sum + Number(batch.expectedRevenue || 0), 0) : null;
+    const projectedProfit = profitSupported
+      ? production.batches.reduce((sum, batch) => sum + Number(batch.projectedProfit || 0), 0) : null;
+    const r2Values = [...priceModels.values()].map(model => model.r2).filter(value => Number.isFinite(value));
+    const confidenceScore = r2Values.length
+      ? r2Values.reduce((sum, value) => sum + value, 0) / r2Values.length * 100 : null;
+    const scenarioEdited = simInput?.dataset.scenarioEdited === "true" && hasSimulation;
+    const scenarioResult = {
+      selectedIngredient: chosen ? {
+        id: chosen.ingredient.id, name: chosen.ingredient.name,
+        latestLandedPrice: chosen.latestPrice, modelForecastPrice: chosen.forecastPrice,
+        enteredPrice: scenarioEdited ? simulatedPrice : null
+      } : null,
+      formulaForecasts: formulaModels.map(model => ({
+        formulaId: model.formula.id, name: model.formula.name,
+        baselineCostPerKg: model.baselineCost == null || !model.totalWeight ? null : model.baselineCost / model.totalWeight,
+        forecastCostPerKg: model.projectedCostPerKg
+      })),
+      productionForecasts: production.batches.map(batch => ({
+        batchId: batch.id, name: batch.name, ageDays: batch.age, birdsAlive: batch.birds,
+        projectedHarvestWeight: batch.harvestWeight, projectedFeedNeed: batch.futureFeedNeed,
+        projectedFeedCost: batch.futureFeedCost, expectedRevenue: batch.expectedRevenue,
+        projectedProfit: batch.projectedProfit
+      })),
+      feedPurchaseCost: baseFeedCost,
+      simulatedFeedPurchaseCost: scenarioEdited ? simFeedCost : null,
+      simulatedFeedCostChange: scenarioEdited ? feedCostDelta : null
+    };
+    latestForecastSnapshot = {
+      horizonDays: horizon,
+      dataThroughDate: new Date().toISOString().slice(0, 10),
+      method: "landed-ingredient-price-trend-and-record-led-broiler-performance",
+      modelVersion: "afi-1.0",
+      baselineDailyCost: null,
+      projectedCost: baseFeedCost,
+      projectedRevenue,
+      projectedProfit,
+      confidenceScore,
+      assumptions: {
+        currency: "UGX",
+        ingredientPriceBasis: "landed",
+        horizonLabel: horizonInfo.label,
+        trendMethod: "ordinary-least-squares on dated landed-cost observations",
+        confidenceScoreMeaning: "mean R-squared of ingredient trends with sufficient observations; not a probability"
+      },
+      inputSnapshot: {
+        ingredients: ingredients.map(item => ({
+          id: item.id, name: item.name, currentPrice: item.currentPrice,
+          datedPriceObservations: priceModels.get(item.id)?.points?.length || 0
+        })),
+        purchases: state.purchases.map(item => ({
+          id: item.id, ingredientId: item.ingredientId, date: item.date,
+          quantity: item.quantity, landedUnitCost: item.landedUnitCost
+        })),
+        formulas: formulaModels.map(model => ({
+          id: model.formula.id, name: model.formula.name, version: model.formula.version,
+          items: model.items.map(item => ({
+            ingredientId: item.ingredientId, quantity: item.quantity, unitPrice: item.latestUnitPrice
+          }))
+        })),
+        batches: production.batches.map(batch => ({
+          id: batch.id, name: batch.name, ageDays: batch.age, birdsAlive: batch.birds,
+          weightObservations: batch.weightPoints
+        }))
+      },
+      resultSnapshot: scenarioResult,
+      scenarios: scenarioEdited ? [{
+        name: `${chosen.ingredient.name} landed-price simulation`,
+        horizonDays: horizon,
+        inputChanges: {
+          ingredientId: chosen.ingredient.id,
+          ingredientName: chosen.ingredient.name,
+          baselineLandedPrice: chosen.latestPrice,
+          modelForecastPrice: chosen.forecastPrice,
+          simulatedLandedPrice: simulatedPrice
+        },
+        resultSnapshot: scenarioResult
+      }] : []
+    };
   }
 
   function render() {
@@ -496,7 +581,7 @@
     $("#afiHorizonAmount")?.addEventListener("input",render);
     $("#afiHorizonUnit")?.addEventListener("change",render);
     $("#afiIngredient")?.addEventListener("change",render);
-    $("#afiSimPrice")?.addEventListener("input",render);
+    $("#afiSimPrice")?.addEventListener("input",event=>{event.target.dataset.scenarioEdited="true";render();});
     $("#afiSimReset")?.addEventListener("click",()=>{
       const input=$("#afiSimPrice");
       const selected=FEED?.state?.ingredients?.find(item=>item.id===$("#afiIngredient")?.value);
@@ -504,11 +589,33 @@
         const latestModel=forecastIngredient(selected,horizonSettings().days);
         const resetPrice=latestModel.latestPrice ?? Number(selected.currentPrice) ?? 0;
         input.dataset.ingredientId=String(selected.id);
+        input.dataset.scenarioEdited="false";
         input.value=Number(resetPrice).toFixed(2);
       }
       render();
     });
     $("#afiRefresh")?.addEventListener("click",render);
+    $("#afiSaveSnapshot")?.addEventListener("click",async()=>{
+      const status=$("#afiSaveStatus");
+      const button=$("#afiSaveSnapshot");
+      if(!window.FratelCloud){
+        if(status)status.textContent="Cloud storage is not available on this page.";
+        return;
+      }
+      try{
+        if(!latestForecastSnapshot)renderContent();
+        if(!latestForecastSnapshot)throw new Error("Generate a forecast before saving.");
+        if(status)status.textContent="Saving forecast to your farm account…";
+        if(button)button.disabled=true;
+        const saved=await window.FratelCloud.saveForecastRun(latestForecastSnapshot);
+        if(status)status.textContent=`Saved forecast ${saved.run?.id ? saved.run.id.slice(0,8) : "successfully"}${saved.scenarios?.length ? " with what-if scenario" : ""}.`;
+      }catch(error){
+        console.error("Could not save forecast snapshot:",error);
+        if(status)status.textContent="Could not save forecast: "+(error.message||"Please try again.");
+      }finally{
+        if(button)button.disabled=false;
+      }
+    });
     document.addEventListener("agripredict:feed-data-updated",render);
     document.addEventListener("agripredict:broiler-data-updated",render);
     window.addEventListener("storage",event=>{if(!event.key||event.key===BROILER_KEY||event.key==="agripredict_broiler_feed_v1")render();});
