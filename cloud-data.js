@@ -587,14 +587,12 @@
         priceHistory: [], batches: [], selectedBatch: "", activeTab: "overview"
       };
     }
-    const [ingredientRows, supplierRows, purchaseRows, movementRows, formulaRows, versionRows, itemRows, productionRows, finishedRows, allocationRows, consumptionRows, priceHistoryRows, paymentRows] = await Promise.all([
+    const [ingredientRows, supplierRows, purchaseRows, movementRows, formulaRows, productionRows, finishedRows, allocationRows, consumptionRows, priceHistoryRows, paymentRows] = await Promise.all([
       select("feed_ingredients", "*", q => q.eq("enterprise_id", enterprise.id)),
       select("feed_suppliers", "*", q => q.eq("farm_id", farm.id)),
       select("feed_purchases", "*", q => q.eq("enterprise_id", enterprise.id)),
       select("feed_stock_movements", "*", q => q.eq("enterprise_id", enterprise.id)),
       select("feed_formulas", "*", q => q.eq("enterprise_id", enterprise.id)),
-      select("feed_formula_versions", "*"),
-      select("feed_formula_items", "*"),
       select("feed_production", "*", q => q.eq("enterprise_id", enterprise.id)),
       select("finished_feed_movements", "*", q => q.eq("enterprise_id", enterprise.id)),
       select("feed_allocations", "*", q => q.eq("enterprise_id", enterprise.id)),
@@ -602,6 +600,14 @@
       select("farm_price_history", "*", q => q.eq("enterprise_id", enterprise.id).eq("price_category", "feed_ingredient")),
       select("farm_transactions", "*", q => q.eq("enterprise_id", enterprise.id).eq("category", "feed_purchase_payment"))
     ]);
+    const formulaIds = formulaRows.map(formula => formula.id);
+    const versionRows = formulaIds.length
+      ? await select("feed_formula_versions", "*", q => q.in("formula_id", formulaIds))
+      : [];
+    const versionIds = versionRows.map(version => version.id);
+    const itemRows = versionIds.length
+      ? await select("feed_formula_items", "*", q => q.in("formula_version_id", versionIds))
+      : [];
 
     const ingredients = ingredientRows.map(row => ({
       id: row.id, name: row.name, category: row.category, unit: row.unit,
