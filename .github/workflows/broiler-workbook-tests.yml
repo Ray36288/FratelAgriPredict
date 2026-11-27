@@ -18,5 +18,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Check JavaScript syntax
+        run: node --check broiler-workbook-engine.js && node --check broiler-workbook-intelligence.js && node --check cloud-data.js
       - name: Verify Excel parity and calculation generalisation
         run: node --test tests/broiler-workbook-engine.test.js
