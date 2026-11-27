@@ -38,6 +38,7 @@
     allocations: [],
     consumption: [],
     priceHistory: [],
+    ownerId: null,
     batches: [],
     selectedBatch: "",
     activeTab: "overview"
@@ -55,6 +56,7 @@
       }
       if (typeof saved.selectedBatch === "string") state.selectedBatch = saved.selectedBatch;
       if (typeof saved.activeTab === "string") state.activeTab = saved.activeTab;
+      if (typeof saved.ownerId === "string") state.ownerId = saved.ownerId;
     } catch (error) {
       console.error("Could not load feed records:", error);
     }
@@ -81,7 +83,13 @@
 
     const snapshot = JSON.parse(JSON.stringify(state));
     const task = cloudSaveQueue.catch(() => {}).then(async () => {
-      await window.FratelCloud.ready();
+      const { user } = await window.FratelCloud.ready();
+      if (snapshot.ownerId && snapshot.ownerId !== user.id) {
+        throw new Error("The local feed cache belongs to a different farmer account. Reload the page before saving.");
+      }
+      snapshot.ownerId = user.id;
+      state.ownerId = user.id;
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
       await window.FratelCloud.saveFeedState(snapshot);
       document.dispatchEvent(new CustomEvent("agripredict:feed-cloud-saved"));
       return true;
@@ -111,8 +119,17 @@
     if (cloudHydrationPromise) return cloudHydrationPromise;
     cloudHydrationPromise = (async () => {
       if (!window.FratelCloud || typeof window.FratelCloud.loadFeedState !== "function") return false;
-      await window.FratelCloud.ready();
-      const remote = await window.FratelCloud.loadFeedState();
+      const { user } = await window.FratelCloud.ready();
+      const localBelongsToAnotherUser = !!state.ownerId && state.ownerId !== user.id;
+      if (localBelongsToAnotherUser) {
+        ["ingredients", "suppliers", "purchases", "rawMovements", "formulas",
+          "production", "finishedMovements", "allocations", "consumption", "priceHistory", "batches"]
+          .forEach(key => { state[key] = []; });
+        state.selectedBatch = "";
+        state.activeTab = "overview";
+      }
+      state.ownerId = user.id;
+      const remote = await window.FratelCloud.loadFeedState(true);
       const arrayKeys = [
         "ingredients", "suppliers", "purchases", "rawMovements", "formulas",
         "production", "finishedMovements", "allocations", "consumption", "priceHistory"
