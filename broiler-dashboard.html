@@ -10,6 +10,7 @@
 
   <link rel="stylesheet" href="broiler-dashboard.css">
   <link rel="stylesheet" href="broiler-fresh-green.css">
+  <link rel="stylesheet" href="broiler-workbook-engine.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="supabase-config.js" defer></script>
   <script src="cloud-data.js" defer></script>
@@ -17,6 +18,7 @@
   <script src="broiler-feed-ui.js" defer></script>
   <script src="broiler-dashboard.js" defer></script>
   <script src="agri-forecast-intelligence.js" defer></script>
+  <script src="broiler-workbook-engine.js" defer></script>
 </head>
 
 <body>
@@ -1115,6 +1117,43 @@
             <article class="content-panel afi-panel"><div class="panel-heading"><div><span class="eyebrow">07 · PREDICTIVE RISK MONITOR</span><h2>Farm signals and data gaps</h2><p>Signals are explanations of recorded patterns, not unsupported diagnoses.</p></div></div><div id="afiInsights" class="afi-insights"></div></article>
             <article class="content-panel afi-panel"><div class="panel-heading"><div><span class="eyebrow">08 · AGRICULTURAL KNOWLEDGE</span><h2>Scientific interpretation coverage</h2><p>Specialist broiler analysis within an extensible whole-agriculture framework.</p></div></div><div id="afiKnowledgeStatus" class="afi-knowledge-list"></div></article>
           </div>
+
+          <article class="content-panel afi-panel" id="broilerWorkbookPanel">
+            <div class="panel-heading"><div><span class="eyebrow">WORKBOOK-FAITHFUL CALCULATION</span><h2>Feed, flock cost & selling calculator</h2><p>Uses the ingredient rows, four feed stages, seven daily intake values and laying calculations from the uploaded Excel workbook. Original entries remain editable.</p></div></div>
+            <div class="wb-controls">
+              <label>Flock / batch<select id="wbBatch"><option value="">Loading batches…</option></select></label>
+              <label>Birds in this calculation<input id="wbBirdCount" type="number" min="0" step="1" value="5000"></label>
+              <label>Feed formulation stage<select id="wbStage"><option value="rearing_0_4">Rearing · 0–4 weeks</option><option value="rearing_4_8">Rearing · 4 to 8 weeks</option><option value="pullet_8_17">Pullet · 8 to 17 weeks</option><option value="prelay_17_20">Pre-lay · 17 to 20 weeks</option></select></label>
+            </div>
+            <div class="wb-kpi-grid">
+              <div class="wb-kpi"><small>Mix weight</small><strong id="wbFormulaWeight">—</strong></div>
+              <div class="wb-kpi"><small>Total mix cost</small><strong id="wbFormulaCost">—</strong></div>
+              <div class="wb-kpi"><small>Cost per kg mixed feed</small><strong id="wbFormulaKg">—</strong></div>
+              <div class="wb-kpi"><small>7-week feed requirement</small><strong id="wbTotalFeed">—</strong></div>
+              <div class="wb-kpi"><small>7-week feed expenditure</small><strong id="wbTotalCost">—</strong></div>
+            </div>
+            <h3 class="wb-subtitle">1. Ingredient quantities and prices</h3>
+            <p class="wb-note">All 17 ingredient rows from Excel are shown, including repeated names, zero inclusions and very small quantities. Change the quantity or price to see the formula cost recalculate. A blank pre-lay quantity remains blank until the farmer supplies it.</p>
+            <div class="wb-table-wrap"><table><thead><tr><th>Ingredient (Excel row)</th><th>Quantity in 1,000 kg mix</th><th>Price (UGX/kg)</th><th>Ingredient cost</th><th>Inclusion (%)</th></tr></thead><tbody id="wbIngredientRows"><tr><td colspan="5">Loading workbook values…</td></tr></tbody></table></div>
+            <h3 class="wb-subtitle">2. Daily and weekly feed requirement per bird and flock</h3>
+            <p class="wb-note">Daily intake is different in each week. Weekly intake per bird = daily kg per bird × days per week. Flock kilograms use the selected bird count; the active batch's recorded sales and mortality reduce the live count.</p>
+            <div class="wb-table-wrap"><table><thead><tr><th>Week</th><th>Daily kg/bird</th><th>Days</th><th>Weekly kg/bird</th><th>Birds</th><th>Flock feed</th><th>Feed cost/bird</th><th>Flock feed cost</th></tr></thead><tbody id="wbWeeklyRows"><tr><td colspan="8">Loading schedule…</td></tr></tbody></table></div>
+            <h3 class="wb-subtitle">3. Laying percentage and egg production</h3>
+            <p class="wb-note">The source workbook has seven laying-percentage entries, all initially 0. They are editable. Daily eggs = birds × laying percentage; weekly eggs = daily eggs × days per week. These values are not broiler meat-production indicators.</p>
+            <div class="wb-table-wrap"><table><thead><tr><th>Week</th><th>Laying (%)</th><th>Daily eggs</th><th>Weekly eggs</th></tr></thead><tbody id="wbLayingRows"><tr><td colspan="4">Loading…</td></tr></tbody></table></div>
+            <h3 class="wb-subtitle">4. Selling price at each available week</h3>
+            <p class="wb-note">This calculator uses accumulated feed cost from the workbook plus chick cost and other cost per bird entered below. It will not call a partial subtotal a guaranteed no-loss price. Costs not entered, mortality allocation, finance charges and market value must be accounted for before a final commercial selling decision.</p>
+            <div class="wb-sale-grid">
+              <label>Sale stage<select id="wbSaleWeek"><option value="1">Week 1</option><option value="2">Week 2</option><option value="3">Week 3</option><option value="4">Week 4</option><option value="5">Week 5</option><option value="6">Week 6</option><option value="7">Week 7</option></select></label>
+              <label>Birds to sell<input id="wbSaleBirds" type="number" min="1" step="1" placeholder="Enter number"></label>
+              <label>Chick cost per bird (UGX)<input id="wbChickCost" type="number" min="0" step="any" placeholder="Enter actual cost"></label>
+              <label>Other costs per bird (UGX)<input id="wbOtherCost" type="number" min="0" step="any" placeholder="Enter allocated costs"></label>
+            </div>
+            <div class="wb-sale-result"><small>Calculated cost floor per bird</small><strong id="wbSaleFloor">—</strong><p id="wbSaleNote" class="wb-note">Enter actual costs to calculate a complete break-even price.</p></div>
+            <div class="wb-actions"><button type="button" class="btn btn-primary" id="wbSave">Save workbook settings</button><button type="button" class="btn btn-outline" id="wbReset">Restore original Excel inputs</button></div>
+            <small id="wbStatus" role="status" aria-live="polite">Loading saved workbook settings…</small>
+          </article>
+
           <p class="afi-disclaimer">Scientific integrity: model outputs are decision-support estimates, not veterinary diagnoses or guaranteed outcomes. Breed-specific nutrient targets, environmental measurements and external market data must be supplied before those dimensions can be forecast reliably.</p>
         </section>
 
