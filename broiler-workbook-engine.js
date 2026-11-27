@@ -109,21 +109,25 @@
     return {stageId,complete:totalWeightKg>0,lines,totalWeightKg,totalCost,costPerKg:totalWeightKg>0?totalCost/totalWeightKg:null,costPerTonne:totalWeightKg>0?totalCost/totalWeightKg*1000:null,reason:totalWeightKg>0?"":"Formula total weight is zero."};
   }
 
-  function calculateWorkbook(model, birdsOverride) {
+  function calculateWorkbook(model, birdsOverride, batch) {
     const validation=validateModel(model);
     const birdsDefault=Number(birdsOverride ?? model.defaultBirds);
     const formulas=Object.fromEntries((model.stages||[]).map(stage=>[stage.id,calculateFormula(model,stage.id)]));
     const weeks=(model.weeklyIntake||[]).map((row,index)=>{
       const birds=birdsDefault;
       const weeklyPerBirdKg=Number(row.dailyKg)*Number(row.days);
-      const totalFeedKg=weeklyPerBirdKg*birds;
+      const dailyCounts=batch?.placementDate ? weeklyBirdCounts(batch,row.week) : null;
+      const birdsAtStart=dailyCounts?.[0]?.birds ?? birds;
+      const birdsAtEnd=dailyCounts?.[dailyCounts.length-1]?.birds ?? birds;
+      const totalBirdDays=dailyCounts ? dailyCounts.reduce((sum,day)=>sum+day.birds,0) : birds*Number(row.days);
+      const totalFeedKg=dailyCounts ? dailyCounts.reduce((sum,day)=>sum+Number(row.dailyKg)*day.birds,0) : weeklyPerBirdKg*birds;
       const formula=formulas[model.weekStageMap?.[index]];
       const feedCostPerBird=formula?.complete?weeklyPerBirdKg*formula.costPerKg:null;
       const totalFeedCost=formula?.complete?totalFeedKg*formula.costPerKg:null;
       const ingredients=formula?.complete?formula.lines.map(line=>({id:line.id,name:line.name,quantityKg:totalFeedKg*line.quantityKg/formula.totalWeightKg,cost:totalFeedKg*line.quantityKg/formula.totalWeightKg*line.pricePerKg})): [];
       const layingPercent=Number(model.layingPercentages?.[index] ?? row.layingPercent ?? 0);
       const dailyEggs=birds*layingPercent/100;
-      return {week:row.week,dailyKgPerBird:Number(row.dailyKg),days:Number(row.days),weeklyKgPerBird:weeklyPerBirdKg,birds,totalFeedKg,stageId:model.weekStageMap?.[index]||null,formulaCostPerKg:formula?.costPerKg??null,feedCostPerBird,totalFeedCost,ingredients,layingPercent,dailyEggs,weeklyEggs:dailyEggs*Number(row.days),complete:Boolean(formula?.complete)};
+      return {week:row.week,dailyKgPerBird:Number(row.dailyKg),days:Number(row.days),weeklyKgPerBird:weeklyPerBirdKg,birds,birdsAtStart,birdsAtEnd,totalBirdDays,totalFeedKg,stageId:model.weekStageMap?.[index]||null,formulaCostPerKg:formula?.costPerKg??null,feedCostPerBird,totalFeedCost,ingredients,layingPercent,dailyEggs,weeklyEggs:dailyEggs*Number(row.days),complete:Boolean(formula?.complete)};
     });
     return {validation,formulas,weeks,totalFeedKg:weeks.reduce((s,w)=>s+w.totalFeedKg,0),totalFeedCost:weeks.every(w=>w.complete)?weeks.reduce((s,w)=>s+w.totalFeedCost,0):null};
   }
@@ -203,8 +207,7 @@
   }
   function currentBirds() {
     if(!activeBatch)return Number(model.defaultBirds)||0;
-    const events=(activeBatch.records||[]).filter(r=>r.type==="mortality"||r.type==="sale").reduce((s,r)=>s+(Number(r.quantity)||0),0);
-    return Math.max(0,(Number(activeBatch.initialBirds)||0)-events);
+    return birdsAliveAt(activeBatch,new Date().toISOString().slice(0,10));
   }
   function render() {
     if(!$("#broilerWorkbookPanel"))return;
@@ -212,12 +215,13 @@
     const stageId=$(ids.stage)?.value||"rearing_0_4";
     const formula=calculateFormula(model,stageId);
     const birdCount=Number($(ids.birds)?.value||currentBirds()||model.defaultBirds);
-    const result=calculateWorkbook(model,birdCount);
+    const useBatchTimeline=activeBatch && Number($(ids.birds)?.value)===currentBirds();
+    const result=calculateWorkbook(model,birdCount,useBatchTimeline?activeBatch:null);
     if($(ids.formulaWeight))$(ids.formulaWeight).textContent=formula.complete?kg(formula.totalWeightKg):"Not configured";
     if($(ids.formulaCost))$(ids.formulaCost).textContent=formula.complete?money(formula.totalCost):"Not available";
     if($(ids.formulaKg))$(ids.formulaKg).textContent=formula.complete?money(formula.costPerKg)+"/kg":"Not available";
     if($(ids.ingredientBody))$(ids.ingredientBody).innerHTML=formula.lines.map(line=>'<tr><td>'+esc(line.name)+' <small>Row '+line.sourceRow+'</small></td><td><input type="number" min="0" step="any" data-wb-quantity="'+esc(line.id)+'" value="'+(line.quantityKg===null?"":line.quantityKg)+'" '+(line.quantityKg===null?'placeholder="Blank in Excel"':'')+'></td><td><input type="number" min="0" step="any" data-wb-price="'+esc(line.id)+'" value="'+esc(model.ingredients.find(x=>x.id===line.id).pricePerKg)+'"></td><td>'+ (line.lineCost===null?"—":money(line.lineCost))+'</td><td>'+ (line.inclusionPercent===null?"—":line.inclusionPercent.toLocaleString("en-UG",{maximumFractionDigits:8})+"%")+'</td></tr>').join("");
-    if($(ids.weeklyBody))$(ids.weeklyBody).innerHTML=result.weeks.map(w=>'<tr><td>Week '+w.week+'</td><td>'+w.dailyKgPerBird.toLocaleString("en-UG",{maximumFractionDigits:6})+'</td><td>'+w.days+'</td><td>'+w.weeklyKgPerBird.toLocaleString("en-UG",{maximumFractionDigits:6})+'</td><td>'+w.birds.toLocaleString("en-UG")+'</td><td>'+kg(w.totalFeedKg)+'</td><td>'+(w.complete?money(w.feedCostPerBird):"Formula missing")+'</td><td>'+(w.complete?money(w.totalFeedCost):"Not available")+'</td></tr>').join("");
+    if($(ids.weeklyBody))$(ids.weeklyBody).innerHTML=result.weeks.map(w=>'<tr><td>Week '+w.week+'</td><td>'+w.dailyKgPerBird.toLocaleString("en-UG",{maximumFractionDigits:6})+'</td><td>'+w.days+'</td><td>'+w.weeklyKgPerBird.toLocaleString("en-UG",{maximumFractionDigits:6})+'</td><td>'+w.birdsAtStart.toLocaleString("en-UG")+' → '+w.birdsAtEnd.toLocaleString("en-UG")+'</td><td>'+kg(w.totalFeedKg)+'</td><td>'+(w.complete?money(w.feedCostPerBird):"Formula missing")+'</td><td>'+(w.complete?money(w.totalFeedCost):"Not available")+'</td></tr>').join("");
     if($(ids.layingBody))$(ids.layingBody).innerHTML=result.weeks.map(w=>'<tr><td>Week '+w.week+'</td><td><input type="number" min="0" max="100" step="any" data-wb-laying="'+w.week+'" value="'+w.layingPercent+'"></td><td>'+w.dailyEggs.toLocaleString("en-UG",{maximumFractionDigits:2})+'</td><td>'+w.weeklyEggs.toLocaleString("en-UG",{maximumFractionDigits:2})+'</td></tr>').join("");
     if($(ids.totalFeed))$(ids.totalFeed).textContent=kg(result.totalFeedKg);
     if($(ids.totalCost))$(ids.totalCost).textContent=result.totalFeedCost===null?"Incomplete":money(result.totalFeedCost);
@@ -229,7 +233,7 @@
     if($(ids.status))$(ids.status).textContent=validation.errors.length?validation.errors.join(" "):validation.warnings.length?validation.warnings.join(" "):"Workbook inputs loaded. Calculations are linked to the selected flock.";
   }
   function bind() {
-    document.addEventListener("input",event=>{
+    document.addEventListener("change",event=>{
       const q=event.target.closest("[data-wb-quantity]");
       const p=event.target.closest("[data-wb-price]");
       const l=event.target.closest("[data-wb-laying]");
