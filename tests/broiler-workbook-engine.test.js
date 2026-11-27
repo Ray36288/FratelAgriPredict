@@ -94,14 +94,13 @@ test("builds the live daily flock schedule from dated sales and mortality record
  ]);
  const r=E.calculate(schedule.model,{flockEvents:schedule.flockEvents});
  assert.deepEqual(r.weeks[0].dailyRows.map(x=>x.birds),[5000,5000,5000,5000,4500,4500,4400]);
- assert.equal(r.weeks[0].totalFeedKg,0.01*5000*4+0.01*4500*2+0.01*4400);
+ close(r.weeks[0].totalFeedKg,0.01*5000*4+0.01*4500*2+0.01*4400,1e-12);
  assert.equal(r.weeks[1].totalFeedKg,4400*0.07);
 });
 test("rejects flock events before placement and flock reductions beyond the live count",()=>{
  const m=E.createDefaultModel();
  assert.throws(()=>E.buildFlockScheduleFromBatch(m,{initialBirds:10,placementDate:"2026-01-01",records:[{type:"sale",date:"2025-12-31",quantity:1}]}),/before the batch placement/);
- const schedule=E.buildFlockScheduleFromBatch(m,{initialBirds:10,placementDate:"2026-01-01",records:[{type:"sale",date:"2026-01-01",quantity:11}]});
- assert.throws(()=>E.calculate(schedule.model,{flockEvents:schedule.flockEvents}),/flock count cannot fall below zero/);
+ assert.throws(()=>E.buildFlockScheduleFromBatch(m,{initialBirds:10,placementDate:"2026-01-01",records:[{type:"sale",date:"2026-01-01",quantity:11}]}),/exceed the birds available on feeding day/);
 });
 
 test("reports feed cost per bird at each stage and flags incomplete pre-lay",()=>{
