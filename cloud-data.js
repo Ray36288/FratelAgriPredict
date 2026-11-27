@@ -737,6 +737,56 @@
   }
 
 
+
+  async function saveForecastRun(snapshot) {
+    if (!snapshot || typeof snapshot !== "object") throw new Error("A forecast snapshot is required.");
+    const { user } = await ready();
+    const farm = await ensureFarm();
+    const enterprise = await ensureEnterprise("broiler", "Broiler Farming");
+    const runId = UUID_RE.test(snapshot.id || "") ? snapshot.id : crypto.randomUUID();
+    const run = {
+      id: runId, farm_id: farm.id, enterprise_id: enterprise.id,
+      horizon_days: Math.max(1, Math.round(Number(snapshot.horizonDays || 30))),
+      method: String(snapshot.method || "record-led-agricultural-forecast"),
+      model_version: snapshot.modelVersion || "afi-1.0",
+      data_through_date: snapshot.dataThroughDate || new Date().toISOString().slice(0, 10),
+      baseline_daily_cost: snapshot.baselineDailyCost == null ? null : Number(snapshot.baselineDailyCost),
+      projected_cost: snapshot.projectedCost == null ? null : Number(snapshot.projectedCost),
+      projected_revenue: snapshot.projectedRevenue == null ? null : Number(snapshot.projectedRevenue),
+      projected_profit: snapshot.projectedProfit == null ? null : Number(snapshot.projectedProfit),
+      confidence_score: snapshot.confidenceScore == null ? null : Number(snapshot.confidenceScore),
+      assumptions: snapshot.assumptions || {},
+      input_snapshot: snapshot.inputSnapshot || {},
+      result_snapshot: snapshot.resultSnapshot || {},
+      generated_by: user.id
+    };
+    const savedRuns = await insert("forecast_runs", [run]);
+    const scenarios = Array.isArray(snapshot.scenarios) ? snapshot.scenarios : [];
+    let savedScenarios = [];
+    if (scenarios.length) {
+      const rows = scenarios.map(item => ({
+        id: UUID_RE.test(item.id || "") ? item.id : crypto.randomUUID(),
+        farm_id: farm.id, forecast_run_id: runId,
+        scenario_name: String(item.name || "Farmer what-if scenario"),
+        horizon_days: Math.max(1, Math.round(Number(item.horizonDays || run.horizon_days))),
+        input_changes: item.inputChanges || {},
+        result_snapshot: item.resultSnapshot || {},
+        created_by: user.id
+      }));
+      savedScenarios = await insert("forecast_scenarios", rows);
+    }
+    return { run: savedRuns?.[0] || run, scenarios: savedScenarios };
+  }
+
+  async function loadForecastRuns(limit = 20) {
+    await ready();
+    const farm = await findFarm();
+    if (!farm) return [];
+    return select("forecast_runs", "*", query =>
+      query.eq("farm_id", farm.id).order("generated_at", { ascending: false }).limit(Math.max(1, Math.min(100, Number(limit) || 20)))
+    );
+  }
+
   async function savePortfolioInventory(records) {
     const { user } = await ready();
     const farm = await ensureFarm();
@@ -853,7 +903,8 @@
     select, insert, upsert, update, remove,
     loadLivestockBatches, saveLivestockBatch, deleteLivestockBatch,
     saveFeedState, loadFeedState,
-    savePortfolioInventory, savePortfolioExpenses, loadPortfolioData
+    savePortfolioInventory, savePortfolioExpenses, loadPortfolioData,
+    saveForecastRun, loadForecastRuns
   });
 
   client().auth.onAuthStateChange((_event, session) => {
