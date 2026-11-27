@@ -201,6 +201,7 @@
   async function saveLivestockBatch(batch, enterpriseType = "broiler") {
     if (!batch || typeof batch !== "object") throw new Error("A valid livestock batch is required.");
     const { user } = await ready();
+    if (batch.ownerId && batch.ownerId !== user.id) throw new Error("Cannot sync a broiler batch from another farmer account.");
     const enterprise = await ensureEnterprise(enterpriseType, "Broiler Farming");
     const localId = String(batch.id || "");
     let cloudId = UUID_RE.test(batch.cloudId || "") ? batch.cloudId : (UUID_RE.test(localId) ? localId : null);
@@ -326,10 +327,12 @@
   }
 
   async function cloudBatchesForFeed() {
+    const { user } = await ready();
     let batches = await loadLivestockBatches("broiler");
     const local = (() => {
       try {
         const saved = JSON.parse(localStorage.getItem("agripredict_broiler_v1") || "{}");
+        if (saved.ownerId && saved.ownerId !== user.id) return [];
         return Array.isArray(saved.batches) ? saved.batches : [];
       } catch { return []; }
     })();
