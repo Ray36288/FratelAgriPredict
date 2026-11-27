@@ -199,7 +199,7 @@
     select("#forecastBatch",batchOptions());
   }
 
-  function syncFeedConsumptionToBroiler(record) {
+  async function syncFeedConsumptionToBroiler(record) {
     const batch=(window.FratelAgriPredictDashboard?.getBatches?.()||[]).find(x=>x.id===record.batchId);
     if(!batch)return;
     batch.records=Array.isArray(batch.records)?batch.records:[];
@@ -213,18 +213,21 @@
       totalCost:n(record.quantity)*unitPrice,source:"feed-management",
       notes:"Recorded through Feed Management"
     });
+    if (!window.FratelCloud) throw new Error("Supabase broiler storage is unavailable.");
+    const saved = await window.FratelCloud.saveLivestockBatch(batch, "broiler");
+    batch.cloudId = saved.cloudId;
     window.dispatchEvent(new CustomEvent("agripredict:broiler-data-updated"));
   }
 
   function switchTab(name) {
     $$("[data-feed-tab]").forEach(b=>b.classList.toggle("active",b.dataset.feedTab===name));
     $$(".feed-tab-content").forEach(p=>{const active=p.id===`feedTab-${name}`;p.classList.toggle("active",active);p.hidden=!active;});
-    state.activeTab=name; APP.save();
+    state.activeTab=name;
   }
 
   function bind() {
     const page=$("#feedView"); if(!page || page.dataset.feedUiBound) return; page.dataset.feedUiBound="true";
-    page.addEventListener("click",e=>{
+    page.addEventListener("click",async e=>{
       const tab=e.target.closest("[data-feed-tab]"); if(tab){switchTab(tab.dataset.feedTab);return;}
       const inventoryTab=e.target.closest("[data-inventory-tab]"); if(inventoryTab){const name=inventoryTab.dataset.inventoryTab;$$('[data-inventory-tab]').forEach(b=>b.classList.toggle("active",b===inventoryTab));$$(".inventory-tab-content").forEach(panel=>{const active=panel.id===`inventoryTab-${name}`;panel.classList.toggle("active",active);panel.hidden=!active;});return;}
       const paymentButton=e.target.closest("[data-purchase-payment]");
@@ -248,7 +251,7 @@
         if($("#formulaNotes"))$("#formulaNotes").value=formula.notes||"";
         renderDraftFormula();notify(`Editing ${formula.name}. Save Formula to create a new version.`);return;
       }
-      const archive=e.target.closest("[data-feed-delete=\"ingredient\"]"); if(archive){try{APP.archiveIngredient(archive.dataset.id);refresh();notify("Ingredient archived.");}catch(err){notify(err.message);}return;}
+      const archive=e.target.closest("[data-feed-delete=\"ingredient\"]"); if(archive){try{await APP.archiveIngredient(archive.dataset.id);refresh();notify("Ingredient archived in Supabase.");}catch(err){notify(err.message||"Could not archive ingredient online.");}return;}
       const button=e.target.closest("#addIngredientBtn,#addFeedSupplierBtn,#addFeedPurchaseBtn,#addStockAdjustmentBtn,#createFeedFormulaBtn,#addFormulaIngredientBtn,#saveFormulaDraftBtn,#saveFeedFormulaBtn,#addProductionRecordBtn,#allocateFeedBtn,#recordDailyFeedBtn,#recordFeedProductionBtn,#feedReportsBtn"); if(!button)return;
       if(button.id==="feedReportsBtn"){switchTab("reports");return;}
       if(button.id==="createFeedFormulaBtn"){clearFormulaEditor();notify("New formula draft started.");return;}
@@ -284,7 +287,7 @@
       if(button.id==="addStockAdjustmentBtn") openForm("Adjust raw-material stock",[field("ingredientId","Ingredient","select",{options:ingredientOptions()}),field("type","Movement","select",{options:[{value:"adjustment_in",label:"Stock increase"},{value:"adjustment_out",label:"Stock decrease"}]}),field("quantity","Quantity (kg)","number",{min:0.01,step:"0.01"}),field("reference","Reference / reason","text",{required:false})],v=>APP.addRawMovement(v));
       if(button.id==="addProductionRecordBtn"||button.id==="recordFeedProductionBtn") openForm("Record feed production",[field("formulaId","Formula","select",{options:formulaOptions()}),field("quantity","Quantity produced (kg)","number",{min:0.01,step:"0.01"}),field("batchNumber","Production lot","text",{required:false}),field("date","Production date","date",{value:new Date().toISOString().slice(0,10)})],v=>APP.produceFeed(v));
       if(button.id==="allocateFeedBtn") openForm("Allocate feed to batch",[field("batchId","Broiler batch","select",{options:batchOptions()}),field("formulaId","Feed formula","select",{options:formulaOptions()}),field("quantity","Quantity (kg)","number",{min:0.01,step:"0.01"}),field("costPerKg","Cost per kg (UGX)","number",{min:0,step:"0.01",value:0}),field("date","Allocation date","date",{value:new Date().toISOString().slice(0,10)})],v=>APP.allocateFeed(v));
-      if(button.id==="recordDailyFeedBtn") {const allocations=state.allocations.map(x=>({value:x.id,label:`${APP.getBatch(x.batchId)?.name||"Batch"} · ${state.formulas.find(f=>f.id===x.formulaId)?.name||"Feed"} · ${fmt(x.quantity)} kg`})); openForm("Record feed consumption",[field("batchId","Batch","select",{options:batchOptions()}),field("allocationId","Feed allocation","select",{options:allocations}),field("quantity","Quantity consumed (kg)","number",{min:0.01,step:"0.01"}),field("date","Date","date",{value:new Date().toISOString().slice(0,10)})],async v=>{const record=await APP.recordConsumption(v);syncFeedConsumptionToBroiler(record);});}
+      if(button.id==="recordDailyFeedBtn") {const allocations=state.allocations.map(x=>({value:x.id,label:`${APP.getBatch(x.batchId)?.name||"Batch"} · ${state.formulas.find(f=>f.id===x.formulaId)?.name||"Feed"} · ${fmt(x.quantity)} kg`})); openForm("Record feed consumption",[field("batchId","Batch","select",{options:batchOptions()}),field("allocationId","Feed allocation","select",{options:allocations}),field("quantity","Quantity consumed (kg)","number",{min:0.01,step:"0.01"}),field("date","Date","date",{value:new Date().toISOString().slice(0,10)})],async v=>{const record=await APP.recordConsumption(v);await syncFeedConsumptionToBroiler(record);});}
     });
     $("#runFeedSensitivityBtn")?.addEventListener("click",()=>{const id=$("#sensitivityIngredient")?.value;const change=n($("#sensitivityPriceChange")?.value);const formula=state.formulas.find(f=>f.status==="active");const out=$("#feedSensitivityResults");if(!out)return;if(!formula)return out.textContent="Create a formula first.";try{const result=APP.formulaPriceSimulation(formula.id,{[id]:change});out.textContent=`Estimated formula cost: ${money(result.simulatedCostPerKg)} per kg (${result.percentageChange>=0?"+":""}${fmt(result.percentageChange)}%).`; }catch(err){out.textContent=err.message;}});
     $("#calculateFeedForecastBtn")?.addEventListener("click",()=>{
