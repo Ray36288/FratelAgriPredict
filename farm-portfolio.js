@@ -96,11 +96,36 @@
     if (!window.FratelCloud) return false;
     cloudPortfolioPromise = (async () => {
       await window.FratelCloud.ready();
-      const [broilerBatches, feedState, portfolioData] = await Promise.all([
+      const [broilerBatches, feedState] = await Promise.all([
         window.FratelCloud.loadLivestockBatches("broiler", false),
-        window.FratelCloud.loadFeedState(false),
-        window.FratelCloud.loadPortfolioData(false)
+        window.FratelCloud.loadFeedState(false)
       ]);
+      let portfolioData = await window.FratelCloud.loadPortfolioData(false);
+
+      // One-time import of older browser-only portfolio rows. Cloud rows win
+      // when an ID already exists; local-only records are preserved and added.
+      const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      const localInventory=arrayFrom(parseJSON(KEYS.inventory));
+      const localExpenses=arrayFrom(parseJSON(KEYS.expenses));
+      const prepare=(items,nested=false)=>items.forEach(item=>{
+        if(!item || typeof item!=="object")return;
+        if(!uuidPattern.test(String(item.id||"")))item.id=crypto.randomUUID();
+        if(nested && Array.isArray(item.movements))item.movements.forEach(m=>{if(m && !uuidPattern.test(String(m.id||"")))m.id=crypto.randomUUID();});
+      });
+      prepare(localInventory,true); prepare(localExpenses);
+      try {
+        if(localInventory.length)localStorage.setItem(KEYS.inventory,JSON.stringify(localInventory));
+        if(localExpenses.length)localStorage.setItem(KEYS.expenses,JSON.stringify(localExpenses));
+      } catch(error) { console.warn("Could not update local portfolio migration cache:",error); }
+
+      const cloudInventoryIds=new Set((portfolioData.inventory||[]).map(item=>String(item.id)));
+      const cloudExpenseIds=new Set((portfolioData.expenses||[]).map(item=>String(item.id)));
+      const inventoryToImport=localInventory.filter(item=>!cloudInventoryIds.has(String(item.id)));
+      const expensesToImport=localExpenses.filter(item=>!cloudExpenseIds.has(String(item.id)));
+      if(inventoryToImport.length)await window.FratelCloud.savePortfolioInventory(inventoryToImport);
+      if(expensesToImport.length)await window.FratelCloud.savePortfolioExpenses(expensesToImport);
+      if(inventoryToImport.length || expensesToImport.length)portfolioData=await window.FratelCloud.loadPortfolioData(false);
+
       cloudPortfolio = { broilerBatches, feedState, inventory: portfolioData.inventory, expenses: portfolioData.expenses };
       render();
       return true;
