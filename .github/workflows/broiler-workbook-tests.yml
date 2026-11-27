@@ -5,6 +5,7 @@ on:
       - main
       - broiler-excel-parity-engine
   pull_request:
+    types: [opened, synchronize, reopened, edited]
     branches:
       - main
 jobs:
