@@ -30,6 +30,7 @@
   ];
   try {
     LEGACY_FARM_KEYS.forEach(key => localStorage.removeItem(key));
+    sessionStorage.removeItem("agriUsername");
   } catch (error) {
     console.warn("Could not clear retired local farm-data stores:", error);
   }
