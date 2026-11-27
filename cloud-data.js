@@ -295,11 +295,20 @@
     }
     if (!cloudId) return [];
 
-    // These foreign keys use ON DELETE RESTRICT, so remove only the feed
-    // allocation/consumption rows belonging to this batch first.
+    // These foreign keys use ON DELETE RESTRICT. Remove linked feed usage
+    // and the finished-stock allocation movements before deleting the batch.
+    const linkedAllocations = await select("feed_allocations", "id", query =>
+      query.eq("livestock_batch_id", cloudId).eq("enterprise_id", enterprise.id)
+    );
+    const allocationIds = linkedAllocations.map(row => row.id);
     await remove("feed_consumption", query =>
       query.eq("livestock_batch_id", cloudId).eq("enterprise_id", enterprise.id)
     );
+    if (allocationIds.length) {
+      await remove("finished_feed_movements", query =>
+        query.eq("enterprise_id", enterprise.id).in("reference", allocationIds)
+      );
+    }
     await remove("feed_allocations", query =>
       query.eq("livestock_batch_id", cloudId).eq("enterprise_id", enterprise.id)
     );
