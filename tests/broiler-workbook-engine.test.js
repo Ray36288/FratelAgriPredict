@@ -89,3 +89,11 @@ test("blank future intake is not extrapolated into a feed requirement", () => {
   assert.equal(result.weeks[7].totalFeedKg, null);
   assert.equal(result.totalFeedKg, 6825);
 });
+
+test("cumulative feed cost per bird follows the source weekly schedule", () => {
+  const model = math.createSourceModel();
+  const result = math.calculateWorkbook(model);
+  const expected = result.sourceWeeks.reduce((sum, week) => sum + week.feedCostPerBird, 0);
+  assert.ok(Math.abs(result.weeks[6].cumulativeFeedCostPerBird - expected) < 1e-8);
+  assert.equal(result.weeks[7].cumulativeFeedCostPerBird, null);
+});
