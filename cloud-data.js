@@ -233,7 +233,7 @@
         cost_amount: record.amount != null ? Number(record.amount) :
           record.cost != null ? Number(record.cost) :
           record.totalCost != null ? Number(record.totalCost) : null,
-        occurred_at: record.date ? new Date(record.date + "T12:00:00").toISOString() : now,
+        occurred_at: record.date ? new Date(record.date + "T12:00:00").toISOString() : new Date().toISOString(),
         cause_or_description: record.description || record.eventType || record.category || null,
         notes: record.notes || null,
         metadata: record,
