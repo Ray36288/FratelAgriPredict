@@ -77,3 +77,13 @@ test("matches every ingredient-by-week quantity and cost cell from the workbook"
   }
  });
 });
+
+test("reports feed cost per bird at each stage and flags incomplete pre-lay",()=>{
+ const r=E.calculate(E.createDefaultModel());
+ close(r.stageSummaries[0].perBirdFeedCost,86.8,1e-8);
+ close(r.stageSummaries[1].perBirdFeedCost,1215.20029008,1e-6);
+ close(r.stageSummaries[2].perBirdFeedCost,364.14,1e-8);
+ close(r.stageSummaries[2].cumulativeFeedCostPerBird,1666.14029008,1e-6);
+ assert.equal(r.stageSummaries[3].formulaCostPerKg,null);
+ assert.equal(r.stageSummaries[3].cumulativeFeedCostPerBird,null);
+});
