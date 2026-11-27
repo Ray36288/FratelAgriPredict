@@ -19,6 +19,20 @@
   ]);
 
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+  // Retire the old browser-only farm data stores. Supabase Auth's own
+  // session storage is deliberately left untouched.
+  const LEGACY_FARM_KEYS = [
+    "agripredict_broiler_v1", "agripredict_broiler_active",
+    "agripredict_broiler_feed_v1", "agripredict_feed_formula_draft",
+    "agripredict_portfolio_owner_v1", "agripredict_farm_inventory_v1",
+    "agripredict_farm_expenses_v1"
+  ];
+  try {
+    LEGACY_FARM_KEYS.forEach(key => localStorage.removeItem(key));
+  } catch (error) {
+    console.warn("Could not clear retired local farm-data stores:", error);
+  }
   let currentUser = null;
   let farmPromise = null;
   const enterprisePromises = new Map();
@@ -358,24 +372,8 @@
   }
 
   async function cloudBatchesForFeed() {
-    const { user } = await ready();
-    let batches = await loadLivestockBatches("broiler");
-    const local = (() => {
-      try {
-        const saved = JSON.parse(localStorage.getItem("agripredict_broiler_v1") || "{}");
-        if (saved.ownerId && saved.ownerId !== user.id) return [];
-        return Array.isArray(saved.batches) ? saved.batches : [];
-      } catch { return []; }
-    })();
-
-    const known = new Set(batches.map(batch => String(batch.id)));
-    for (const batch of local) {
-      if (!known.has(String(batch.id))) {
-        await saveLivestockBatch(batch, "broiler");
-      }
-    }
-    if (local.length) batches = await loadLivestockBatches("broiler");
-    return batches;
+    // Batch records are read only from Supabase. Never import browser caches.
+    return loadLivestockBatches("broiler");
   }
 
   async function saveFeedState(feedState) {
