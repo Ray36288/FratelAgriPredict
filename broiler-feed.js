@@ -3,13 +3,9 @@
    AGRIPREDICT — BROILER FEED MANAGEMENT ENGINE
    Production-oriented frontend module
    Version: 1.0
-   Database: authenticated Supabase storage with a local recovery cache
+   Database: authenticated Supabase storage only
 
-   STORAGE:
-   - Feed operations are saved in browser localStorage.
-   - Feed records remain on this device and browser.
-   - Broiler batch details are read from the broiler dashboard store.
-   - Historical transaction prices are retained in their records.
+   Feed records are loaded from and saved to the signed-in farmer's Supabase account.
    ============================================================ */
 
 (() => {
@@ -47,22 +43,11 @@
   let cloudSaveQueue = Promise.resolve();
   let cloudHydrationPromise = null;
 
-  function loadState() {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-      if (!saved || typeof saved !== "object") return;
-      for (const key of Object.keys(state)) {
-        if (Array.isArray(saved[key])) state[key] = saved[key];
-      }
-      if (typeof saved.selectedBatch === "string") state.selectedBatch = saved.selectedBatch;
-      if (typeof saved.activeTab === "string") state.activeTab = saved.activeTab;
-      if (typeof saved.ownerId === "string") state.ownerId = saved.ownerId;
-    } catch (error) {
-      console.error("Could not load feed records:", error);
-    }
+  async function loadState() {
+    return hydrateFromCloud();
   }
 
-  function saveState() {
+  async function saveState() {
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     ["ingredients", "suppliers", "purchases", "rawMovements", "formulas",
       "production", "finishedMovements", "allocations", "consumption", "priceHistory"].forEach(key => {
@@ -70,33 +55,24 @@
         if (!uuidPattern.test(String(item.id || ""))) item.id = crypto.randomUUID();
       });
     });
-
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (error) {
-      console.warn("Could not update the local feed recovery cache:", error);
-    }
-
     if (!window.FratelCloud || typeof window.FratelCloud.saveFeedState !== "function") {
-      return Promise.resolve(false);
+      throw new Error("Supabase feed storage is unavailable. Feed records were not saved.");
     }
-
     const snapshot = JSON.parse(JSON.stringify(state));
     const task = cloudSaveQueue.catch(() => {}).then(async () => {
       const { user } = await window.FratelCloud.ready();
       if (snapshot.ownerId && snapshot.ownerId !== user.id) {
-        throw new Error("The local feed cache belongs to a different farmer account. Reload the page before saving.");
+        throw new Error("Feed records belong to a different farmer account. Reload before saving.");
       }
       snapshot.ownerId = user.id;
       state.ownerId = user.id;
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
       await window.FratelCloud.saveFeedState(snapshot);
       document.dispatchEvent(new CustomEvent("agripredict:feed-cloud-saved"));
       return true;
     });
     cloudSaveQueue = task;
     task.catch(error => {
-      console.error("Feed records could not be synchronised to Supabase:", error);
+      console.error("Feed records could not be saved to Supabase:", error);
       document.dispatchEvent(new CustomEvent("agripredict:cloud-save-error", {
         detail: { module: "feed", message: error.message || "Feed cloud save failed." }
       }));
@@ -118,43 +94,20 @@
   async function hydrateFromCloud() {
     if (cloudHydrationPromise) return cloudHydrationPromise;
     cloudHydrationPromise = (async () => {
-      if (!window.FratelCloud || typeof window.FratelCloud.loadFeedState !== "function") return false;
-      const { user } = await window.FratelCloud.ready();
-      const localBelongsToAnotherUser = !!state.ownerId && state.ownerId !== user.id;
-      if (localBelongsToAnotherUser) {
-        ["ingredients", "suppliers", "purchases", "rawMovements", "formulas",
-          "production", "finishedMovements", "allocations", "consumption", "priceHistory", "batches"]
-          .forEach(key => { state[key] = []; });
-        state.selectedBatch = "";
-        state.activeTab = "overview";
+      if (!window.FratelCloud || typeof window.FratelCloud.loadFeedState !== "function") {
+        throw new Error("Supabase feed storage is unavailable.");
       }
-      state.ownerId = user.id;
+      const { user } = await window.FratelCloud.ready();
       const remote = await window.FratelCloud.loadFeedState(true);
       const arrayKeys = [
         "ingredients", "suppliers", "purchases", "rawMovements", "formulas",
         "production", "finishedMovements", "allocations", "consumption", "priceHistory"
       ];
-      const remoteHasRecords = arrayKeys.some(key => Array.isArray(remote[key]) && remote[key].length);
-      const localSnapshot = JSON.parse(JSON.stringify(state));
-
-      if (remoteHasRecords) {
-        arrayKeys.forEach(key => { state[key] = mergeRecords(remote[key], localSnapshot[key]); });
-        state.batches = Array.isArray(remote.batches) && remote.batches.length
-          ? remote.batches : localSnapshot.batches;
-      } else {
-        arrayKeys.forEach(key => {
-          if (Array.isArray(remote[key]) && remote[key].length) state[key] = remote[key];
-        });
-        if (Array.isArray(remote.batches) && remote.batches.length) state.batches = remote.batches;
-      }
-
-      state.selectedBatch = localSnapshot.selectedBatch || remote.selectedBatch || state.batches[0]?.id || "";
-      state.activeTab = localSnapshot.activeTab || remote.activeTab || "overview";
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-
-      // Existing browser records are imported; remote records are merged by ID,
-      // so this does not erase cloud-only or previously saved farmer data.
-      await saveState();
+      arrayKeys.forEach(key => { state[key] = Array.isArray(remote[key]) ? remote[key] : []; });
+      state.batches = Array.isArray(remote.batches) ? remote.batches : [];
+      state.ownerId = user.id;
+      state.selectedBatch = state.batches.some(batch => batch.id === state.selectedBatch)
+        ? state.selectedBatch : (state.batches[0]?.id || "");
       document.dispatchEvent(new CustomEvent("agripredict:feed-data-updated", {
         detail: { operation: "cloud-hydration" }
       }));
@@ -165,12 +118,11 @@
       document.dispatchEvent(new CustomEvent("agripredict:cloud-load-error", {
         detail: { module: "feed", message: error.message || "Feed cloud load failed." }
       }));
-      return false;
+      throw error;
     });
     return cloudHydrationPromise;
   }
 
-  loadState();
 
   /* ============================================================
      1. UTILITIES
@@ -1290,9 +1242,9 @@
      15. PUBLIC APPLICATION API
      ============================================================ */
 
-  const persistAfter = fn => (...args) => {
+  const persistAfter = fn => async (...args) => {
     const result = fn(...args);
-    saveState();
+    await saveState();
     document.dispatchEvent(new CustomEvent("agripredict:feed-data-updated", { detail: { operation: fn.name || "feed-update" } }));
     return result;
   };
@@ -1301,7 +1253,7 @@
     config: CONFIG,
     state,
     save: saveState,
-    reload: loadState,
+    reload: hydrateFromCloud,
     hydrate: hydrateFromCloud,
     setBatches(batches, selectedId = "") {
       state.batches = Array.isArray(batches) ? batches : [];
@@ -1309,7 +1261,6 @@
         ? selectedId
         : (state.batches.some(batch => batch.id === state.selectedBatch)
           ? state.selectedBatch : (state.batches[0]?.id || ""));
-      saveState();
     },
     addIngredient: persistAfter(addIngredient),
     updateIngredient: persistAfter(updateIngredient),
