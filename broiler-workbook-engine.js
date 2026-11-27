@@ -143,6 +143,12 @@
       const weeklyEggs=layingValue===null?null:(dailyCounts?dailyCounts.reduce((sum,day)=>sum+day.birds*layingValue/100,0):dailyEggs*(daysValue||0));
       return {week:row.week,dailyKgPerBird:dailyValue,days:daysValue,weeklyKgPerBird:weeklyPerBirdKg,birds:birdsDefault,birdsAtStart,birdsAtEnd,totalBirdDays,totalFeedKg,stageId,formulaCostPerKg:formula?.costPerKg??null,feedCostPerBird,totalFeedCost,ingredients,layingPercent,dailyEggs,weeklyEggs,complete:configured};
     });
+    let cumulativeFeedCost=0,cumulativeComplete=true;
+    weeks.forEach(w=>{
+      if(!w.complete || !Number.isFinite(w.feedCostPerBird)){cumulativeComplete=false;w.cumulativeFeedCostPerBird=null;}
+      else if(cumulativeComplete){cumulativeFeedCost+=w.feedCostPerBird;w.cumulativeFeedCostPerBird=cumulativeFeedCost;}
+      else w.cumulativeFeedCostPerBird=null;
+    });
     const sourceWeeks=weeks.slice(0,7);
     return {
       validation,formulas,weeks,sourceWeeks,additionalWeeks:weeks.slice(7),
@@ -241,7 +247,7 @@
     if($(ids.formulaCost))$(ids.formulaCost).textContent=formula.complete?money(formula.totalCost):"Not available";
     if($(ids.formulaKg))$(ids.formulaKg).textContent=formula.complete?money(formula.costPerKg)+"/kg":"Not available";
     if($(ids.ingredientBody))$(ids.ingredientBody).innerHTML=formula.lines.map(line=>'<tr><td>'+esc(line.name)+' <small>Row '+line.sourceRow+'</small></td><td><input type="number" min="0" step="any" data-wb-quantity="'+esc(line.id)+'" value="'+(line.quantityKg===null?"":line.quantityKg)+'" '+(line.quantityKg===null?'placeholder="Blank in Excel"':'')+'></td><td><input type="number" min="0" step="any" data-wb-price="'+esc(line.id)+'" value="'+esc(model.ingredients.find(x=>x.id===line.id).pricePerKg)+'"></td><td>'+money(line.lineCost)+'</td><td>'+ (line.inclusionPercent===null?"—":line.inclusionPercent.toLocaleString("en-UG",{maximumFractionDigits:8})+"%")+'</td></tr>').join("");
-    if($("#wbStageSummaryRows"))$("#wbStageSummaryRows").innerHTML=(model.stages||[]).map(stage=>{const f=result.formulas[stage.id];return '<tr><td>'+esc(stage.label)+'</td><td>'+(f.complete?kg(f.totalWeightKg):"Blank in workbook")+'</td><td>'+(f.complete?money(f.totalCost):"—")+'</td><td>'+(f.complete?money(f.costPerKg)+"/kg":"Not calculable")+'</td></tr>';}).join("");
+    if($("#wbStageSummaryRows"))$("#wbStageSummaryRows").innerHTML=(model.stages||[]).map(stage=>{const f=result.formulas[stage.id];const linked=result.weeks.filter(w=>w.stageId===stage.id);const stageBirdCost=linked.length&&linked.every(w=>w.complete)?linked.reduce((sum,w)=>sum+w.feedCostPerBird,0):null;return '<tr><td>'+esc(stage.label)+'</td><td>'+(f.complete?kg(f.totalWeightKg):"Blank in workbook")+'</td><td>'+(f.complete?money(f.totalCost):"—")+'</td><td>'+(f.complete?money(f.costPerKg)+"/kg":"Not calculable")+'</td><td>'+(stageBirdCost===null?(linked.length?"Incomplete schedule":"No linked weeks"):money(stageBirdCost))+'</td></tr>';}).join("");
     const weekHeaders=result.weeks.map(w=>'<th>Week '+w.week+'</th>').join("");
     if($("#wbWeeklyIngredientHead"))$("#wbWeeklyIngredientHead").innerHTML='<tr><th>Ingredient</th>'+weekHeaders+'</tr>';
     if($("#wbWeeklyCostHead"))$("#wbWeeklyCostHead").innerHTML='<tr><th>Ingredient</th>'+weekHeaders+'</tr>';
