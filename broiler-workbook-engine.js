@@ -196,7 +196,7 @@
   window.FratelBroilerWorkbookMath=API;
 
   const ids={status:"#wbStatus",stage:"#wbStage",birds:"#wbBirdCount",ingredientBody:"#wbIngredientRows",formulaWeight:"#wbFormulaWeight",formulaCost:"#wbFormulaCost",formulaKg:"#wbFormulaKg",weeklyBody:"#wbWeeklyRows",layingBody:"#wbLayingRows",totalFeed:"#wbTotalFeed",totalCost:"#wbTotalCost",saleWeek:"#wbSaleWeek",saleBirds:"#wbSaleBirds",chickCost:"#wbChickCost",otherCost:"#wbOtherCost",saleFloor:"#wbSaleFloor",saleNote:"#wbSaleNote",save:"#wbSave",reset:"#wbReset"};
-  let model=createSourceModel(),enterprise=null,activeBatch=null,loaded=false;
+  let model=createSourceModel(),enterprise=null,activeBatch=null,loaded=false,saleObserver=null;
   const getBatches=()=>window.FratelAgriPredictDashboard?.getBatches?.()||[];
   function chooseBatch() {
     const batches=getBatches();
@@ -307,23 +307,24 @@
       let hint=$("#wbSaleGuidance",modal);
       if(!hint){hint=document.createElement("p");hint.id="wbSaleGuidance";hint.className="wb-note";fields.appendChild(hint);}
       const batch=activeBatch||getBatches()[0]||null;
-      if(!batch?.placementDate){hint.textContent="Select a batch with a placement date before calculating a sale cost floor.";return;}
+      const priceField=$("#record-unitPrice",modal);
+      if(!batch?.placementDate){hint.textContent="Select a batch with a placement date before calculating a sale cost floor.";if(priceField)priceField.removeAttribute("min");return;}
       const placed=new Date(batch.placementDate+"T00:00:00");
       const today=new Date(new Date().toISOString().slice(0,10)+"T00:00:00");
       const ageDays=Math.floor((today-placed)/DAY)+1;
       const week=Math.ceil(ageDays/7);
       if(week<1){hint.textContent="This batch has not reached its placement date.";return;}
-      if(week>7){hint.textContent="The Excel workbook provides daily feed intake only for Weeks 1–7. No later-week intake is available, so a reliable sale cost floor cannot be calculated from this workbook alone. Record actual feed consumption or enter verified later-stage intake first.";return;}
+      if(week>7){hint.textContent="The Excel workbook provides daily feed intake only for Weeks 1–7. No later-week intake is available, so a reliable sale cost floor cannot be calculated from this workbook alone. Record actual feed consumption or enter verified later-stage intake first.";if(priceField)priceField.removeAttribute("min");return;}
       const chickFromBatch=Number(batch.chickCost)>0?Number(batch.chickCost):num($(ids.chickCost)?.value);
       const otherPerBird=num($(ids.otherCost)?.value);
       const floor=calculateSellingFloor(model,week,chickFromBatch,otherPerBird);
-      const priceField=$("#record-unitPrice",modal);
       const quantityField=$("#record-quantity",modal);
       if(floor.complete){
-        hint.textContent="Workbook cost floor for the current age (Week "+week+"): "+money(floor.breakEvenPrice)+" per bird. This includes scheduled feed, chick cost and the other cost per bird entered in Forecasting Intelligence. It is not a market-price guarantee; unrecorded costs and mortality allocation are not included.";
+        const count=Number(quantityField?.value)||0;
+        hint.textContent="Workbook cost floor for the current age (Week "+week+"): "+money(floor.breakEvenPrice)+" per bird. "+(count>0?"For "+count.toLocaleString("en-UG")+" birds, minimum total: "+money(floor.breakEvenPrice*count)+". ":"")+"This includes scheduled feed, chick cost and the other cost per bird entered in Forecasting Intelligence. It is not a market-price guarantee; unrecorded costs and mortality allocation are not included.";
         if(priceField){priceField.min=String(floor.breakEvenPrice);priceField.title="Do not enter less than the calculated cost floor unless you deliberately accept a loss.";if(!priceField.value)priceField.value=floor.breakEvenPrice.toFixed(2);}
-        if(quantityField)quantityField.addEventListener("input",()=>{const count=Number(quantityField.value)||0;hint.textContent="Workbook cost floor: "+money(floor.breakEvenPrice)+" per bird. For "+count.toLocaleString("en-UG")+" birds, the minimum total at this cost floor is "+money(floor.breakEvenPrice*count)+". Unrecorded costs and mortality allocation are not included.";},{once:true});
       } else {
+        if(priceField)priceField.removeAttribute("min");
         hint.textContent="Known feed-cost subtotal for Week "+week+": "+money(floor.knownCostPerBird)+" per bird. "+floor.reason+" The sale price field has not been restricted because the full cost is incomplete.";
       }
     };
