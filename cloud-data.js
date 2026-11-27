@@ -685,11 +685,123 @@
     };
   }
 
+
+  async function savePortfolioInventory(records) {
+    const { user } = await ready();
+    const farm = await ensureFarm();
+    const items = Array.isArray(records) ? records : [];
+    const rows = [];
+    const movementRows = [];
+
+    for (const item of items) {
+      ensureUuid(item);
+      const enterpriseType = item.enterprise || item.projectSlug || item.project || "";
+      const enterprise = enterpriseType ? await findEnterprise(enterpriseType) : null;
+      const quantity = Number(item.currentQuantity ?? item.liveCount ?? item.quantity ?? item.count ?? item.currentStock ?? 0);
+      rows.push({
+        id: item.id, farm_id: farm.id, enterprise_id: enterprise?.id || null,
+        category: String(item.category || item.type || item.species || "general"),
+        name: String(item.name || item.itemName || item.product || "Farm inventory item"),
+        unit: String(item.unit || "unit"),
+        reorder_level: Math.max(0, Number(item.reorderLevel || item.minimumStock || 0)),
+        is_active: item.active !== false && item.is_active !== false,
+        notes: item.notes || null,
+        metadata: { ...item, currentQuantity: quantity },
+        updated_at: new Date().toISOString()
+      });
+
+      (Array.isArray(item.movements) ? item.movements : []).forEach(movement => {
+        ensureUuid(movement);
+        const type = ["purchase", "production", "sale", "use", "wastage", "adjustment", "transfer"].includes(movement.type || movement.movementType)
+          ? (movement.type || movement.movementType) : "adjustment";
+        const amount = Number(movement.quantityChange ?? movement.quantity ?? 0);
+        if (!amount) return;
+        movementRows.push({
+          id: movement.id, farm_id: farm.id, item_id: item.id,
+          enterprise_id: enterprise?.id || null, movement_type: type,
+          quantity_change: amount, unit_cost: movement.unitCost == null ? null : Number(movement.unitCost),
+          reference: movement.reference || null,
+          occurred_at: movement.date ? new Date(movement.date).toISOString() : new Date().toISOString(),
+          notes: movement.notes || null, recorded_by: user.id
+        });
+      });
+    }
+
+    if (rows.length) await upsert("inventory_items", rows, "id");
+    if (movementRows.length) await upsert("inventory_movements", movementRows, "id");
+    return { saved: rows.length, movements: movementRows.length };
+  }
+
+  async function savePortfolioExpenses(records) {
+    const { user } = await ready();
+    const farm = await ensureFarm();
+    const items = Array.isArray(records) ? records : [];
+    const rows = [];
+
+    for (const item of items) {
+      ensureUuid(item);
+      const enterpriseType = item.enterprise || item.projectSlug || item.project || "";
+      const enterprise = enterpriseType ? await findEnterprise(enterpriseType) : null;
+      const amount = Number(item.amount ?? item.totalCost ?? item.cost ?? 0);
+      if (!Number.isFinite(amount) || amount < 0) continue;
+      const rawType = String(item.transactionType || item.type || "expense").toLowerCase();
+      rows.push({
+        id: item.id, farm_id: farm.id, enterprise_id: enterprise?.id || null,
+        transaction_type: rawType === "income" || rawType === "sale" ? "income" : "expense",
+        category: String(item.category || item.type || "other"),
+        description: String(item.description || item.name || item.category || "Farm transaction"),
+        amount, currency: item.currency || "UGX",
+        transaction_date: String(item.date || item.expenseDate || item.createdAt || new Date().toISOString()).slice(0, 10),
+        payment_method: item.paymentMethod || null,
+        reference: item.reference || null, notes: item.notes || null,
+        recorded_by: user.id, updated_at: new Date().toISOString()
+      });
+    }
+    if (rows.length) await upsert("farm_transactions", rows, "id");
+    return { saved: rows.length };
+  }
+
+  async function loadPortfolioData(createIfMissing = false) {
+    await ready();
+    const farm = createIfMissing ? await ensureFarm() : await findFarm();
+    if (!farm) return { inventory: [], expenses: [] };
+
+    const [itemRows, movementRows, transactionRows] = await Promise.all([
+      select("inventory_items", "*", q => q.eq("farm_id", farm.id)),
+      select("inventory_movements", "*", q => q.eq("farm_id", farm.id)),
+      select("farm_transactions", "*", q => q.eq("farm_id", farm.id).order("transaction_date", { ascending: false }))
+    ]);
+
+    const movementTotals = new Map();
+    movementRows.forEach(row => movementTotals.set(row.item_id,
+      (movementTotals.get(row.item_id) || 0) + Number(row.quantity_change || 0)
+    ));
+    const movementsByItem = new Set(movementRows.map(row => row.item_id));
+    const inventory = itemRows.map(row => {
+      const metadata = row.metadata && typeof row.metadata === "object" ? row.metadata : {};
+      return {
+        ...metadata, id: row.id, name: row.name, category: row.category, unit: row.unit,
+        reorderLevel: Number(row.reorder_level || 0), active: row.is_active,
+        currentQuantity: movementsByItem.has(row.id)
+          ? movementTotals.get(row.id) : Number(metadata.currentQuantity || 0)
+      };
+    });
+    const expenses = transactionRows.map(row => ({
+      id: row.id, date: row.transaction_date, category: row.category,
+      amount: Number(row.amount), description: row.description,
+      enterprise: row.enterprise_id || "farm", transactionType: row.transaction_type,
+      paymentMethod: row.payment_method || "", reference: row.reference || "",
+      notes: row.notes || ""
+    }));
+    return { inventory, expenses };
+  }
+
   window.FratelCloud = Object.freeze({
     ready, getUser, ensureFarm, findFarm, ensureEnterprise, findEnterprise,
     select, insert, upsert, update, remove,
     loadLivestockBatches, saveLivestockBatch, deleteLivestockBatch,
-    saveFeedState, loadFeedState
+    saveFeedState, loadFeedState,
+    savePortfolioInventory, savePortfolioExpenses, loadPortfolioData
   });
 
   client().auth.onAuthStateChange((_event, session) => {
