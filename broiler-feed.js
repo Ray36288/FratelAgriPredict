@@ -443,6 +443,7 @@
       formulaId: data.formulaId,
       type: data.type,
       quantity: qty,
+      unitCost: number(data.unitCost),
       date: data.date || today(),
       reference: data.reference || "",
       notes: data.notes || "",
@@ -760,6 +761,7 @@
       formulaId: formula.id,
       type: "production",
       quantity: targetWeight,
+      unitCost: record.costPerKg,
       reference: record.id,
       date: record.date
     });
@@ -875,6 +877,7 @@
       formulaId: formula.id,
       type: "allocation",
       quantity: qty,
+      unitCost: allocation.costPerKg,
       reference: allocation.id,
       date: allocation.date
     });
