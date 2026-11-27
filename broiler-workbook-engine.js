@@ -26,7 +26,7 @@ function createDefaultModel(){return{
 modelVersion:MODEL_VERSION,source:{file:"koudijce broiler.xlsx",sheet:"broilers",sourceRows:"1–77",benchmark:"Excel formulas reproduced as written"},
 currency:"UGX",birdCountByWeek:Array(7).fill(5000),stages:STAGES.map(x=>({...x})),
 ingredients:RAW_INGREDIENTS.map(r=>({id:"excel-row-"+r[0],excelRow:r[0],name:r[1],inclusionKg:{rearing_0_4:r[2],rearing_4_8:r[3],pullet_8_17:r[4],pre_lay_17_20:r[5]},pricePerKg:r[6]})),
-weeklySchedule:INTAKE.map((v,i)=>({week:i+1,dailyKgPerBird:v,days:DAYS[i],formulaStageId:WEEK_STAGE[i],excelBirdCountColumn:String.fromCharCode(66+i),excelDailyIntakeColumn:String.fromCharCode(66+i)})),
+weeklySchedule:INTAKE.map((v,i)=>({week:i+1,dailyKgPerBird:v,days:DAYS[i],formulaStageId:WEEK_STAGE[i],excelStageLabel:["REARING ","REARING",null,null,null,null,"STARTER"][i],excelBirdCountColumn:String.fromCharCode(66+i),excelDailyIntakeColumn:String.fromCharCode(66+i)})),
 layingPercentages:Array(7).fill(0),layingDaysPerWeek:Array(7).fill(7),
 notes:{weeklyIntakeLabel:"Weekly intake Per Pig",weeklyIntakeDisplayLabel:"Weekly intake per bird (Excel label retained in source notes)",formulaMappingNote:"Week 1 uses column C percentages; Weeks 2–6 use column E percentages; Week 7 uses column G percentages.",blankStagePolicy:"Pre-lay ingredient quantities are blank in the source workbook and remain uncalculated until entered."}
 };}
