@@ -489,7 +489,8 @@
       ? production.batches.reduce((sum, batch) => sum + Number(batch.projectedProfit || 0), 0) : null;
     const r2Values = [...priceModels.values()].map(model => model.r2).filter(value => Number.isFinite(value));
     const confidenceScore = r2Values.length
-      ? r2Values.reduce((sum, value) => sum + value, 0) / r2Values.length * 100 : null;
+      ? Math.max(0, Math.min(100, r2Values.reduce((sum, value) => sum + value, 0) / r2Values.length * 100))
+      : null;
     const scenarioEdited = simInput?.dataset.scenarioEdited === "true" && hasSimulation;
     const scenarioResult = {
       selectedIngredient: chosen ? {
