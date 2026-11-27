@@ -91,6 +91,12 @@
       if(!Number.isFinite(Number(row.dailyKg)) || Number(row.dailyKg)<0) errors.push("Invalid daily intake in week "+row.week+".");
       if(!Number.isInteger(Number(row.days)) || Number(row.days)<1 || Number(row.days)>7) errors.push("Days per week must be a whole number from 1 to 7.");
     });
+    (model.eggDaysPerWeek||[]).forEach((days,index)=>{
+      if(!Number.isInteger(Number(days)) || Number(days)<1 || Number(days)>7) errors.push("Egg production days in week "+(index+1)+" must be from 1 to 7.");
+    });
+    (model.layingPercentages||[]).forEach((value,index)=>{
+      if(!Number.isFinite(Number(value)) || Number(value)<0 || Number(value)>100) errors.push("Laying percentage in week "+(index+1)+" must be between 0 and 100.");
+    });
     (model.additionalWeeklyIntake||[]).forEach(row=>{
       const anyEntered=row.dailyKg!==null || row.days!==null || row.stageId!==null;
       if(anyEntered && (!Number.isFinite(Number(row.dailyKg)) || Number(row.dailyKg)<0 || !Number.isInteger(Number(row.days)) || Number(row.days)<1 || Number(row.days)>7 || !row.stageId)) warnings.push("Week "+row.week+" needs a daily intake, days per week and feed stage before it can be costed.");
