@@ -297,6 +297,43 @@
       console.error("Broiler workbook model save failed:",error);
     }
   }
+  function installSaleGuidance() {
+    const modal=$("#recordModal");
+    if(!modal || typeof MutationObserver==="undefined")return;
+    const refreshGuidance=()=>{
+      if(modal.hidden || $("#modalTitle")?.textContent!=="Record bird sale")return;
+      const fields=$("#recordFields",modal);
+      if(!fields)return;
+      let hint=$("#wbSaleGuidance",modal);
+      if(!hint){hint=document.createElement("p");hint.id="wbSaleGuidance";hint.className="wb-note";fields.appendChild(hint);}
+      const batch=activeBatch||getBatches()[0]||null;
+      if(!batch?.placementDate){hint.textContent="Select a batch with a placement date before calculating a sale cost floor.";return;}
+      const placed=new Date(batch.placementDate+"T00:00:00");
+      const today=new Date(new Date().toISOString().slice(0,10)+"T00:00:00");
+      const ageDays=Math.floor((today-placed)/DAY)+1;
+      const week=Math.ceil(ageDays/7);
+      if(week<1){hint.textContent="This batch has not reached its placement date.";return;}
+      if(week>7){hint.textContent="The Excel workbook provides daily feed intake only for Weeks 1–7. No later-week intake is available, so a reliable sale cost floor cannot be calculated from this workbook alone. Record actual feed consumption or enter verified later-stage intake first.";return;}
+      const chickFromBatch=Number(batch.chickCost)>0?Number(batch.chickCost):num($(ids.chickCost)?.value);
+      const otherPerBird=num($(ids.otherCost)?.value);
+      const floor=calculateSellingFloor(model,week,chickFromBatch,otherPerBird);
+      const priceField=$("#record-unitPrice",modal);
+      const quantityField=$("#record-quantity",modal);
+      if(floor.complete){
+        hint.textContent="Workbook cost floor for the current age (Week "+week+"): "+money(floor.breakEvenPrice)+" per bird. This includes scheduled feed, chick cost and the other cost per bird entered in Forecasting Intelligence. It is not a market-price guarantee; unrecorded costs and mortality allocation are not included.";
+        if(priceField){priceField.min=String(floor.breakEvenPrice);priceField.title="Do not enter less than the calculated cost floor unless you deliberately accept a loss.";if(!priceField.value)priceField.value=floor.breakEvenPrice.toFixed(2);}
+        if(quantityField)quantityField.addEventListener("input",()=>{const count=Number(quantityField.value)||0;hint.textContent="Workbook cost floor: "+money(floor.breakEvenPrice)+" per bird. For "+count.toLocaleString("en-UG")+" birds, the minimum total at this cost floor is "+money(floor.breakEvenPrice*count)+". Unrecorded costs and mortality allocation are not included.";},{once:true});
+      } else {
+        hint.textContent="Known feed-cost subtotal for Week "+week+": "+money(floor.knownCostPerBird)+" per bird. "+floor.reason+" The sale price field has not been restricted because the full cost is incomplete.";
+      }
+    };
+    saleObserver=new MutationObserver(refreshGuidance);
+    saleObserver.observe(modal,{attributes:true,attributeFilter:["hidden","class"]});
+    document.addEventListener("input",event=>{
+      if(event.target?.id==="record-quantity" || event.target?.id==="record-unitPrice")refreshGuidance();
+    });
+  }
+
   function initialise() {
     if(!$("#broilerWorkbookPanel"))return;
     const checks=benchmark();
@@ -304,7 +341,7 @@
     if(checks.passed!==checks.total)console.error("Workbook benchmark mismatch:",checks);
     chooseBatch();
     if($(ids.birds))$(ids.birds).value=currentBirds()||model.defaultBirds;
-    bind();render();load();
+    bind();installSaleGuidance();render();load();
   }
   window.FratelBroilerWorkbook={render,load,save,getModel:()=>model,benchmark,calculateWorkbook,calculateFormula,calculateSellingFloor};
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initialise,{once:true});else initialise();
