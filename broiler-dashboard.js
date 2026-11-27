@@ -1,15 +1,11 @@
 /* =========================================================
    FRATEL-AGRIPREDICT — BROILER MANAGEMENT
    Matches broiler-dashboard.html
-   Storage: agripredict_broiler_v1
-   Supabase-backed broiler records with a local recovery cache
+   Storage: authenticated Supabase only
 ========================================================= */
 
 (() => {
   "use strict";
-
-  const STORAGE_KEY = "agripredict_broiler_v1";
-  const ACTIVE_KEY = "agripredict_broiler_active";
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -81,22 +77,12 @@
   }
 
   function readData() {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-
-      if (saved && typeof saved === "object") {
-        if (!Array.isArray(saved.batches)) saved.batches = [];
-        return saved;
-      }
-    } catch (error) {
-      console.error("Could not read saved broiler data:", error);
-    }
-
+    // Farm records are hydrated from Supabase during initialise().
     return { batches: [] };
   }
 
   let data = readData();
-  let activeBatchId = localStorage.getItem(ACTIVE_KEY) || "";
+  let activeBatchId = "";
   // Read-only bridge for the forecasting module. It always exposes the
   // same in-memory batch records used by the dashboard itself.
   window.FratelAgriPredictDashboard = {
@@ -129,41 +115,25 @@
   let cloudSaveQueue = Promise.resolve();
 
   function saveData() {
-    // Keep a recoverable browser cache, but Supabase is the permanent store.
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      localStorage.setItem(ACTIVE_KEY, activeBatchId);
-    } catch (error) {
-      console.warn("Could not update the local recovery cache:", error);
-    }
-
-    document.dispatchEvent(new CustomEvent("agripredict:broiler-data-updated"));
-
     const task = cloudSaveQueue.catch(() => {}).then(async () => {
       if (!window.FratelCloud) throw new Error("The cloud data service is not loaded.");
       const { user } = await window.FratelCloud.ready();
       if (data.ownerId && data.ownerId !== user.id) {
-        throw new Error("These local broiler records belong to a different farmer account. Reload before saving.");
+        throw new Error("These broiler records belong to a different farmer account. Reload before saving.");
       }
       data.ownerId = user.id;
-
       for (const batch of data.batches) {
         const saved = await window.FratelCloud.saveLivestockBatch(batch, "broiler");
         batch.cloudId = saved.cloudId;
+        batch.ownerId = user.id;
       }
-
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      } catch (error) {
-        console.warn("Cloud save succeeded, but the local recovery cache could not be updated:", error);
-      }
+      document.dispatchEvent(new CustomEvent("agripredict:broiler-data-updated"));
       return true;
     });
-
     cloudSaveQueue = task;
     task.catch(error => {
-      console.error("Broiler cloud synchronisation failed:", error);
-      notify("Cloud save failed: " + (error.message || "Please check your connection and try again."));
+      console.error("Broiler cloud save failed:", error);
+      notify("Cloud save failed. Your changes were not confirmed as saved: " + (error.message || "Check your connection."));
     });
     return task;
   }
@@ -483,11 +453,11 @@
     if (batch) showSetup(batch);
   });
 
-  $("#batchSelect")?.addEventListener("change", event => {
+  $("#batchSelect")?.addEventListener("change", async event => {
     if (!data.batches.some(batch => batch.id === event.target.value)) return;
 
     activeBatchId = event.target.value;
-    saveData();
+    try { await saveData(); } catch (error) { notify("Could not save active batch selection: " + error.message); return; }
     renderDashboard();
     navigate("overview");
 
@@ -664,7 +634,7 @@
     if (event.key === "Escape") closeModal();
   });
 
-  $("#recordForm").addEventListener("submit", event => {
+  $("#recordForm").addEventListener("submit", async event => {
     event.preventDefault();
 
     const batch = getBatch();
@@ -747,12 +717,12 @@
       record.unit = values.unit || "";
       batch.priceChanges.push(record);
 
-      saveData();
+      try { await saveData(); } catch (error) { $("#recordError").textContent = "Could not save online: " + error.message; return; }
       closeModal();
       renderDashboard();
       renderPrices();
 
-      notify("Price change saved. Previous prices were preserved.");
+      notify("Price change saved to your online farm records. Previous prices were preserved.");
       return;
     }
 
@@ -778,12 +748,12 @@
 
     batch.records.push(record);
 
-    saveData();
+    try { await saveData(); } catch (error) { $("#recordError").textContent = "Could not save online: " + error.message; return; }
     closeModal();
     renderDashboard();
     renderCurrentPage();
 
-    notify("Record saved successfully.");
+    notify("Record saved to your online farm records.");
   });
 
   function getPriceAtDate(batch, feedType, date) {
@@ -1617,26 +1587,7 @@ function renderPriceSimulation() {
     data.batches = data.batches.filter(item => item.id !== batchId);
 
     if (activeBatchId === batchId) activeBatchId = data.batches[0]?.id || "";
-    // Update the local broiler snapshot before feed synchronisation so the
-    // feed importer cannot accidentally recreate the batch being deleted.
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      localStorage.setItem(ACTIVE_KEY, activeBatchId);
-    } catch (error) { console.warn("Could not update the broiler recovery cache:", error); }
-
-    try {
-      const feedKey = "agripredict_broiler_feed_v1";
-      const feedState = JSON.parse(localStorage.getItem(feedKey) || "null");
-      let allocationIds = new Set();
-      if (feedState && typeof feedState === "object") {
-        allocationIds = new Set((feedState.allocations || []).filter(item => item.batchId === batchId).map(item => item.id));
-        feedState.allocations = (feedState.allocations || []).filter(item => item.batchId !== batchId);
-        feedState.consumption = (feedState.consumption || []).filter(item => item.batchId !== batchId);
-        feedState.batches = (feedState.batches || []).filter(item => item.id !== batchId);
-        feedState.finishedMovements = (feedState.finishedMovements || []).filter(item => !allocationIds.has(item.reference));
-        if (feedState.selectedBatch === batchId) feedState.selectedBatch = "";
-        localStorage.setItem(feedKey, JSON.stringify(feedState));
-      }
       const feedAppState = window.AgriPredictFeed?.state;
       if (feedAppState) {
         const liveAllocationIds = new Set(feedAppState.allocations.filter(item => item.batchId === batchId).map(item => item.id));
@@ -1668,7 +1619,7 @@ function renderPriceSimulation() {
     notify("Batch deleted.");
   }
 
-  $("#batchList").addEventListener("click", event => {
+  $("#batchList").addEventListener("click", async event => {
     const deleteButton = event.target.closest("[data-delete-batch]");
     if (deleteButton) {
       deleteBatch(deleteButton.dataset.deleteBatch);
@@ -1679,7 +1630,7 @@ function renderPriceSimulation() {
     if (!button) return;
 
     activeBatchId = button.dataset.switchBatch;
-    saveData();
+    try { await saveData(); } catch (error) { notify("Could not save batch selection: " + error.message); return; }
     populateBatchSelect();
     renderDashboard();
     renderBatchSettings();
@@ -1871,14 +1822,8 @@ function renderPriceSimulation() {
   });
 
   window.addEventListener("agripredict:broiler-data-updated", () => {
-    data = readData();
-    data.batches = data.batches.map(normaliseBatch);
-    const storedActive = localStorage.getItem(ACTIVE_KEY) || "";
-    if (data.batches.some(batch => batch.id === storedActive)) activeBatchId = storedActive;
-    else if (!data.batches.some(batch => batch.id === activeBatchId)) activeBatchId = data.batches[0]?.id || "";
     renderDashboard();
     renderCurrentPage();
-    if (window.FratelCloud && data.batches.length) saveData();
   });
 
   /* =======================================================
@@ -1902,26 +1847,16 @@ function renderPriceSimulation() {
         data.ownerId = user.id;
       }
 
-      // Import any existing browser-only batches once, preserving their IDs
-      // and full daily records inside the existing livestock_batches metadata.
-      for (const localBatch of data.batches) {
-        await window.FratelCloud.saveLivestockBatch(localBatch, "broiler");
-      }
-
       const cloudBatches = await window.FratelCloud.loadLivestockBatches("broiler");
       data.batches = cloudBatches.map(normaliseBatch);
 
-      const preferred = localStorage.getItem(ACTIVE_KEY) || activeBatchId;
-      if (data.batches.some(batch => batch.id === preferred)) activeBatchId = preferred;
-      else activeBatchId = data.batches[0]?.id || "";
+      activeBatchId = data.batches[0]?.id || "";
 
       if (!data.batches.length) {
         activeBatchId = "";
-        await saveData();
         return;
       }
 
-      await saveData();
       openWorkspace();
     } catch (error) {
       console.error("Could not initialise broiler cloud records:", error);
