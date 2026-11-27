@@ -197,7 +197,7 @@
       opening_avg_weight_kg: Number(batch.initialWeight || 0) > 0
         ? Number(batch.initialWeight) / 1000 : null,
       target_market_date: batch.targetMarketDate || null,
-      status: batch.status === "closed" ? "closed" : "active",
+      status: ["planned", "active", "completed", "closed"].includes(batch.status) ? batch.status : "active",
       notes: batch.notes || null,
       metadata: {
         appBatch: batch,
@@ -229,7 +229,18 @@
       cloudId = rows.find(row => row.metadata?.localId === String(batch.id))?.id || null;
     }
     if (!cloudId) return [];
-    return remove("livestock_batches", query => query.eq("id", cloudId).eq("enterprise_id", enterprise.id));
+
+    // These foreign keys use ON DELETE RESTRICT, so remove only the feed
+    // allocation/consumption rows belonging to this batch first.
+    await remove("feed_consumption", query =>
+      query.eq("livestock_batch_id", cloudId).eq("enterprise_id", enterprise.id)
+    );
+    await remove("feed_allocations", query =>
+      query.eq("livestock_batch_id", cloudId).eq("enterprise_id", enterprise.id)
+    );
+    return remove("livestock_batches", query =>
+      query.eq("id", cloudId).eq("enterprise_id", enterprise.id)
+    );
   }
 
   window.FratelCloud = Object.freeze({
