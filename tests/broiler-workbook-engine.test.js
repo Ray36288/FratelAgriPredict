@@ -55,3 +55,7 @@ test("break-even calculator includes entered cost only",()=>{
 test("rejects invalid percentages and negative flock counts",()=>{
  const m=E.createDefaultModel();m.layingPercentages[0]=1.2;assert.throws(()=>E.calculate(m),/between 0 and 1/);m.layingPercentages[0]=0;m.birdCountByWeek[0]=-1;assert.throws(()=>E.calculate(m),/cannot be negative/);
 });
+test("keeps egg-production days separate from feed-consumption days",()=>{
+ const m=E.createDefaultModel();m.birdCountByWeek[0]=100;m.layingPercentages[0]=.75;m.layingDaysPerWeek[0]=5;
+ const r=E.calculate(m);close(r.weeks[0].dailyEggs,75,1e-12);close(r.weeks[0].weeklyEggs,375,1e-12);
+});
