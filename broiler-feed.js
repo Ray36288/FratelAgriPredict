@@ -42,6 +42,9 @@
     activeTab: "overview"
   };
 
+  let cloudSaveQueue = Promise.resolve();
+  let cloudHydrationPromise = null;
+
   function loadState() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
@@ -60,8 +63,85 @@
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch (error) {
-      console.error("Could not save feed records:", error);
+      console.warn("Could not update the local feed recovery cache:", error);
     }
+
+    if (!window.FratelCloud || typeof window.FratelCloud.saveFeedState !== "function") {
+      return Promise.resolve(false);
+    }
+
+    const snapshot = JSON.parse(JSON.stringify(state));
+    const task = cloudSaveQueue.catch(() => {}).then(async () => {
+      await window.FratelCloud.ready();
+      await window.FratelCloud.saveFeedState(snapshot);
+      document.dispatchEvent(new CustomEvent("agripredict:feed-cloud-saved"));
+      return true;
+    });
+    cloudSaveQueue = task;
+    task.catch(error => {
+      console.error("Feed records could not be synchronised to Supabase:", error);
+      document.dispatchEvent(new CustomEvent("agripredict:cloud-save-error", {
+        detail: { module: "feed", message: error.message || "Feed cloud save failed." }
+      }));
+    });
+    return task;
+  }
+
+  function mergeRecords(remoteRows, localRows) {
+    const merged = new Map();
+    (Array.isArray(remoteRows) ? remoteRows : []).forEach(row => {
+      if (row && row.id) merged.set(String(row.id), row);
+    });
+    (Array.isArray(localRows) ? localRows : []).forEach(row => {
+      if (row && row.id && !merged.has(String(row.id))) merged.set(String(row.id), row);
+    });
+    return [...merged.values()];
+  }
+
+  async function hydrateFromCloud() {
+    if (cloudHydrationPromise) return cloudHydrationPromise;
+    cloudHydrationPromise = (async () => {
+      if (!window.FratelCloud || typeof window.FratelCloud.loadFeedState !== "function") return false;
+      await window.FratelCloud.ready();
+      const remote = await window.FratelCloud.loadFeedState();
+      const arrayKeys = [
+        "ingredients", "suppliers", "purchases", "rawMovements", "formulas",
+        "production", "finishedMovements", "allocations", "consumption"
+      ];
+      const remoteHasRecords = arrayKeys.some(key => Array.isArray(remote[key]) && remote[key].length);
+      const localSnapshot = JSON.parse(JSON.stringify(state));
+
+      if (remoteHasRecords) {
+        arrayKeys.forEach(key => { state[key] = mergeRecords(remote[key], localSnapshot[key]); });
+        state.batches = Array.isArray(remote.batches) && remote.batches.length
+          ? remote.batches : localSnapshot.batches;
+      } else {
+        arrayKeys.forEach(key => {
+          if (Array.isArray(remote[key]) && remote[key].length) state[key] = remote[key];
+        });
+        if (Array.isArray(remote.batches) && remote.batches.length) state.batches = remote.batches;
+      }
+
+      state.selectedBatch = localSnapshot.selectedBatch || remote.selectedBatch || state.batches[0]?.id || "";
+      state.activeTab = localSnapshot.activeTab || remote.activeTab || "overview";
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+      // Existing browser records are imported; remote records are merged by ID,
+      // so this does not erase cloud-only or previously saved farmer data.
+      await saveState();
+      document.dispatchEvent(new CustomEvent("agripredict:feed-data-updated", {
+        detail: { operation: "cloud-hydration" }
+      }));
+      return true;
+    })().catch(error => {
+      cloudHydrationPromise = null;
+      console.error("Could not load feed records from Supabase:", error);
+      document.dispatchEvent(new CustomEvent("agripredict:cloud-load-error", {
+        detail: { module: "feed", message: error.message || "Feed cloud load failed." }
+      }));
+      return false;
+    });
+    return cloudHydrationPromise;
   }
 
   loadState();
@@ -1248,7 +1328,7 @@
     );
   }
 
-  function initialise() {
+  async function initialise() {
     const page = getFeedPage();
 
     if (!page) {
@@ -1265,12 +1345,8 @@
       );
     }
 
-    console.info(
-      "AgriPredict Feed Management engine initialised."
-    );
-
-    // The feed engine is ready for the coordinated interface.
-    // Existing Broiler pages remain untouched.
+    console.info("AgriPredict Feed Management engine initialised.");
+    await hydrateFromCloud();
   }
 
   if (document.readyState === "loading") {
