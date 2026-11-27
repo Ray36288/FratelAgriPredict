@@ -374,7 +374,10 @@
   }
   function refresh(batch) { if(batch) currentBatch(); render(); }
   async function initialise() {
-    if (typeof APP.hydrate === "function") await APP.hydrate();
+    if (typeof APP.hydrate === "function") {
+      try { await APP.hydrate(); }
+      catch (error) { notify("Feed records could not be loaded from Supabase: " + (error.message || "Check your connection.")); }
+    }
     currentBatch();
     bind();
     document.addEventListener("agripredict:feed-data-updated", () => render());
