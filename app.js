@@ -675,11 +675,6 @@
                     throw sessionError;
                 }
 
-                sessionStorage.setItem(
-                    "agriUsername",
-                    username
-                );
-
                 window.location.replace("dashboard.html");
 
             } catch (error) {
@@ -1806,8 +1801,6 @@ function openFarmerProject(project) {
                 const { error } = await supabase.auth.signOut();
 
                 if (error) throw error;
-
-                sessionStorage.removeItem("agriUsername");
 
                 window.location.replace("auth.html");
 
