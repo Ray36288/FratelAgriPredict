@@ -68,3 +68,24 @@ test("selling floor is marked incomplete when chick and other costs are missing"
   assert.equal(result.complete, false);
   assert.equal(result.knownCostOnly, true);
 });
+
+test("later-stage sale cost requires verified daily intake and formula stages", () => {
+  const model = math.createSourceModel();
+  const incomplete = math.calculateSellingFloor(model, 8, 1000, 200);
+  assert.equal(incomplete.complete, false);
+  const week8 = model.additionalWeeklyIntake.find(x => x.week === 8);
+  week8.dailyKg = 0.08;
+  week8.days = 7;
+  week8.stageId = "pullet_8_17";
+  const complete = math.calculateSellingFloor(model, 8, 1000, 200);
+  assert.equal(complete.complete, true);
+  assert.ok(complete.breakEvenPrice > 0);
+});
+
+test("blank future intake is not extrapolated into a feed requirement", () => {
+  const model = math.createSourceModel();
+  const result = math.calculateWorkbook(model, 5000);
+  assert.equal(result.weeks[7].complete, false);
+  assert.equal(result.weeks[7].totalFeedKg, null);
+  assert.equal(result.totalFeedKg, 6825);
+});
