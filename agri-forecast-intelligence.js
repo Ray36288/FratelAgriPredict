@@ -41,25 +41,13 @@
       : new Date(raw).getTime();
     return Number.isFinite(parsed) ? parsed : NaN;
   };
-  const readBroiler = () => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(BROILER_KEY) || "{}");
-      return saved && typeof saved === "object" ? saved : {};
-    } catch (error) {
-      console.warn("Forecast intelligence could not parse saved broiler data:", error);
-      return {};
-    }
-  };
   function readBroilerBatches() {
-    // Prefer the dashboard's live in-memory records, then its localStorage snapshot.
     const live = window.FratelAgriPredictDashboard?.getBatches?.();
-    if (Array.isArray(live) && live.length) return live.filter(Boolean);
-    const saved = readBroiler();
-    if (Array.isArray(saved.batches) && saved.batches.length) return saved.batches.filter(Boolean);
-    // Feed management maintains a linked batch index; use it as a final fallback.
+    if (Array.isArray(live)) return live.filter(Boolean);
     const feedBatches = FEED?.state?.batches;
     return Array.isArray(feedBatches) ? feedBatches.filter(Boolean) : [];
   }
+
   const daysBetween = (a, b) => (b - a) / 86400000;
 
   function landedCost(purchase) {
