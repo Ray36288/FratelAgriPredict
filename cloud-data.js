@@ -346,6 +346,9 @@
     }
 
     if (ingredients.length) {
+      const priorPrices = await select("feed_ingredients", "id,current_price",
+        query => query.eq("enterprise_id", enterprise.id));
+      const priorPriceById = new Map(priorPrices.map(row => [row.id, Number(row.current_price || 0)]));
       const rows = ingredients.map(item => ({
         id: item.id, enterprise_id: enterprise.id, name: String(item.name || "Ingredient"),
         category: String(item.category || "other"), unit: item.unit || "kg",
@@ -361,6 +364,18 @@
         is_active: item.active !== false, updated_at: now
       }));
       await upsert("feed_ingredients", rows, "id");
+
+      const changedPrices = ingredients.filter(item => {
+        const next = Number(item.currentPrice || 0);
+        return next > 0 && (!priorPriceById.has(item.id) || priorPriceById.get(item.id) !== next);
+      }).map(item => ({
+        id: crypto.randomUUID(), farm_id: farm.id, enterprise_id: enterprise.id,
+        price_category: "feed_ingredient", item_name: String(item.name || "Feed ingredient"),
+        unit: item.unit || "kg", price: Number(item.currentPrice || 0),
+        currency: "UGX", effective_date: now.slice(0, 10),
+        recorded_by: user.id, notes: "Ingredient price entry or update"
+      }));
+      if (changedPrices.length) await insert("farm_price_history", changedPrices);
     }
 
     if (suppliers.length) {
