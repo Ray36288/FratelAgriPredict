@@ -1,6 +1,8 @@
-const test = require("node:test");
-const assert = require("node:assert/strict");
-const E = require("../broiler-workbook-engine.js");
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import "../broiler-workbook-engine.js";
+const E = globalThis.FratelBroilerWorkbook;
 const close = (a,b,t=0.01) => assert.ok(Math.abs(a-b)<=t, a+" != "+b);
 
 test("retains all 17 Excel ingredient rows including duplicates, zero and tiny values",()=>{
@@ -61,7 +63,7 @@ test("keeps egg-production days separate from feed-consumption days",()=>{
 });
 
 test("matches every ingredient-by-week quantity and cost cell from the workbook",()=>{
- const benchmark=require("./broiler-workbook-benchmark.json");
+ const benchmark=JSON.parse(await readFile(new URL("./broiler-workbook-benchmark.json",import.meta.url),"utf8"));
  const result=E.calculate(E.createDefaultModel());
  const closeRelative=(actual,expected)=>{
   const tolerance=Math.max(1e-14,Math.abs(expected)*1e-10);
