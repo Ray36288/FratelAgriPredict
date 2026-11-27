@@ -74,17 +74,43 @@
   let enrolledRows = [];
   const sourceProviders = new Map();
   let latestModel = null;
+  let cloudPortfolio = null;
+  let cloudPortfolioPromise = null;
 
   function readBroiler() {
     const live = window.FratelAgriPredictDashboard?.getData?.();
-    if (live && Array.isArray(live.batches)) return live;
+    if (live && Array.isArray(live.batches) && live.batches.length) return live;
+    if (cloudPortfolio?.broilerBatches) return { batches: cloudPortfolio.broilerBatches };
     const saved = parseJSON(KEYS.broiler);
     return saved && typeof saved === "object" ? saved : {batches:[]};
   }
   function readFeed() {
     if (window.AgriPredictFeed?.state) return window.AgriPredictFeed.state;
+    if (cloudPortfolio?.feedState) return cloudPortfolio.feedState;
     const saved = parseJSON(KEYS.feed);
     return saved && typeof saved === "object" ? saved : {};
+  }
+
+  async function hydrateCloudPortfolio() {
+    if (cloudPortfolioPromise) return cloudPortfolioPromise;
+    if (!window.FratelCloud) return false;
+    cloudPortfolioPromise = (async () => {
+      await window.FratelCloud.ready();
+      const [broilerBatches, feedState] = await Promise.all([
+        window.FratelCloud.loadLivestockBatches("broiler", false),
+        window.FratelCloud.loadFeedState(false)
+      ]);
+      cloudPortfolio = { broilerBatches, feedState };
+      render();
+      return true;
+    })().catch(error => {
+      cloudPortfolioPromise = null;
+      console.warn("Farm portfolio could not load cloud records:", error);
+      const status = document.getElementById("inventorySourceNote");
+      if (status) status.textContent = "Online farm records could not be loaded. Please check your sign-in and internet connection.";
+      return false;
+    });
+    return cloudPortfolioPromise;
   }
   function normaliseProject(value) {
     return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
@@ -400,5 +426,7 @@
   window.addEventListener("focus",render);
   document.addEventListener("DOMContentLoaded",render,{once:true});
 
-  window.AgriPredictFarmPortfolio = {render,setProjects,registerSource,publishInventory,publishExpenses,getSnapshot:()=>latestModel||buildModel(),keys:{...KEYS},periods:[...PERIODS]};
+  window.AgriPredictFarmPortfolio = {render,setProjects,registerSource,publishInventory,publishExpenses,getSnapshot:()=>latestModel||buildModel(),keys:{...KEYS},periods:[...PERIODS],refreshCloud:hydrateCloudPortfolio};
+  hydrateCloudPortfolio();
+  window.addEventListener("focus", () => { cloudPortfolioPromise = null; hydrateCloudPortfolio(); });
 })();
