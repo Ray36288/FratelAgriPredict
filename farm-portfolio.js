@@ -76,10 +76,13 @@
   let latestModel = null;
 
   function readBroiler() {
+    const live = window.FratelAgriPredictDashboard?.getData?.();
+    if (live && Array.isArray(live.batches)) return live;
     const saved = parseJSON(KEYS.broiler);
     return saved && typeof saved === "object" ? saved : {batches:[]};
   }
   function readFeed() {
+    if (window.AgriPredictFeed?.state) return window.AgriPredictFeed.state;
     const saved = parseJSON(KEYS.feed);
     return saved && typeof saved === "object" ? saved : {};
   }
