@@ -102,11 +102,41 @@
       const canImportLocalPortfolio = !savedOwnerId || savedOwnerId === user.id;
       if(savedOwnerId && savedOwnerId!==user.id)cloudPortfolio={broilerBatches:[],feedState:{},inventory:[],expenses:[]};
       portfolioOwnerId = user.id;
-      const [broilerBatches, feedState] = await Promise.all([
+      let [broilerBatches, feedState] = await Promise.all([
         window.FratelCloud.loadLivestockBatches("broiler", false),
         window.FratelCloud.loadFeedState(false)
       ]);
       let portfolioData = await window.FratelCloud.loadPortfolioData(false);
+
+      // Migrate older broiler and feed caches only when their owner marker
+      // matches this account (or the cache predates owner markers).
+      const localBroilerCache=parseJSON(KEYS.broiler);
+      const localFeedCache=parseJSON(KEYS.feed);
+      const canImportBroiler=canImportLocalPortfolio && (!localBroilerCache?.ownerId || localBroilerCache.ownerId===user.id);
+      const canImportFeed=canImportLocalPortfolio && (!localFeedCache?.ownerId || localFeedCache.ownerId===user.id);
+      const localBatches=canImportBroiler && Array.isArray(localBroilerCache?.batches) ? localBroilerCache.batches : [];
+      const knownBatchIds=new Set(broilerBatches.map(batch=>String(batch.id)));
+      const missingBatches=localBatches.filter(batch=>!knownBatchIds.has(String(batch.id)));
+      for(const batch of missingBatches)await window.FratelCloud.saveLivestockBatch(batch,"broiler");
+      if(missingBatches.length)broilerBatches=await window.FratelCloud.loadLivestockBatches("broiler",false);
+
+      const feedKeys=["ingredients","suppliers","purchases","rawMovements","formulas","production","finishedMovements","allocations","consumption","priceHistory"];
+      if(canImportFeed && localFeedCache && typeof localFeedCache==="object") {
+        const mergedFeed={...localFeedCache};
+        let hasLocalOnlyFeedRows=false;
+        feedKeys.forEach(key=>{
+          const remoteRows=Array.isArray(feedState[key])?feedState[key]:[];
+          const localRows=Array.isArray(localFeedCache[key])?localFeedCache[key]:[];
+          const remoteIds=new Set(remoteRows.map(row=>String(row.id)));
+          const merged=new Map(remoteRows.filter(row=>row?.id).map(row=>[String(row.id),row]));
+          localRows.filter(row=>row?.id && !remoteIds.has(String(row.id))).forEach(row=>{merged.set(String(row.id),row);hasLocalOnlyFeedRows=true;});
+          mergedFeed[key]=[...merged.values()];
+        });
+        if(hasLocalOnlyFeedRows) {
+          await window.FratelCloud.saveFeedState(mergedFeed);
+          feedState=await window.FratelCloud.loadFeedState(false);
+        }
+      }
 
       // One-time import of older browser-only portfolio rows. Cloud rows win
       // when an ID already exists; local-only records are preserved and added.
@@ -136,6 +166,12 @@
         if(!canImportLocalPortfolio) {
           localStorage.setItem(KEYS.inventory,JSON.stringify(portfolioData.inventory||[]));
           localStorage.setItem(KEYS.expenses,JSON.stringify(portfolioData.expenses||[]));
+        }
+        if(!canImportBroiler || missingBatches.length) {
+          localStorage.setItem(KEYS.broiler,JSON.stringify({ownerId:user.id,batches:broilerBatches}));
+        }
+        if(!canImportFeed || feedKeys.some(key=>Array.isArray(feedState[key])&&feedState[key].length)) {
+          localStorage.setItem(KEYS.feed,JSON.stringify({...feedState,ownerId:user.id}));
         }
       } catch(error) { console.warn("Could not refresh owner-scoped portfolio cache:",error); }
 
