@@ -1616,38 +1616,49 @@ function renderPriceSimulation() {
 
     data.batches = data.batches.filter(item => item.id !== batchId);
 
-    // Remove only feed transactions linked to this batch; retain shared stock,
-    // purchases, ingredients, formulas and other batches.
+    if (activeBatchId === batchId) activeBatchId = data.batches[0]?.id || "";
+    // Update the local broiler snapshot before feed synchronisation so the
+    // feed importer cannot accidentally recreate the batch being deleted.
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      localStorage.setItem(ACTIVE_KEY, activeBatchId);
+    } catch (error) { console.warn("Could not update the broiler recovery cache:", error); }
+
     try {
       const feedKey = "agripredict_broiler_feed_v1";
       const feedState = JSON.parse(localStorage.getItem(feedKey) || "null");
+      let allocationIds = new Set();
       if (feedState && typeof feedState === "object") {
-        ["allocations", "consumption", "batches"].forEach(key => {
-          if (Array.isArray(feedState[key])) {
-            feedState[key] = feedState[key].filter(item =>
-              item.batchId !== batchId && item.id !== batchId
-            );
-          }
-        });
+        allocationIds = new Set((feedState.allocations || []).filter(item => item.batchId === batchId).map(item => item.id));
+        feedState.allocations = (feedState.allocations || []).filter(item => item.batchId !== batchId);
+        feedState.consumption = (feedState.consumption || []).filter(item => item.batchId !== batchId);
+        feedState.batches = (feedState.batches || []).filter(item => item.id !== batchId);
+        feedState.finishedMovements = (feedState.finishedMovements || []).filter(item => !allocationIds.has(item.reference));
         if (feedState.selectedBatch === batchId) feedState.selectedBatch = "";
         localStorage.setItem(feedKey, JSON.stringify(feedState));
       }
+      const feedAppState = window.AgriPredictFeed?.state;
+      if (feedAppState) {
+        const liveAllocationIds = new Set(feedAppState.allocations.filter(item => item.batchId === batchId).map(item => item.id));
+        feedAppState.allocations = feedAppState.allocations.filter(item => item.batchId !== batchId);
+        feedAppState.consumption = feedAppState.consumption.filter(item => item.batchId !== batchId);
+        feedAppState.batches = feedAppState.batches.filter(item => item.id !== batchId);
+        feedAppState.finishedMovements = feedAppState.finishedMovements.filter(item => !liveAllocationIds.has(item.reference));
+        if (feedAppState.selectedBatch === batchId) feedAppState.selectedBatch = "";
+        await window.AgriPredictFeed.save();
+      }
     } catch (error) {
       console.error("Could not clean linked feed batch records:", error);
+      notify("The batch was deleted, but some linked feed records need attention.");
     }
 
-    if (activeBatchId === batchId) {
-      activeBatchId = data.batches[0]?.id || "";
-    }
-
-    saveData();
+    await saveData();
     populateBatchSelect();
     if (data.batches.length) {
       renderDashboard();
       renderBatchSettings();
     } else {
       activeBatchId = "";
-      saveData();
       $("#workspaceView").hidden = true;
       $("#setupView").hidden = false;
       $("#batchDetails").innerHTML = '<p class="empty-message">No batches yet. Create a new batch to get started.</p>';
