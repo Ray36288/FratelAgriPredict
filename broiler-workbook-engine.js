@@ -137,7 +137,7 @@
       const feedCostPerBird=configured?weeklyPerBirdKg*formula.costPerKg:null;
       const totalFeedCost=configured?totalFeedKg*formula.costPerKg:null;
       const ingredients=configured?formula.lines.map(line=>({id:line.id,name:line.name,quantityKg:totalFeedKg*line.effectiveQuantityKg/formula.totalWeightKg,cost:totalFeedKg*line.effectiveQuantityKg/formula.totalWeightKg*line.pricePerKg})): [];
-      const layingValue=num(row.layingPercent ?? model.layingPercentages?.[index]);
+      const layingValue=num(model.layingPercentages?.[index] ?? row.layingPercent);
       const layingPercent=layingValue;
       const dailyEggs=layingValue===null?null:(dailyCounts?dailyCounts.reduce((sum,day)=>sum+day.birds*layingValue/100,0)/(daysValue||1):birdsAtStart*layingValue/100);
       const weeklyEggs=layingValue===null?null:(dailyCounts?dailyCounts.reduce((sum,day)=>sum+day.birds*layingValue/100,0):dailyEggs*(daysValue||0));
