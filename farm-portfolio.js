@@ -274,7 +274,7 @@
       if (!date || !Number.isFinite(amount) || amount<0) return;
       push({id:item.id,date:String(date).slice(0,10),category:categoryFor(item.category || item.type),amount,description:item.description||item.category||"Farm expense",enterprise:item.enterprise||item.projectSlug||"farm"});
     });
-    (cloudPortfolio?.expenses || []).filter(item => item.transactionType !== "income").forEach(item => {
+    (cloudPortfolio?.expenses || []).filter(item => item.transactionType !== "income" && item.category !== "feed_purchase_payment").forEach(item => {
       push({id:item.id,date:item.date,category:categoryFor(item.category),amount:item.amount,description:item.description,enterprise:item.enterprise||"farm"});
     });
 
