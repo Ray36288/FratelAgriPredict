@@ -96,11 +96,12 @@
     if (!window.FratelCloud) return false;
     cloudPortfolioPromise = (async () => {
       await window.FratelCloud.ready();
-      const [broilerBatches, feedState] = await Promise.all([
+      const [broilerBatches, feedState, portfolioData] = await Promise.all([
         window.FratelCloud.loadLivestockBatches("broiler", false),
-        window.FratelCloud.loadFeedState(false)
+        window.FratelCloud.loadFeedState(false),
+        window.FratelCloud.loadPortfolioData(false)
       ]);
-      cloudPortfolio = { broilerBatches, feedState };
+      cloudPortfolio = { broilerBatches, feedState, inventory: portfolioData.inventory, expenses: portfolioData.expenses };
       render();
       return true;
     })().catch(error => {
@@ -157,7 +158,13 @@
     const broilerCount = batches.reduce((s,b)=>s+liveBirds(b),0);
     if (batches.length) rows.push({slug:"broiler",label:"Broiler birds",count:broilerCount,detail:`${batches.length} recorded batch${batches.length===1?"":"es"}`,source:"Broiler Management"});
 
-    const generic = arrayFrom(parseJSON(KEYS.inventory));
+    const cloudGeneric = Array.isArray(cloudPortfolio?.inventory) ? cloudPortfolio.inventory : [];
+    const localGeneric = arrayFrom(parseJSON(KEYS.inventory));
+    const genericById = new Map(cloudGeneric.filter(item => item?.id).map(item => [String(item.id), item]));
+    localGeneric.filter(item => item && !genericById.has(String(item.id || ""))).forEach((item,index) => {
+      genericById.set(String(item.id || `local-inventory-${index}`), item);
+    });
+    const generic = [...genericById.values()];
     const extraByType = new Map();
     generic.forEach(item => {
       if (!item || typeof item !== "object") return;
@@ -241,6 +248,9 @@
       const date = item.date || item.expenseDate || item.createdAt;
       if (!date || !Number.isFinite(amount) || amount<0) return;
       push({id:item.id,date:String(date).slice(0,10),category:categoryFor(item.category || item.type),amount,description:item.description||item.category||"Farm expense",enterprise:item.enterprise||item.projectSlug||"farm"});
+    });
+    (cloudPortfolio?.expenses || []).filter(item => item.transactionType !== "income").forEach(item => {
+      push({id:item.id,date:item.date,category:categoryFor(item.category),amount:item.amount,description:item.description,enterprise:item.enterprise||"farm"});
     });
 
     for (const [slug,provider] of sourceProviders) {
@@ -399,13 +409,27 @@
   }
   function publishInventory(records) {
     const saved=Array.isArray(records)?records:[];
-    localStorage.setItem(KEYS.inventory,JSON.stringify(saved));
+    try { localStorage.setItem(KEYS.inventory,JSON.stringify(saved)); } catch(error) { console.warn("Local inventory cache unavailable:",error); }
+    if (window.FratelCloud) {
+      window.FratelCloud.savePortfolioInventory(saved).then(() => hydrateCloudPortfolio()).catch(error => {
+        console.error("Farm inventory cloud save failed:",error);
+        document.dispatchEvent(new CustomEvent("agripredict:cloud-save-error",{detail:{module:"portfolio",message:error.message}}));
+      });
+    }
     window.dispatchEvent(new CustomEvent("agripredict:farm-records-updated"));
+    return saved;
   }
   function publishExpenses(records) {
     const saved=Array.isArray(records)?records:[];
-    localStorage.setItem(KEYS.expenses,JSON.stringify(saved));
+    try { localStorage.setItem(KEYS.expenses,JSON.stringify(saved)); } catch(error) { console.warn("Local expense cache unavailable:",error); }
+    if (window.FratelCloud) {
+      window.FratelCloud.savePortfolioExpenses(saved).then(() => hydrateCloudPortfolio()).catch(error => {
+        console.error("Farm expense cloud save failed:",error);
+        document.dispatchEvent(new CustomEvent("agripredict:cloud-save-error",{detail:{module:"portfolio",message:error.message}}));
+      });
+    }
     window.dispatchEvent(new CustomEvent("agripredict:farm-records-updated"));
+    return saved;
   }
 
   document.addEventListener("input",event=>{
