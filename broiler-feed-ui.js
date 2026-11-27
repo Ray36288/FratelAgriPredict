@@ -366,7 +366,8 @@
     $("#filterFeedConsumptionBtn")?.addEventListener("click",filterConsumption);
   }
   function refresh(batch) { if(batch) currentBatch(); render(); }
-  function initialise() {
+  async function initialise() {
+    if (typeof APP.hydrate === "function") await APP.hydrate();
     currentBatch();
     bind();
     document.addEventListener("agripredict:feed-data-updated", () => render());
