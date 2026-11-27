@@ -15,6 +15,8 @@
 (() => {
   "use strict";
 
+  const OWNER_KEY = "agripredict_portfolio_owner_v1";
+  let portfolioOwnerId = null;
   const KEYS = {
     broiler: "agripredict_broiler_v1",
     feed: "agripredict_broiler_feed_v1",
@@ -95,7 +97,10 @@
     if (cloudPortfolioPromise) return cloudPortfolioPromise;
     if (!window.FratelCloud) return false;
     cloudPortfolioPromise = (async () => {
-      await window.FratelCloud.ready();
+      const { user } = await window.FratelCloud.ready();
+      const savedOwnerId = (() => { try { return localStorage.getItem(OWNER_KEY); } catch { return null; } })();
+      const canImportLocalPortfolio = !savedOwnerId || savedOwnerId === user.id;
+      portfolioOwnerId = user.id;
       const [broilerBatches, feedState] = await Promise.all([
         window.FratelCloud.loadLivestockBatches("broiler", false),
         window.FratelCloud.loadFeedState(false)
@@ -105,8 +110,8 @@
       // One-time import of older browser-only portfolio rows. Cloud rows win
       // when an ID already exists; local-only records are preserved and added.
       const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      const localInventory=arrayFrom(parseJSON(KEYS.inventory));
-      const localExpenses=arrayFrom(parseJSON(KEYS.expenses));
+      const localInventory=canImportLocalPortfolio ? arrayFrom(parseJSON(KEYS.inventory)) : [];
+      const localExpenses=canImportLocalPortfolio ? arrayFrom(parseJSON(KEYS.expenses)) : [];
       const prepare=(items,nested=false)=>items.forEach(item=>{
         if(!item || typeof item!=="object")return;
         if(!uuidPattern.test(String(item.id||"")))item.id=crypto.randomUUID();
@@ -125,6 +130,13 @@
       if(inventoryToImport.length)await window.FratelCloud.savePortfolioInventory(inventoryToImport);
       if(expensesToImport.length)await window.FratelCloud.savePortfolioExpenses(expensesToImport);
       if(inventoryToImport.length || expensesToImport.length)portfolioData=await window.FratelCloud.loadPortfolioData(false);
+      try {
+        localStorage.setItem(OWNER_KEY,user.id);
+        if(!canImportLocalPortfolio) {
+          localStorage.setItem(KEYS.inventory,JSON.stringify(portfolioData.inventory||[]));
+          localStorage.setItem(KEYS.expenses,JSON.stringify(portfolioData.expenses||[]));
+        }
+      } catch(error) { console.warn("Could not refresh owner-scoped portfolio cache:",error); }
 
       cloudPortfolio = { broilerBatches, feedState, inventory: portfolioData.inventory, expenses: portfolioData.expenses };
       render();
