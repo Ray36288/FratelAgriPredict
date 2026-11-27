@@ -65,6 +65,7 @@
       source:{file:"koudijce broiler.xlsx",sheet:"broilers",ingredientHeading:"INGRIDIENTS",currency:"UGX"},
       version:MODEL_VERSION,
       defaultBirds:5000,
+      sellingCostInputs:{chickCostPerBird:null,otherCostPerBird:null},
       ingredients:SOURCE_INGREDIENTS.map((r,i)=>({id:"source_row_"+(i+4),sourceRow:i+4,name:r[0],pricePerKg:r[1],quantities:{rearing_0_4:r[2],rearing_4_8:r[3],pullet_8_17:r[4],prelay_17_20:r[5]}})),
       stages:STAGES.map(s=>({id:s.id,label:s.label,source:s.source})),
       weeklyIntake:SOURCE_WEEKLY_INTAKE.map(x=>({...x})),
@@ -221,7 +222,10 @@
     if($(ids.formulaWeight))$(ids.formulaWeight).textContent=formula.complete?kg(formula.totalWeightKg):"Not configured";
     if($(ids.formulaCost))$(ids.formulaCost).textContent=formula.complete?money(formula.totalCost):"Not available";
     if($(ids.formulaKg))$(ids.formulaKg).textContent=formula.complete?money(formula.costPerKg)+"/kg":"Not available";
-    if($(ids.ingredientBody))$(ids.ingredientBody).innerHTML=formula.lines.map(line=>'<tr><td>'+esc(line.name)+' <small>Row '+line.sourceRow+'</small></td><td><input type="number" min="0" step="any" data-wb-quantity="'+esc(line.id)+'" value="'+(line.quantityKg===null?"":line.quantityKg)+'" '+(line.quantityKg===null?'placeholder="Blank in Excel"':'')+'></td><td><input type="number" min="0" step="any" data-wb-price="'+esc(line.id)+'" value="'+esc(model.ingredients.find(x=>x.id===line.id).pricePerKg)+'"></td><td>'+ (line.lineCost===null?"—":money(line.lineCost))+'</td><td>'+ (line.inclusionPercent===null?"—":line.inclusionPercent.toLocaleString("en-UG",{maximumFractionDigits:8})+"%")+'</td></tr>').join("");
+    if($(ids.ingredientBody))$(ids.ingredientBody).innerHTML=formula.lines.map(line=>'<tr><td>'+esc(line.name)+' <small>Row '+line.sourceRow+'</small></td><td><input type="number" min="0" step="any" data-wb-quantity="'+esc(line.id)+'" value="'+(line.quantityKg===null?"":line.quantityKg)+'" '+(line.quantityKg===null?'placeholder="Blank in Excel"':'')+'></td><td><input type="number" min="0" step="any" data-wb-price="'+esc(line.id)+'" value="'+esc(model.ingredients.find(x=>x.id===line.id).pricePerKg)+'"></td><td>'+money(line.lineCost)+'</td><td>'+ (line.inclusionPercent===null?"—":line.inclusionPercent.toLocaleString("en-UG",{maximumFractionDigits:8})+"%")+'</td></tr>').join("");
+    if($("#wbStageSummaryRows"))$("#wbStageSummaryRows").innerHTML=(model.stages||[]).map(stage=>{const f=result.formulas[stage.id];return '<tr><td>'+esc(stage.label)+'</td><td>'+(f.complete?kg(f.totalWeightKg):"Blank in workbook")+'</td><td>'+(f.complete?money(f.totalCost):"—")+'</td><td>'+(f.complete?money(f.costPerKg)+"/kg":"Not calculable")+'</td></tr>';}).join("");
+    if($("#wbWeeklyIngredientRows"))$("#wbWeeklyIngredientRows").innerHTML=model.ingredients.map(item=>'<tr><td>'+esc(item.name)+' <small>Excel row '+item.sourceRow+'</small></td>'+result.weeks.map(w=>{const line=w.ingredients.find(x=>x.id===item.id);return '<td>'+(line?line.quantityKg.toLocaleString("en-UG",{maximumFractionDigits:9}):"—")+'</td>';}).join("")+'</tr>').join("")+'<tr><th>Total feed</th>'+result.weeks.map(w=>'<th>'+w.totalFeedKg.toLocaleString("en-UG",{maximumFractionDigits:6})+'</th>').join("")+'</tr>';
+    if($("#wbWeeklyCostRows"))$("#wbWeeklyCostRows").innerHTML=model.ingredients.map(item=>'<tr><td>'+esc(item.name)+' <small>Excel row '+item.sourceRow+'</small></td>'+result.weeks.map(w=>{const line=w.ingredients.find(x=>x.id===item.id);return '<td>'+(line?money(line.cost):"—")+'</td>';}).join("")+'</tr>').join("")+'<tr><th>Total feed cost</th>'+result.weeks.map(w=>'<th>'+(w.complete?money(w.totalFeedCost):"—")+'</th>').join("")+'</tr>';
     if($(ids.weeklyBody))$(ids.weeklyBody).innerHTML=result.weeks.map(w=>'<tr><td>Week '+w.week+'</td><td>'+w.dailyKgPerBird.toLocaleString("en-UG",{maximumFractionDigits:6})+'</td><td>'+w.days+'</td><td>'+w.weeklyKgPerBird.toLocaleString("en-UG",{maximumFractionDigits:6})+'</td><td>'+w.birdsAtStart.toLocaleString("en-UG")+' → '+w.birdsAtEnd.toLocaleString("en-UG")+'</td><td>'+kg(w.totalFeedKg)+'</td><td>'+(w.complete?money(w.feedCostPerBird):"Formula missing")+'</td><td>'+(w.complete?money(w.totalFeedCost):"Not available")+'</td></tr>').join("");
     if($(ids.layingBody))$(ids.layingBody).innerHTML=result.weeks.map(w=>'<tr><td>Week '+w.week+'</td><td><input type="number" min="0" max="100" step="any" data-wb-laying="'+w.week+'" value="'+w.layingPercent+'"></td><td>'+w.dailyEggs.toLocaleString("en-UG",{maximumFractionDigits:2})+'</td><td>'+w.weeklyEggs.toLocaleString("en-UG",{maximumFractionDigits:2})+'</td></tr>').join("");
     if($(ids.totalFeed))$(ids.totalFeed).textContent=kg(result.totalFeedKg);
@@ -229,7 +233,9 @@
     const saleWeek=Number($(ids.saleWeek)?.value||1);
     const sale=calculateSellingFloor(model,saleWeek,num($(ids.chickCost)?.value),num($(ids.otherCost)?.value));
     if($(ids.saleFloor))$(ids.saleFloor).textContent=sale.complete?money(sale.breakEvenPrice):money(sale.knownCostPerBird)+" (partial)";
-    if($(ids.saleNote))$(ids.saleNote).textContent=sale.reason+" This calculation uses the workbook's scheduled feed costs; it is not a market-price guarantee. It excludes any cost not entered here, and does not infer a liveweight-based market value.";
+    const saleQuantity=Math.max(0,Number($(ids.saleBirds)?.value)||0);
+    const saleTotal=sale.complete&&saleQuantity>0?" Estimated minimum total for "+saleQuantity.toLocaleString("en-UG")+" birds: "+money(sale.breakEvenPrice*saleQuantity)+".":"";
+    if($(ids.saleNote))$(ids.saleNote).textContent=sale.reason+saleTotal+" This uses scheduled workbook feed costs; it is not a market-price guarantee. It excludes costs not entered here, and does not infer a liveweight-based market value.";
     const validation=validateModel(model);
     if($(ids.status))$(ids.status).textContent=validation.errors.length?validation.errors.join(" "):validation.warnings.length?validation.warnings.join(" "):"Workbook inputs loaded. Calculations are linked to the selected flock.";
   }
@@ -241,10 +247,14 @@
       if(q){const item=model.ingredients.find(x=>x.id===q.dataset.wbQuantity);if(item)item.quantities[$(ids.stage).value]=q.value===""?null:Number(q.value);render();}
       if(p){const item=model.ingredients.find(x=>x.id===p.dataset.wbPrice);if(item)item.pricePerKg=Number(p.value);render();}
       if(l){const index=Number(l.dataset.wbLaying)-1;if(index>=0&&index<7)model.layingPercentages[index]=Number(l.value);render();}
-      if(event.target.matches("#wbBirdCount,#wbChickCost,#wbOtherCost,#wbSaleBirds,#wbSaleWeek"))render();
+      if(event.target.matches("#wbBirdCount,#wbChickCost,#wbOtherCost,#wbSaleBirds,#wbSaleWeek")){
+        if(event.target.id==="wbChickCost")model.sellingCostInputs.chickCostPerBird=num(event.target.value);
+        if(event.target.id==="wbOtherCost")model.sellingCostInputs.otherCostPerBird=num(event.target.value);
+        render();
+      }
     });
     $(ids.stage)?.addEventListener("change",render);
-    $("#wbBatch")?.addEventListener("change",event=>{activeBatch=getBatches().find(b=>b.id===event.target.value)||null;$(ids.birds).value=currentBirds();render();});
+    $("#wbBatch")?.addEventListener("change",event=>{activeBatch=getBatches().find(b=>b.id===event.target.value)||null;$(ids.birds).value=currentBirds();if($(ids.chickCost))$(ids.chickCost).value=Number(activeBatch?.chickCost)>0?Number(activeBatch.chickCost):"";render();});
     $(ids.birds)?.addEventListener("change",render);
     $(ids.saleWeek)?.addEventListener("change",render);
     $(ids.reset)?.addEventListener("click",()=>{model=createSourceModel();render();});
@@ -259,9 +269,13 @@
       const rows=await window.FratelCloud.select("broiler_workbook_models","*",q=>q.eq("enterprise_id",enterprise.id).limit(1));
       if(rows[0]?.model_data)model={...createSourceModel(),...rows[0].model_data};
       else model=createSourceModel();
+      model.sellingCostInputs=model.sellingCostInputs||{chickCostPerBird:null,otherCostPerBird:null};
       loaded=true;
       if($(ids.status))$(ids.status).textContent=rows.length?"Saved farm workbook model loaded.":"Original workbook values loaded. Save after reviewing to keep your farm's settings.";
       if($(ids.birds))$(ids.birds).value=currentBirds()||model.defaultBirds;
+      if($(ids.chickCost)&&activeBatch&&Number(activeBatch.chickCost)>0)$(ids.chickCost).value=Number(activeBatch.chickCost);
+      if($(ids.chickCost)&&!$(ids.chickCost).value&&model.sellingCostInputs.chickCostPerBird!==null)$(ids.chickCost).value=model.sellingCostInputs.chickCostPerBird;
+      if($(ids.otherCost)&&model.sellingCostInputs.otherCostPerBird!==null)$(ids.otherCost).value=model.sellingCostInputs.otherCostPerBird;
       render();
     } catch(error) {
       if($(ids.status))$(ids.status).textContent="Could not load the saved workbook model: "+(error.message||"Check connection and sign-in.");
