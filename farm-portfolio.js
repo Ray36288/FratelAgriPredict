@@ -100,6 +100,7 @@
       const { user } = await window.FratelCloud.ready();
       const savedOwnerId = (() => { try { return localStorage.getItem(OWNER_KEY); } catch { return null; } })();
       const canImportLocalPortfolio = !savedOwnerId || savedOwnerId === user.id;
+      if(savedOwnerId && savedOwnerId!==user.id)cloudPortfolio={broilerBatches:[],feedState:{},inventory:[],expenses:[]};
       portfolioOwnerId = user.id;
       const [broilerBatches, feedState] = await Promise.all([
         window.FratelCloud.loadLivestockBatches("broiler", false),
