@@ -1,10 +1,12 @@
-const test = require("node:test");
-const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const path = require("node:path");
-const vm = require("node:vm");
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import vm from "node:vm";
+import { fileURLToPath } from "node:url";
 
-const source = fs.readFileSync(path.join(__dirname, "..", "broiler-workbook-engine.js"), "utf8");
+const here = path.dirname(fileURLToPath(import.meta.url));
+const source = fs.readFileSync(path.join(here, "..", "broiler-workbook-engine.js"), "utf8");
 const window = {};
 const document = { readyState: "complete", querySelector: () => null, addEventListener: () => {}, };
 vm.runInNewContext(source, { window, document, console, Date, Math, Number, Object, Array, String, Map, Set });
