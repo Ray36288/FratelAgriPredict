@@ -1135,9 +1135,15 @@
             <h3 class="wb-subtitle">1. Ingredient quantities and prices</h3>
             <p class="wb-note">All 17 ingredient rows from Excel are shown, including repeated names, zero inclusions and very small quantities. Change the quantity or price to see the formula cost recalculate. A blank pre-lay quantity remains blank until the farmer supplies it.</p>
             <div class="wb-table-wrap"><table><thead><tr><th>Ingredient (Excel row)</th><th>Quantity in 1,000 kg mix</th><th>Price (UGX/kg)</th><th>Ingredient cost</th><th>Inclusion (%)</th></tr></thead><tbody id="wbIngredientRows"><tr><td colspan="5">Loading workbook values…</td></tr></tbody></table></div>
+            <h3 class="wb-subtitle">All four source formulation stages</h3>
+            <div class="wb-table-wrap"><table><thead><tr><th>Workbook stage</th><th>Total mix weight</th><th>Total mix cost</th><th>Cost per kg</th></tr></thead><tbody id="wbStageSummaryRows"><tr><td colspan="4">Loading stages…</td></tr></tbody></table></div>
             <h3 class="wb-subtitle">2. Daily and weekly feed requirement per bird and flock</h3>
             <p class="wb-note">Daily intake is different in each week. Weekly intake per bird = daily kg per bird × days per week. Flock kilograms use the selected bird count; the active batch's recorded sales and mortality reduce the live count.</p>
             <div class="wb-table-wrap"><table><thead><tr><th>Week</th><th>Daily kg/bird</th><th>Days</th><th>Weekly kg/bird</th><th>Birds (start → end)</th><th>Flock feed</th><th>Feed cost/bird</th><th>Flock feed cost</th></tr></thead><tbody id="wbWeeklyRows"><tr><td colspan="8">Loading schedule…</td></tr></tbody></table></div>
+            <h3 class="wb-subtitle">Ingredient quantities consumed by week (kg)</h3>
+            <div class="wb-table-wrap"><table><thead><tr><th>Ingredient</th><th>Week 1</th><th>Week 2</th><th>Week 3</th><th>Week 4</th><th>Week 5</th><th>Week 6</th><th>Week 7</th></tr></thead><tbody id="wbWeeklyIngredientRows"><tr><td colspan="8">Loading ingredient requirements…</td></tr></tbody></table></div>
+            <h3 class="wb-subtitle">Cost by ingredient and week (UGX)</h3>
+            <div class="wb-table-wrap"><table><thead><tr><th>Ingredient</th><th>Week 1</th><th>Week 2</th><th>Week 3</th><th>Week 4</th><th>Week 5</th><th>Week 6</th><th>Week 7</th></tr></thead><tbody id="wbWeeklyCostRows"><tr><td colspan="8">Loading ingredient costs…</td></tr></tbody></table></div>
             <h3 class="wb-subtitle">3. Laying percentage and egg production</h3>
             <p class="wb-note">The source workbook has seven laying-percentage entries, all initially 0. They are editable. Daily eggs = birds × laying percentage; weekly eggs = daily eggs × days per week. These values are not broiler meat-production indicators.</p>
             <div class="wb-table-wrap"><table><thead><tr><th>Week</th><th>Laying (%)</th><th>Daily eggs</th><th>Weekly eggs</th></tr></thead><tbody id="wbLayingRows"><tr><td colspan="4">Loading…</td></tr></tbody></table></div>
