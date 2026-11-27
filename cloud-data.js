@@ -67,6 +67,26 @@
     return farmPromise;
   }
 
+  async function findFarm() {
+    const { user, client: db } = await ready();
+    const { data, error } = await db.from("farms")
+      .select("id,name").eq("farmer_id", user.id)
+      .order("created_at", { ascending: true }).limit(1).maybeSingle();
+    if (error) throw error;
+    return data || null;
+  }
+
+  async function findEnterprise(type) {
+    const farm = await findFarm();
+    if (!farm) return null;
+    const { data, error } = await client().from("farm_enterprises")
+      .select("id,farm_id,enterprise_type,name,status")
+      .eq("farm_id", farm.id).eq("enterprise_type", String(type || "").trim().toLowerCase())
+      .eq("status", "active").order("created_at", { ascending: true }).limit(1).maybeSingle();
+    if (error) throw error;
+    return data || null;
+  }
+
   async function ensureEnterprise(type, displayName) {
     const enterpriseType = String(type || "").trim().toLowerCase();
     if (!enterpriseType) throw new Error("An enterprise type is required.");
@@ -150,8 +170,11 @@
     return data || [];
   }
 
-  async function loadLivestockBatches(enterpriseType = "broiler") {
-    const enterprise = await ensureEnterprise(enterpriseType, "Broiler Farming");
+  async function loadLivestockBatches(enterpriseType = "broiler", createIfMissing = true) {
+    const enterprise = createIfMissing
+      ? await ensureEnterprise(enterpriseType, "Broiler Farming")
+      : await findEnterprise(enterpriseType);
+    if (!enterprise) return [];
     const rows = await select("livestock_batches", "*", query =>
       query.eq("enterprise_id", enterprise.id).order("start_date", { ascending: false })
     );
@@ -535,10 +558,19 @@
     return { farmId: farm.id, enterpriseId: enterprise.id, syncedAt: now };
   }
 
-  async function loadFeedState() {
+  async function loadFeedState(createIfMissing = true) {
     await ready();
-    const enterprise = await ensureEnterprise("broiler", "Broiler Farming");
-    const farm = await ensureFarm();
+    const farm = createIfMissing ? await ensureFarm() : await findFarm();
+    const enterprise = createIfMissing
+      ? await ensureEnterprise("broiler", "Broiler Farming")
+      : await findEnterprise("broiler");
+    if (!farm || !enterprise) {
+      return {
+        ingredients: [], suppliers: [], purchases: [], rawMovements: [], formulas: [],
+        production: [], finishedMovements: [], allocations: [], consumption: [],
+        priceHistory: [], batches: [], selectedBatch: "", activeTab: "overview"
+      };
+    }
     const [ingredientRows, supplierRows, purchaseRows, movementRows, formulaRows, versionRows, itemRows, productionRows, finishedRows, allocationRows, consumptionRows, priceHistoryRows] = await Promise.all([
       select("feed_ingredients", "*", q => q.eq("enterprise_id", enterprise.id)),
       select("feed_suppliers", "*", q => q.eq("farm_id", farm.id)),
@@ -631,7 +663,7 @@
       notes: row.notes || "", createdAt: row.created_at
     }));
 
-    const batches = await loadLivestockBatches("broiler");
+    const batches = await loadLivestockBatches("broiler", createIfMissing);
     const localBatchIdByCloud = new Map(batches.map(batch => [String(batch.cloudId || batch.id), String(batch.id)]));
     const allocations = allocationRows.map(row => ({
       id: row.id, batchId: localBatchIdByCloud.get(String(row.livestock_batch_id)) || row.livestock_batch_id,
@@ -654,7 +686,7 @@
   }
 
   window.FratelCloud = Object.freeze({
-    ready, getUser, ensureFarm, ensureEnterprise,
+    ready, getUser, ensureFarm, findFarm, ensureEnterprise, findEnterprise,
     select, insert, upsert, update, remove,
     loadLivestockBatches, saveLivestockBatch, deleteLivestockBatch,
     saveFeedState, loadFeedState
