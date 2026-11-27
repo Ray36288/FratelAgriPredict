@@ -187,6 +187,9 @@
       cloudId = existing.find(row => row.metadata?.localId === localId)?.id || null;
     }
 
+    if (Array.isArray(batch.records)) batch.records.forEach(ensureUuid);
+    if (Array.isArray(batch.priceChanges)) batch.priceChanges.forEach(ensureUuid);
+
     const payload = {
       enterprise_id: enterprise.id,
       batch_name: String(batch.name || batch.batchName || "Unnamed batch"),
@@ -217,6 +220,44 @@
       .select("id")
       .single();
     if (error) throw error;
+
+    const recordRows = (Array.isArray(batch.records) ? batch.records : []).map(record => {
+      const quantity = Number(record.quantity || 0);
+      return {
+        id: record.id,
+        batch_id: data.id,
+        record_type: String(record.type || "other"),
+        quantity_change: ["mortality", "sale"].includes(record.type) ? -Math.abs(quantity) : quantity,
+        measurement_value: record.averageWeight == null ? null : Number(record.averageWeight),
+        measurement_unit: record.averageWeight == null ? null : "kg",
+        cost_amount: record.amount != null ? Number(record.amount) :
+          record.cost != null ? Number(record.cost) :
+          record.totalCost != null ? Number(record.totalCost) : null,
+        occurred_at: record.date ? new Date(record.date + "T12:00:00").toISOString() : now,
+        cause_or_description: record.description || record.eventType || record.category || null,
+        notes: record.notes || null,
+        metadata: record,
+        recorded_by: user.id
+      };
+    });
+    if (recordRows.length) await upsert("livestock_records", recordRows, "id");
+
+    const farm = await ensureFarm();
+    const priceRows = (Array.isArray(batch.priceChanges) ? batch.priceChanges : []).map(price => ({
+      id: price.id,
+      farm_id: farm.id,
+      enterprise_id: enterprise.id,
+      price_category: String(price.category || "feed"),
+      item_name: String(price.item || price.category || "Farm input"),
+      unit: String(price.unit || "kg"),
+      price: Number(price.price || 0),
+      currency: "UGX",
+      effective_date: price.date || new Date().toISOString().slice(0, 10),
+      recorded_by: user.id,
+      notes: price.notes || null
+    }));
+    if (priceRows.length) await upsert("farm_price_history", priceRows, "id");
+
     return { ...batch, cloudId: data.id, ownerId: user.id };
   }
 
