@@ -489,6 +489,22 @@
         };
       });
       if (priceRows.length) await upsert("farm_price_history", priceRows, "id");
+
+      const paymentRows = purchases.flatMap(purchase =>
+        (Array.isArray(purchase.payments) ? purchase.payments : []).map(payment => {
+          ensureUuid(payment);
+          return {
+            id: payment.id, farm_id: farm.id, enterprise_id: enterprise.id,
+            transaction_type: "expense", category: "feed_purchase_payment",
+            description: `Payment for feed purchase ${purchase.invoiceNumber || purchase.id.slice(0, 8)}`,
+            amount: Number(payment.amount || 0), currency: "UGX",
+            transaction_date: payment.date || purchase.date,
+            reference: purchase.id, notes: payment.reference || null,
+            recorded_by: user.id, updated_at: now
+          };
+        })
+      ).filter(row => row.amount > 0);
+      if (paymentRows.length) await upsert("farm_transactions", paymentRows, "id");
     }
 
     if (rawMovements.length) {
@@ -571,7 +587,7 @@
         priceHistory: [], batches: [], selectedBatch: "", activeTab: "overview"
       };
     }
-    const [ingredientRows, supplierRows, purchaseRows, movementRows, formulaRows, versionRows, itemRows, productionRows, finishedRows, allocationRows, consumptionRows, priceHistoryRows] = await Promise.all([
+    const [ingredientRows, supplierRows, purchaseRows, movementRows, formulaRows, versionRows, itemRows, productionRows, finishedRows, allocationRows, consumptionRows, priceHistoryRows, paymentRows] = await Promise.all([
       select("feed_ingredients", "*", q => q.eq("enterprise_id", enterprise.id)),
       select("feed_suppliers", "*", q => q.eq("farm_id", farm.id)),
       select("feed_purchases", "*", q => q.eq("enterprise_id", enterprise.id)),
@@ -583,7 +599,8 @@
       select("finished_feed_movements", "*", q => q.eq("enterprise_id", enterprise.id)),
       select("feed_allocations", "*", q => q.eq("enterprise_id", enterprise.id)),
       select("feed_consumption", "*", q => q.eq("enterprise_id", enterprise.id)),
-      select("farm_price_history", "*", q => q.eq("enterprise_id", enterprise.id).eq("price_category", "feed_ingredient"))
+      select("farm_price_history", "*", q => q.eq("enterprise_id", enterprise.id).eq("price_category", "feed_ingredient")),
+      select("farm_transactions", "*", q => q.eq("enterprise_id", enterprise.id).eq("category", "feed_purchase_payment"))
     ]);
 
     const ingredients = ingredientRows.map(row => ({
@@ -604,15 +621,31 @@
       telephone: row.telephone || "", address: row.address || "",
       notes: row.notes || "", active: row.is_active, createdAt: row.created_at
     }));
-    const purchases = purchaseRows.map(row => ({
-      id: row.id, supplierId: row.supplier_id, ingredientId: row.ingredient_id,
-      invoiceNumber: row.invoice_number || "", date: row.purchased_on,
-      quantity: Number(row.quantity), unitPrice: Number(row.unit_price),
-      transportCost: Number(row.transport_cost), otherCost: Number(row.other_cost),
-      totalCost: Number(row.total_cost), landedUnitCost: Number(row.landed_unit_cost),
-      paidAmount: 0, balanceDue: Number(row.total_cost), paymentStatus: "Not tracked",
-      payments: [], notes: row.notes || "", createdAt: row.created_at
-    }));
+    const paymentsByPurchase = new Map();
+    paymentRows.forEach(row => {
+      const purchaseId = row.reference;
+      if (!purchaseId) return;
+      if (!paymentsByPurchase.has(purchaseId)) paymentsByPurchase.set(purchaseId, []);
+      paymentsByPurchase.get(purchaseId).push({
+        id: row.id, amount: Number(row.amount), date: row.transaction_date,
+        reference: row.notes || ""
+      });
+    });
+    const purchases = purchaseRows.map(row => {
+      const payments = paymentsByPurchase.get(row.id) || [];
+      const paidAmount = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+      const balanceDue = Math.max(0, Number(row.total_cost) - paidAmount);
+      return {
+        id: row.id, supplierId: row.supplier_id, ingredientId: row.ingredient_id,
+        invoiceNumber: row.invoice_number || "", date: row.purchased_on,
+        quantity: Number(row.quantity), unitPrice: Number(row.unit_price),
+        transportCost: Number(row.transport_cost), otherCost: Number(row.other_cost),
+        totalCost: Number(row.total_cost), landedUnitCost: Number(row.landed_unit_cost),
+        paidAmount, balanceDue,
+        paymentStatus: balanceDue <= 0.005 ? "Paid" : paidAmount > 0 ? "Part paid" : "Unpaid",
+        payments, notes: row.notes || "", createdAt: row.created_at
+      };
+    });
     const rawMovements = movementRows.map(row => ({
       id: row.id, ingredientId: row.ingredient_id, type: row.movement_type,
       quantity: Number(row.quantity_change), unitCost: Number(row.unit_cost),
