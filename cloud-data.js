@@ -8,7 +8,7 @@
   "use strict";
 
   const TABLES = new Set([
-    "farms", "farm_enterprises", "livestock_batches",
+    "farms", "farm_enterprises", "livestock_batches", "livestock_records",
     "production_records", "feed_ingredients", "feed_suppliers",
     "feed_purchases", "feed_stock_movements", "feed_formulas",
     "feed_formula_versions", "feed_formula_items", "feed_production",
