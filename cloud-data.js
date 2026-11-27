@@ -247,11 +247,19 @@
 
     const recordRows = (Array.isArray(batch.records) ? batch.records : []).map(record => {
       const quantity = Number(record.quantity || 0);
+      const rawType = String(record.type || "other").toLowerCase();
+      const allowedRecordTypes = new Set(["addition","mortality","sale","transfer","weight","vaccination","treatment","breeding","feed","health","expense","price_change","other"]);
+      const recordType = allowedRecordTypes.has(rawType)
+        ? rawType
+        : /vaccin/.test(rawType) ? "vaccination"
+        : /medic|treat/.test(rawType) ? "treatment"
+        : /weight/.test(rawType) ? "weight"
+        : /add|stocking/.test(rawType) ? "addition" : "other";
       return {
         id: record.id,
         batch_id: data.id,
-        record_type: String(record.type || "other"),
-        quantity_change: ["mortality", "sale"].includes(record.type) ? -Math.abs(quantity) : quantity,
+        record_type: recordType,
+        quantity_change: ["mortality", "sale"].includes(recordType) ? -Math.abs(quantity) : quantity,
         measurement_value: record.averageWeight == null ? null : Number(record.averageWeight),
         measurement_unit: record.averageWeight == null ? null : "kg",
         cost_amount: record.amount != null ? Number(record.amount) :
