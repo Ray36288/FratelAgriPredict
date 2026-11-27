@@ -369,6 +369,13 @@
   function initialise() {
     currentBatch();
     bind();
+    document.addEventListener("agripredict:feed-data-updated", () => render());
+    document.addEventListener("agripredict:cloud-save-error", event => {
+      if (event.detail?.module === "feed") notify("Feed cloud sync failed: " + (event.detail.message || "Check your connection."));
+    });
+    document.addEventListener("agripredict:cloud-load-error", event => {
+      if (event.detail?.module === "feed") notify("Feed records could not be loaded online: " + (event.detail.message || "Check your connection."));
+    });
     try {
       const draft=JSON.parse(localStorage.getItem("agripredict_feed_formula_draft")||"null");
       if(draft){
