@@ -2,7 +2,7 @@
    FRATEL-AGRIPREDICT — BROILER MANAGEMENT
    Matches broiler-dashboard.html
    Storage: agripredict_broiler_v1
-   Frontend prototype — no Supabase connection yet
+   Supabase-backed broiler records with a local recovery cache
 ========================================================= */
 
 (() => {
