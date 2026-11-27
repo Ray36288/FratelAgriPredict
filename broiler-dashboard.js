@@ -141,7 +141,11 @@
 
     const task = cloudSaveQueue.catch(() => {}).then(async () => {
       if (!window.FratelCloud) throw new Error("The cloud data service is not loaded.");
-      await window.FratelCloud.ready();
+      const { user } = await window.FratelCloud.ready();
+      if (data.ownerId && data.ownerId !== user.id) {
+        throw new Error("These local broiler records belong to a different farmer account. Reload before saving.");
+      }
+      data.ownerId = user.id;
 
       for (const batch of data.batches) {
         const saved = await window.FratelCloud.saveLivestockBatch(batch, "broiler");
@@ -1879,7 +1883,13 @@ function renderPriceSimulation() {
 
     try {
       if (!window.FratelCloud) throw new Error("Cloud data service is missing from this page.");
-      await window.FratelCloud.ready();
+      const { user } = await window.FratelCloud.ready();
+      if (data.ownerId && data.ownerId !== user.id) {
+        data = { batches: [], ownerId: user.id };
+        activeBatchId = "";
+      } else {
+        data.ownerId = user.id;
+      }
 
       // Import any existing browser-only batches once, preserving their IDs
       // and full daily records inside the existing livestock_batches metadata.
