@@ -1,26 +1,12 @@
 /* =========================================================
    AGRIPREDICT — WHOLE-FARM PORTFOLIO & COST INTELLIGENCE
-   Connects the farmer dashboard to the supplied broiler and
-   feed-management browser records. Other enterprise modules
-   can publish through the documented registry API below.
-
-   Known existing stores:
-   - agripredict_broiler_v1
-   - agripredict_broiler_feed_v1
-
-   Optional shared stores for other enterprise modules:
-   - agripredict_farm_inventory_v1
-   - agripredict_farm_expenses_v1
+   Reads farm records from authenticated Supabase tables.
+   Other enterprise modules can publish through the registry API below.
 ========================================================= */
 (() => {
   "use strict";
 
-  const KEYS = {
-    broiler: "agripredict_broiler_v1",
-    feed: "agripredict_broiler_feed_v1",
-    inventory: "agripredict_farm_inventory_v1",
-    expenses: "agripredict_farm_expenses_v1"
-  };
+  let portfolioOwnerId = null;
   const PERIODS = [
     {days:7,label:"7 days"},
     {days:14,label:"14 days"},
@@ -35,19 +21,6 @@
     return Number.isFinite(parsed) ? parsed : 0;
   };
   const escapeHTML = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  const parseJSON = key => {
-    try { return JSON.parse(localStorage.getItem(key) || "null"); }
-    catch (error) { console.warn(`AgriPredict could not read ${key}:`, error); return null; }
-  };
-  const arrayFrom = value => {
-    if (Array.isArray(value)) return value;
-    if (value && typeof value === "object") {
-      for (const key of ["items","records","inventory","animals","transactions","expenses","entries"]) {
-        if (Array.isArray(value[key])) return value[key];
-      }
-    }
-    return [];
-  };
   const localISODate = date => {
     const d = date || new Date();
     const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
@@ -74,15 +47,51 @@
   let enrolledRows = [];
   const sourceProviders = new Map();
   let latestModel = null;
+  let cloudPortfolio = null;
+  let cloudPortfolioPromise = null;
 
   function readBroiler() {
-    const saved = parseJSON(KEYS.broiler);
-    return saved && typeof saved === "object" ? saved : {batches:[]};
+    if (window.FratelAgriPredictDashboard?.getData) return window.FratelAgriPredictDashboard.getData();
+    return cloudPortfolio?.broilerBatches ? { batches: cloudPortfolio.broilerBatches } : { batches: [] };
   }
   function readFeed() {
-    const saved = parseJSON(KEYS.feed);
-    return saved && typeof saved === "object" ? saved : {};
+    if (window.AgriPredictFeed?.state) return window.AgriPredictFeed.state;
+    return cloudPortfolio?.feedState || {};
   }
+
+  async function hydrateCloudPortfolio() {
+    if (cloudPortfolioPromise) return cloudPortfolioPromise;
+    if (!window.FratelCloud) {
+      const status = document.getElementById("inventorySourceNote");
+      if (status) status.textContent = "Supabase data service is unavailable.";
+      return false;
+    }
+    cloudPortfolioPromise = (async () => {
+      const { user } = await window.FratelCloud.ready();
+      portfolioOwnerId = user.id;
+      const [broilerBatches, feedState, portfolioData] = await Promise.all([
+        window.FratelCloud.loadLivestockBatches("broiler", false),
+        window.FratelCloud.loadFeedState(false),
+        window.FratelCloud.loadPortfolioData(false)
+      ]);
+      cloudPortfolio = {
+        broilerBatches: Array.isArray(broilerBatches) ? broilerBatches : [],
+        feedState: feedState || {},
+        inventory: Array.isArray(portfolioData?.inventory) ? portfolioData.inventory : [],
+        expenses: Array.isArray(portfolioData?.expenses) ? portfolioData.expenses : []
+      };
+      render();
+      return true;
+    })().catch(error => {
+      cloudPortfolioPromise = null;
+      console.warn("Farm portfolio could not load cloud records:", error);
+      const status = document.getElementById("inventorySourceNote");
+      if (status) status.textContent = "Online farm records could not be loaded. Please check your sign-in and internet connection.";
+      return false;
+    });
+    return cloudPortfolioPromise;
+  }
+
   function normaliseProject(value) {
     return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
   }
@@ -128,7 +137,8 @@
     const broilerCount = batches.reduce((s,b)=>s+liveBirds(b),0);
     if (batches.length) rows.push({slug:"broiler",label:"Broiler birds",count:broilerCount,detail:`${batches.length} recorded batch${batches.length===1?"":"es"}`,source:"Broiler Management"});
 
-    const generic = arrayFrom(parseJSON(KEYS.inventory));
+    const cloudGeneric = Array.isArray(cloudPortfolio?.inventory) ? cloudPortfolio.inventory : [];
+    const generic = cloudGeneric;
     const extraByType = new Map();
     generic.forEach(item => {
       if (!item || typeof item !== "object") return;
@@ -206,12 +216,8 @@
       if (amount>0) push({id:record.id,date:record.date,category:"feed",amount,description:"Feed Management consumption",enterprise:"broiler"});
     });
 
-    arrayFrom(parseJSON(KEYS.expenses)).forEach(item=>{
-      if (!item || typeof item !== "object") return;
-      const amount = Number(item.amount ?? item.totalCost ?? item.cost);
-      const date = item.date || item.expenseDate || item.createdAt;
-      if (!date || !Number.isFinite(amount) || amount<0) return;
-      push({id:item.id,date:String(date).slice(0,10),category:categoryFor(item.category || item.type),amount,description:item.description||item.category||"Farm expense",enterprise:item.enterprise||item.projectSlug||"farm"});
+    (cloudPortfolio?.expenses || []).filter(item => item.transactionType !== "income" && item.category !== "feed_purchase_payment").forEach(item => {
+      push({id:item.id,date:item.date,category:categoryFor(item.category),amount:item.amount,description:item.description,enterprise:item.enterprise||"farm"});
     });
 
     for (const [slug,provider] of sourceProviders) {
@@ -254,7 +260,7 @@
     const placeholders = enrolledSlugs.filter(slug=>enterpriseGroup(slug)!=="crop" && !knownGroups.has(enterpriseGroup(slug)));
     const cards = model.inventory.map((row,index)=>`<article class="inventory-card inventory-tone-${index%5}"><span class="inventory-card-icon">${row.slug.includes("fish")?"🐟":row.slug.includes("dairy")||row.slug.includes("cattle")?"🐄":row.slug.includes("pig")?"🐖":row.slug.includes("layer")||row.slug.includes("chicken")?"🐔":"🐤"}</span><div><span class="inventory-label">${escapeHTML(row.label)}</span><strong>${Math.round(row.count).toLocaleString("en-UG")}</strong><small>${escapeHTML(row.detail)}</small></div></article>`);
     const missing = placeholders.map(slug=>`<article class="inventory-card inventory-pending"><span class="inventory-card-icon">＋</span><div><span class="inventory-label">${escapeHTML(projectLabel(slug))}</span><strong>—</strong><small>Project enrolled · inventory records not connected</small></div></article>`);
-    grid.innerHTML = cards.concat(missing).join("") || `<div class="inventory-placeholder">No livestock inventory records have been connected yet. Broiler batches are read from this browser's saved farm records.</div>`;
+    grid.innerHTML = cards.concat(missing).join("") || `<div class="inventory-placeholder">No livestock inventory records have been connected yet. Broiler batches are read from your Supabase farm records.</div>`;
     const status = document.getElementById("inventorySourceStatus");
     if(status) { status.textContent=model.inventory.length?`${model.inventory.length} connected stock group${model.inventory.length===1?"":"s"}`:"No inventory source"; status.classList.toggle("source-ready",model.inventory.length>0); }
     text("inventorySourceNote",model.inventory.length?`Recorded inventory totals ${Math.round(knownTotal).toLocaleString("en-UG")} live animals/birds across connected records. Enrolled projects without inventory data are shown as not connected, not counted as zero.`:"No inventory module has published livestock counts yet. Project enrolments alone are not used to invent animal quantities.");
@@ -368,34 +374,46 @@
     sourceProviders.set(normaliseProject(slug),provider);
     render();
   }
-  function publishInventory(records) {
-    const saved=Array.isArray(records)?records:[];
-    localStorage.setItem(KEYS.inventory,JSON.stringify(saved));
+  async function publishInventory(records) {
+    if (!window.FratelCloud) throw new Error("Supabase inventory storage is unavailable.");
+    const saved = Array.isArray(records) ? records : [];
+    const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    saved.forEach(item=>{
+      if(item && typeof item==="object"){
+        if(!uuidPattern.test(String(item.id||"")))item.id=crypto.randomUUID();
+        (Array.isArray(item.movements)?item.movements:[]).forEach(m=>{
+          if(m && typeof m==="object" && !uuidPattern.test(String(m.id||"")))m.id=crypto.randomUUID();
+        });
+      }
+    });
+    const {user}=await window.FratelCloud.ready();
+    if(portfolioOwnerId && portfolioOwnerId!==user.id)throw new Error("The signed-in farmer changed. Reload before saving inventory.");
+    portfolioOwnerId=user.id;
+    await window.FratelCloud.savePortfolioInventory(saved);
+    cloudPortfolioPromise=null;
+    await hydrateCloudPortfolio();
     window.dispatchEvent(new CustomEvent("agripredict:farm-records-updated"));
-  }
-  function publishExpenses(records) {
-    const saved=Array.isArray(records)?records:[];
-    localStorage.setItem(KEYS.expenses,JSON.stringify(saved));
-    window.dispatchEvent(new CustomEvent("agripredict:farm-records-updated"));
+    return saved;
   }
 
-  document.addEventListener("input",event=>{
-    if(event.target.matches("#scenarioFeedDelta,#scenarioLabourDelta,#scenarioOtherDelta") && latestModel) renderForecast(latestModel);
-  });
-  document.getElementById("resetScenarioButton")?.addEventListener("click",()=>{
-    ["scenarioFeedDelta","scenarioLabourDelta","scenarioOtherDelta"].forEach(id=>{const input=document.getElementById(id);if(input)input.value="0";});
-    if(latestModel)renderForecast(latestModel);
-  });
-  // The existing broiler/feed engines dispatch some events on document and
-  // their feed UI also dispatches a window event; listen to both targets.
-  ["agripredict:broiler-data-updated","agripredict:feed-data-updated"].forEach(name=>document.addEventListener(name,render));
-  window.addEventListener("agripredict:broiler-data-updated",render);
-  window.addEventListener("agripredict:feed-data-updated",render);
-  window.addEventListener("agripredict:farm-records-updated",render);
-  window.addEventListener("storage",event=>{if(!event.key||Object.values(KEYS).includes(event.key))render();});
-  window.addEventListener("pageshow",render);
-  window.addEventListener("focus",render);
-  document.addEventListener("DOMContentLoaded",render,{once:true});
+  async function publishExpenses(records) {
+    if (!window.FratelCloud) throw new Error("Supabase expense storage is unavailable.");
+    const saved = Array.isArray(records) ? records : [];
+    const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    saved.forEach(item=>{
+      if(item && typeof item==="object" && !uuidPattern.test(String(item.id||"")))item.id=crypto.randomUUID();
+    });
+    const {user}=await window.FratelCloud.ready();
+    if(portfolioOwnerId && portfolioOwnerId!==user.id)throw new Error("The signed-in farmer changed. Reload before saving expenses.");
+    portfolioOwnerId=user.id;
+    await window.FratelCloud.savePortfolioExpenses(saved);
+    cloudPortfolioPromise=null;
+    await hydrateCloudPortfolio();
+    window.dispatchEvent(new CustomEvent("agripredict:farm-records-updated"));
+    return saved;
+  }
 
-  window.AgriPredictFarmPortfolio = {render,setProjects,registerSource,publishInventory,publishExpenses,getSnapshot:()=>latestModel||buildModel(),keys:{...KEYS},periods:[...PERIODS]};
+  window.AgriPredictFarmPortfolio = {render,setProjects,registerSource,publishInventory,publishExpenses,getSnapshot:()=>latestModel||buildModel(),periods:[...PERIODS],refreshCloud:hydrateCloudPortfolio};
+  hydrateCloudPortfolio();
+  window.addEventListener("focus", () => { cloudPortfolioPromise = null; hydrateCloudPortfolio(); });
 })();
