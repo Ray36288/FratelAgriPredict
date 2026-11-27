@@ -95,7 +95,7 @@ test("builds the live daily flock schedule from dated sales and mortality record
  const r=E.calculate(schedule.model,{flockEvents:schedule.flockEvents});
  assert.deepEqual(r.weeks[0].dailyRows.map(x=>x.birds),[5000,5000,5000,5000,4500,4500,4400]);
  close(r.weeks[0].totalFeedKg,0.01*5000*4+0.01*4500*2+0.01*4400,1e-12);
- assert.equal(r.weeks[1].totalFeedKg,4400*0.07);
+ close(r.weeks[1].totalFeedKg,4400*0.07,1e-12);
 });
 test("rejects flock events before placement and flock reductions beyond the live count",()=>{
  const m=E.createDefaultModel();
