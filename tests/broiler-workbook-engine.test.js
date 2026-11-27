@@ -1,0 +1,148 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import vm from "node:vm";
+import { fileURLToPath } from "node:url";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const source = fs.readFileSync(path.join(here, "..", "broiler-workbook-engine.js"), "utf8");
+const window = {};
+const document = { readyState: "complete", querySelector: () => null, addEventListener: () => {}, };
+vm.runInNewContext(source, { window, document, console, Date, Math, Number, Object, Array, String, Map, Set });
+const math = window.FratelBroilerWorkbookMath;
+
+test("source workbook benchmarks match all seven weekly feed and cost totals", () => {
+  const result = math.benchmark();
+  assert.equal(result.passed, result.total, JSON.stringify(result.checks.filter(x => !x.pass)));
+});
+
+test("different bird counts scale weekly intake and cost proportionally", () => {
+  const model = math.createSourceModel();
+  const result = math.calculateWorkbook(model, 100);
+  assert.ok(Math.abs(result.weeks[0].totalFeedKg - 7) < 1e-10);
+  assert.ok(Math.abs(result.weeks[0].totalFeedCost - 8680) < 0.01);
+});
+
+test("an ingredient price change recalculates the relevant formulation", () => {
+  const model = math.createSourceModel();
+  const result = math.calculatePriceScenario(model, "source_row_15", 3500);
+  const starter = result.stageImpacts.find(x => x.stageId === "rearing_0_4");
+  assert.ok(Math.abs(starter.deltaPerKg - 48) < 1e-9);
+});
+
+test("blank pre-lay cells remain unavailable rather than being invented", () => {
+  const model = math.createSourceModel();
+  const result = math.calculateFormula(model, "prelay_17_20");
+  assert.equal(result.complete, false);
+  assert.equal(result.totalWeightKg, 0);
+});
+
+test("mortality and sales on their recorded dates reduce later daily feed demand", () => {
+  const model = math.createSourceModel();
+  const batch = {
+    initialBirds: 100,
+    placementDate: "2026-01-01",
+    records: [
+      { type: "mortality", date: "2026-01-03", quantity: 10 },
+      { type: "sale", date: "2026-01-05", quantity: 5 }
+    ]
+  };
+  const result = math.calculateWorkbook(model, 100, batch);
+  assert.equal(result.weeks[0].birdsAtStart, 100);
+  assert.equal(result.weeks[0].birdsAtEnd, 85);
+  assert.ok(Math.abs(result.weeks[0].totalFeedKg - 6.35) < 1e-10);
+});
+
+test("laying percentage calculates daily and weekly egg quantities", () => {
+  const model = math.createSourceModel();
+  model.layingPercentages = [80,0,0,0,0,0,0];
+  const result = math.calculateWorkbook(model, 5000);
+  assert.equal(result.weeks[0].dailyEggs, 4000);
+  assert.equal(result.weeks[0].weeklyEggs, 28000);
+});
+
+test("selling floor is marked incomplete when chick and other costs are missing", () => {
+  const model = math.createSourceModel();
+  const result = math.calculateSellingFloor(model, 1, null, null);
+  assert.equal(result.complete, false);
+  assert.equal(result.knownCostOnly, true);
+});
+
+test("later-stage sale cost requires verified daily intake and formula stages", () => {
+  const model = math.createSourceModel();
+  const incomplete = math.calculateSellingFloor(model, 8, 1000, 200);
+  assert.equal(incomplete.complete, false);
+  const week8 = model.additionalWeeklyIntake.find(x => x.week === 8);
+  week8.dailyKg = 0.08;
+  week8.days = 7;
+  week8.stageId = "pullet_8_17";
+  const complete = math.calculateSellingFloor(model, 8, 1000, 200);
+  assert.equal(complete.complete, true);
+  assert.ok(complete.breakEvenPrice > 0);
+});
+
+test("blank future intake is not extrapolated into a feed requirement", () => {
+  const model = math.createSourceModel();
+  const result = math.calculateWorkbook(model, 5000);
+  assert.equal(result.weeks[7].complete, false);
+  assert.equal(result.weeks[7].totalFeedKg, null);
+  assert.equal(result.totalFeedKg, 6825);
+});
+
+test("cumulative feed cost per bird follows the source weekly schedule", () => {
+  const model = math.createSourceModel();
+  const result = math.calculateWorkbook(model);
+  const expected = result.sourceWeeks.reduce((sum, week) => sum + week.feedCostPerBird, 0);
+  assert.ok(Math.abs(result.weeks[6].cumulativeFeedCostPerBird - expected) < 1e-8);
+  assert.equal(result.weeks[7].cumulativeFeedCostPerBird, null);
+});
+
+test("feed days and egg-production days remain independent like the worksheet", () => {
+  const model = math.createSourceModel();
+  model.weeklyIntake[0].days = 5;
+  model.eggDaysPerWeek[0] = 7;
+  model.layingPercentages[0] = 50;
+  const result = math.calculateWorkbook(model, 5000);
+  assert.equal(result.weeks[0].weeklyKgPerBird, 0.05);
+  assert.equal(result.weeks[0].dailyEggs, 2500);
+  assert.equal(result.weeks[0].weeklyEggs, 17500);
+});
+
+test("source week labels remain distinct from the formula stages used", () => {
+  const model = math.createSourceModel();
+  const result = math.calculateWorkbook(model);
+  assert.equal(result.weeks[0].sourceLabel, "REARING");
+  assert.equal(result.weeks[1].sourceLabel, "REARING");
+  assert.equal(result.weeks[6].sourceLabel, "STARTER");
+  assert.equal(result.weeks[6].stageId, "pullet_8_17");
+  assert.equal(model.source.weeklyIntakeHeading, "Weekly intake Per Pig");
+});
+
+test("all 17 source ingredient rows, duplicate names and tiny inclusions are retained", () => {
+  const model = math.createSourceModel();
+  assert.equal(model.ingredients.length, 17);
+  assert.equal(model.ingredients.filter(x => x.name === "hendrix 5%").length, 2);
+  assert.equal(model.ingredients.find(x => x.sourceRow === 20).quantities.rearing_0_4, 1e-10);
+  assert.equal(model.ingredients.find(x => x.sourceRow === 20).quantities.rearing_4_8, 0.0001);
+  assert.equal(model.ingredients.find(x => x.sourceRow === 20).quantities.pullet_8_17, 1e-13);
+  assert.equal(model.ingredients.find(x => x.sourceRow === 7).quantities.pullet_8_17, null);
+});
+
+test("ingredient-level weekly quantities and costs reconcile to the weekly totals", () => {
+  const result = math.calculateWorkbook(math.createSourceModel());
+  for (const week of result.sourceWeeks) {
+    const ingredientKg = week.ingredients.reduce((sum, row) => sum + row.quantityKg, 0);
+    const ingredientCost = week.ingredients.reduce((sum, row) => sum + row.cost, 0);
+    assert.ok(Math.abs(ingredientKg - week.totalFeedKg) < 1e-8);
+    assert.ok(Math.abs(ingredientCost - week.totalFeedCost) < 0.01);
+  }
+});
+
+test("calculator is included additively in the existing forecasting page", () => {
+  const html = fs.readFileSync(path.join(here, "..", "broiler-dashboard.html"), "utf8");
+  assert.match(html, /id="broilerWorkbookPanel"/);
+  assert.match(html, /broiler-workbook-engine.js/);
+  assert.match(html, /broiler-workbook-engine.css/);
+  assert.match(html, /data-page="forecasting"/);
+});

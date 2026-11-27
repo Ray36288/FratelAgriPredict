@@ -1,0 +1,22 @@
+/* Additive styles for the workbook calculator; existing dashboard styles remain untouched. */
+#broilerWorkbookPanel .wb-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin:16px 0}
+#broilerWorkbookPanel .wb-kpi{background:var(--surface,#f7faf8);border:1px solid var(--border,#dce7df);border-radius:12px;padding:14px}
+#broilerWorkbookPanel .wb-kpi small{display:block;color:var(--muted,#66756b);font-size:.78rem}
+#broilerWorkbookPanel .wb-kpi strong{display:block;font-size:1.15rem;margin-top:6px}
+#broilerWorkbookPanel .wb-controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:14px 0}
+#broilerWorkbookPanel .wb-controls label,#broilerWorkbookPanel .wb-sale-grid label{display:grid;gap:6px;font-weight:600;font-size:.88rem}
+#broilerWorkbookPanel input,#broilerWorkbookPanel select{max-width:100%;min-width:0}
+#broilerWorkbookPanel .wb-table-wrap{overflow-x:auto;margin:12px 0}
+#broilerWorkbookPanel table{width:100%;border-collapse:collapse;min-width:690px}
+#broilerWorkbookPanel th,#broilerWorkbookPanel td{padding:9px 10px;border-bottom:1px solid var(--border,#e3eae5);text-align:left;font-size:.84rem;white-space:nowrap}
+#broilerWorkbookPanel th{background:var(--surface,#f7faf8);font-weight:700}
+#broilerWorkbookPanel td small{display:block;color:var(--muted,#718076);font-size:.72rem}
+#broilerWorkbookPanel td input{width:104px;padding:7px;border:1px solid var(--border,#cfdcd2);border-radius:7px}
+#broilerWorkbookPanel .wb-subtitle{margin:22px 0 6px;font-size:1rem}
+#broilerWorkbookPanel .wb-note{padding:11px 13px;border-radius:9px;background:var(--surface,#f7faf8);color:var(--muted,#526157);font-size:.84rem;line-height:1.5}
+#broilerWorkbookPanel .wb-sale-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+#broilerWorkbookPanel .wb-sale-result{margin-top:14px;padding:16px;border:1px solid var(--border,#dce7df);border-radius:12px}
+#broilerWorkbookPanel .wb-sale-result strong{font-size:1.35rem;display:block;margin-top:5px}
+#broilerWorkbookPanel .wb-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+#broilerWorkbookPanel #wbStatus{display:block;margin-top:10px;min-height:1.4em;color:var(--muted,#64756a);font-size:.82rem}
+@media(max-width:640px){#broilerWorkbookPanel .wb-table-wrap{margin-left:-8px;margin-right:-8px}#broilerWorkbookPanel th,#broilerWorkbookPanel td{padding:8px;font-size:.78rem}}

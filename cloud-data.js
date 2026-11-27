@@ -15,6 +15,7 @@
     "finished_feed_movements", "feed_allocations", "feed_consumption",
     "farm_transactions", "farm_price_history", "forecast_runs",
     "forecast_scenarios", "inventory_items", "inventory_movements",
+    "broiler_workbook_models",
     "layer_enterprise_data"
   ]);
 
