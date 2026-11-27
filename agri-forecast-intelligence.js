@@ -93,17 +93,26 @@
   function ingredientSeries(ingredient) {
     const purchases = (FEED?.state?.purchases || [])
       .filter(p => p.ingredientId === ingredient.id)
-      .map(p => ({ date: p.date, day: parseDate(p.date), price: landedCost(p), quantity: Number(p.quantity)||0, source: "purchase" }))
+      .map(p => ({ id:p.id, date: p.date, day: parseDate(p.date), price: landedCost(p), quantity: Number(p.quantity)||0, source: "purchase" }))
       .filter(p => Number.isFinite(p.day) && Number.isFinite(p.price) && p.price > 0)
       .sort((a,b)=>a.day-b.day);
-    // Multiple deliveries on one day are consolidated by quantity-weighted landed cost.
+    const purchaseIds = new Set(purchases.map(point => String(point.id)));
+    const manualPrices = (FEED?.state?.priceHistory || [])
+      .filter(row => row && !purchaseIds.has(String(row.id)) &&
+        String(row.ingredientName || "").toLowerCase() === String(ingredient.name || "").toLowerCase())
+      .map(row => ({ id:row.id, date:row.date, day:parseDate(row.date), price:Number(row.price), quantity:1, source:"recorded-price-change" }))
+      .filter(point => Number.isFinite(point.day) && Number.isFinite(point.price) && point.price > 0);
+    const observations = [...purchases, ...manualPrices].sort((a,b)=>a.day-b.day);
+    // Deliveries on one day use quantity-weighted landed cost. A manual price
+    // observation is kept as a dated price point and is not invented data.
     const daily = [];
-    purchases.forEach(point => {
+    observations.forEach(point => {
       const last = daily[daily.length-1];
       if (last && last.day === point.day) {
         const oldQty = last.quantity;
         last.price = (last.price*oldQty + point.price*point.quantity) / Math.max(0.000001, oldQty+point.quantity);
         last.quantity += point.quantity;
+        if (point.source !== "purchase") last.source = point.source;
       } else daily.push({...point});
     });
     return daily;
