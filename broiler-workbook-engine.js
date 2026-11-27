@@ -69,7 +69,8 @@
       ingredients:SOURCE_INGREDIENTS.map((r,i)=>({id:"source_row_"+(i+4),sourceRow:i+4,name:r[0],pricePerKg:r[1],quantities:{rearing_0_4:r[2],rearing_4_8:r[3],pullet_8_17:r[4],prelay_17_20:r[5]}})),
       stages:STAGES.map(s=>({id:s.id,label:s.label,source:s.source})),
       weeklyIntake:SOURCE_WEEKLY_INTAKE.map(x=>({...x})),
-      additionalWeeklyIntake:Array.from({length:13},(_,i)=>({week:i+8,dailyKg:null,days:null,stageId:null,layingPercent:null})),
+      eggDaysPerWeek:[7,7,7,7,7,7,7],
+      additionalWeeklyIntake:Array.from({length:13},(_,i)=>({week:i+8,dailyKg:null,days:null,stageId:null,layingPercent:null,eggDays:null})),
       weekStageMap:[...WEEK_STAGE],
       layingPercentages:SOURCE_WEEKLY_INTAKE.map(x=>x.layingPercent)
     };
@@ -94,6 +95,7 @@
       const anyEntered=row.dailyKg!==null || row.days!==null || row.stageId!==null;
       if(anyEntered && (!Number.isFinite(Number(row.dailyKg)) || Number(row.dailyKg)<0 || !Number.isInteger(Number(row.days)) || Number(row.days)<1 || Number(row.days)>7 || !row.stageId)) warnings.push("Week "+row.week+" needs a daily intake, days per week and feed stage before it can be costed.");
       if(row.layingPercent!==null && (!Number.isFinite(Number(row.layingPercent)) || Number(row.layingPercent)<0 || Number(row.layingPercent)>100)) errors.push("Laying percentage in week "+row.week+" must be between 0 and 100.");
+      if(row.eggDays!==null && (!Number.isInteger(Number(row.eggDays)) || Number(row.eggDays)<1 || Number(row.eggDays)>7)) errors.push("Egg production days in week "+row.week+" must be from 1 to 7.");
     });
     for(const stage of (model.stages||[])){
       const quantities=(model.ingredients||[]).map(i=>i.quantities?.[stage.id]);
@@ -138,10 +140,12 @@
       const totalFeedCost=configured?totalFeedKg*formula.costPerKg:null;
       const ingredients=configured?formula.lines.map(line=>({id:line.id,name:line.name,quantityKg:totalFeedKg*line.effectiveQuantityKg/formula.totalWeightKg,cost:totalFeedKg*line.effectiveQuantityKg/formula.totalWeightKg*line.pricePerKg})): [];
       const layingValue=num(model.layingPercentages?.[index] ?? row.layingPercent);
+      const eggDaysValue=num(row.eggDays ?? model.eggDaysPerWeek?.[index]);
+      const eggBirdCounts=configured && batch?.placementDate && eggDaysValue!==null ? weeklyBirdCounts(batch,row.week,eggDaysValue) : null;
       const layingPercent=layingValue;
-      const dailyEggs=layingValue===null?null:(dailyCounts?dailyCounts.reduce((sum,day)=>sum+day.birds*layingValue/100,0)/(daysValue||1):birdsAtStart*layingValue/100);
-      const weeklyEggs=layingValue===null?null:(dailyCounts?dailyCounts.reduce((sum,day)=>sum+day.birds*layingValue/100,0):dailyEggs*(daysValue||0));
-      return {week:row.week,dailyKgPerBird:dailyValue,days:daysValue,weeklyKgPerBird:weeklyPerBirdKg,birds:birdsDefault,birdsAtStart,birdsAtEnd,totalBirdDays,totalFeedKg,stageId,formulaCostPerKg:formula?.costPerKg??null,feedCostPerBird,totalFeedCost,ingredients,layingPercent,dailyEggs,weeklyEggs,complete:configured};
+      const dailyEggs=layingValue===null?null:(eggBirdCounts?eggBirdCounts.reduce((sum,day)=>sum+day.birds*layingValue/100,0)/eggDaysValue:birdsAtStart*layingValue/100);
+      const weeklyEggs=layingValue===null || eggDaysValue===null?null:(eggBirdCounts?eggBirdCounts.reduce((sum,day)=>sum+day.birds*layingValue/100,0):dailyEggs*eggDaysValue);
+      return {week:row.week,dailyKgPerBird:dailyValue,days:daysValue,eggDays:eggDaysValue,weeklyKgPerBird:weeklyPerBirdKg,birds:birdsDefault,birdsAtStart,birdsAtEnd,totalBirdDays,totalFeedKg,stageId,formulaCostPerKg:formula?.costPerKg??null,feedCostPerBird,totalFeedCost,ingredients,layingPercent,dailyEggs,weeklyEggs,complete:configured};
     });
     let cumulativeFeedCost=0,cumulativeComplete=true;
     weeks.forEach(w=>{
@@ -255,7 +259,7 @@
     if($("#wbWeeklyCostRows"))$("#wbWeeklyCostRows").innerHTML=model.ingredients.map(item=>'<tr><td>'+esc(item.name)+' <small>Excel row '+item.sourceRow+'</small></td>'+result.weeks.map(w=>{const line=w.ingredients.find(x=>x.id===item.id);return '<td>'+(line?money(line.cost):"—")+'</td>';}).join("")+'</tr>').join("")+'<tr><th>Total feed cost</th>'+result.weeks.map(w=>'<th>'+(w.complete?money(w.totalFeedCost):"—")+'</th>').join("")+'</tr>';
     if($("#wbAdditionalScheduleRows"))$("#wbAdditionalScheduleRows").innerHTML=(model.additionalWeeklyIntake||[]).map(row=>'<tr><td>Week '+row.week+'</td><td><input type="number" min="0" step="any" data-wb-extra-intake="'+row.week+'" value="'+(row.dailyKg??"")+'" placeholder="Enter kg"></td><td><input type="number" min="1" max="7" step="1" data-wb-extra-days="'+row.week+'" value="'+(row.days??"")+'" placeholder="1–7"></td><td><select data-wb-extra-stage="'+row.week+'"><option value="">Choose stage</option>'+(model.stages||[]).map(st=>'<option value="'+st.id+'" '+(row.stageId===st.id?"selected":"")+'>'+esc(st.label)+'</option>').join("")+'</select></td><td><input type="number" min="0" max="100" step="any" data-wb-extra-laying="'+row.week+'" value="'+(row.layingPercent??"")+'" placeholder="If applicable"></td></tr>').join("");
     if($(ids.weeklyBody))$(ids.weeklyBody).innerHTML=result.weeks.map(w=>'<tr><td>Week '+w.week+'</td><td>'+(w.dailyKgPerBird===null?"Not entered":w.dailyKgPerBird.toLocaleString("en-UG",{maximumFractionDigits:6}))+'</td><td>'+(w.days===null?"—":w.days)+'</td><td>'+(w.weeklyKgPerBird===null?"—":w.weeklyKgPerBird.toLocaleString("en-UG",{maximumFractionDigits:6}))+'</td><td>'+w.birdsAtStart.toLocaleString("en-UG")+' → '+w.birdsAtEnd.toLocaleString("en-UG")+'</td><td>'+(w.totalFeedKg===null?"Not configured":kg(w.totalFeedKg))+'</td><td>'+(w.complete?money(w.feedCostPerBird):"Not configured")+'</td><td>'+(w.complete?money(w.totalFeedCost):"Not configured")+'</td><td>'+(w.cumulativeFeedCostPerBird===null?"—":money(w.cumulativeFeedCostPerBird))+'</td></tr>').join("");
-    if($(ids.layingBody))$(ids.layingBody).innerHTML=result.weeks.map(w=>'<tr><td>Week '+w.week+'</td><td>'+(w.week<=7?'<input type="number" min="0" max="100" step="any" data-wb-laying="'+w.week+'" value="'+w.layingPercent+'">':(w.layingPercent===null?"Not entered":'<input type="number" min="0" max="100" step="any" data-wb-extra-laying="'+w.week+'" value="'+w.layingPercent+'">'))+'</td><td>'+(w.dailyEggs===null?"—":w.dailyEggs.toLocaleString("en-UG",{maximumFractionDigits:2}))+'</td><td>'+(w.weeklyEggs===null?"—":w.weeklyEggs.toLocaleString("en-UG",{maximumFractionDigits:2}))+'</td></tr>').join("");
+    if($(ids.layingBody))$(ids.layingBody).innerHTML=result.weeks.map(w=>'<tr><td>Week '+w.week+'</td><td>'+(w.week<=7?'<input type="number" min="0" max="100" step="any" data-wb-laying="'+w.week+'" value="'+w.layingPercent+'">':'<input type="number" min="0" max="100" step="any" data-wb-extra-laying="'+w.week+'" value="'+(w.layingPercent??"")+'" placeholder="Not supplied">')+'</td><td>'+(w.week<=7?'<input type="number" min="1" max="7" step="1" data-wb-egg-days="'+w.week+'" value="'+(w.eggDays??"")+'">':'<input type="number" min="1" max="7" step="1" data-wb-extra-egg-days="'+w.week+'" value="'+(w.eggDays??"")+'" placeholder="Not supplied">')+'</td><td>'+(w.dailyEggs===null?"—":w.dailyEggs.toLocaleString("en-UG",{maximumFractionDigits:2}))+'</td><td>'+(w.weeklyEggs===null?"—":w.weeklyEggs.toLocaleString("en-UG",{maximumFractionDigits:2}))+'</td></tr>').join("");
     if($(ids.totalFeed))$(ids.totalFeed).textContent=kg(result.totalFeedKg);
     if($(ids.totalCost))$(ids.totalCost).textContent=result.totalFeedCost===null?"Incomplete":money(result.totalFeedCost);
     const saleWeek=Number($(ids.saleWeek)?.value||1);
@@ -276,16 +280,20 @@
       const extraDays=event.target.closest("[data-wb-extra-days]");
       const extraStage=event.target.closest("[data-wb-extra-stage]");
       const extraLaying=event.target.closest("[data-wb-extra-laying]");
+      const eggDays=event.target.closest("[data-wb-egg-days]");
+      const extraEggDays=event.target.closest("[data-wb-extra-egg-days]");
       if(q){const item=model.ingredients.find(x=>x.id===q.dataset.wbQuantity);if(item)item.quantities[$(ids.stage).value]=q.value===""?null:Number(q.value);render();}
       if(p){const item=model.ingredients.find(x=>x.id===p.dataset.wbPrice);if(item)item.pricePerKg=Number(p.value);render();}
       if(l){const index=Number(l.dataset.wbLaying)-1;if(index>=0&&index<7)model.layingPercentages[index]=Number(l.value);render();}
-      const extraWeek=Number(extraIntake?.dataset.wbExtraIntake||extraDays?.dataset.wbExtraDays||extraStage?.dataset.wbExtraStage||extraLaying?.dataset.wbExtraLaying);
+      const extraWeek=Number(extraIntake?.dataset.wbExtraIntake||extraDays?.dataset.wbExtraDays||extraStage?.dataset.wbExtraStage||extraLaying?.dataset.wbExtraLaying||extraEggDays?.dataset.wbExtraEggDays);
       const extra=model.additionalWeeklyIntake?.find(x=>x.week===extraWeek);
       if(extraIntake&&extra)extra.dailyKg=extraIntake.value===""?null:Number(extraIntake.value);
       if(extraDays&&extra)extra.days=extraDays.value===""?null:Number(extraDays.value);
       if(extraStage&&extra)extra.stageId=extraStage.value||null;
       if(extraLaying&&extra)extra.layingPercent=extraLaying.value===""?null:Number(extraLaying.value);
-      if(extra)render();
+      if(extraEggDays&&extra)extra.eggDays=extraEggDays.value===""?null:Number(extraEggDays.value);
+      if(eggDays){const index=Number(eggDays.dataset.wbEggDays)-1;if(index>=0&&index<7)model.eggDaysPerWeek[index]=Number(eggDays.value);}
+      if(extra || eggDays)render();
       if(event.target.matches("#wbBirdCount,#wbChickCost,#wbOtherCost,#wbSaleBirds,#wbSaleWeek")){
         if(event.target.id==="wbChickCost")model.sellingCostInputs.chickCostPerBird=num(event.target.value);
         if(event.target.id==="wbOtherCost")model.sellingCostInputs.otherCostPerBird=num(event.target.value);
