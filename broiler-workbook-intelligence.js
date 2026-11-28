@@ -170,7 +170,9 @@ function forecast(batchId,daysAhead){
  const requestedDays=Number(daysAhead);if(!Number.isInteger(requestedDays)||requestedDays<1||requestedDays>MAX_WEEKS*7)throw new Error("Forecast period must be 1–140 days; add the required weeks to the daily feed plan.");
  const schedule=E.buildFlockScheduleFromBatch(model,batch),calc=E.calculate(schedule.model,{flockEvents:schedule.flockEvents});
  const age=window.AgriPredictFeed?.batchAge?.(batch);if(!Number.isInteger(age)||age<0)throw new Error("Could not establish batch age from its placement date.");
- const remaining=Math.max(0,Number(batch.targetAgeDays)-age),days=Math.min(requestedDays,remaining);
+ const targetAge=Number(batch.targetAgeDays);
+ if(!Number.isInteger(targetAge)||targetAge<1)throw new Error("Set a valid target harvest age in the Broiler batch setup before forecasting feed.");
+ const remaining=Math.max(0,targetAge-age),days=Math.min(requestedDays,remaining);
  if(days<1)throw new Error("The batch has reached its target harvest age. Check the batch target or create a new feeding plan.");
  let total=0,cost=0,costComplete=true;const dailyRows=[];
  for(let offset=0;offset<days;offset++){
@@ -197,6 +199,7 @@ function bind(){
    else if(t.id==="batchSelect")render();
   }catch(error){setMessage(error.message,"error");render();}
  });
+ document.addEventListener("change",event=>{if(event.target?.id==="batchSelect")render();});
  document.addEventListener("agripredict:broiler-data-updated",render);
  document.addEventListener("fratel:workbook-model-ready",render);
 }
