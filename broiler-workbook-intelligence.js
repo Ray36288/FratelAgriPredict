@@ -163,9 +163,11 @@ async function save(){
 function useBatch(){if(!activeBatch()){setMessage("Create or select a Broiler batch first.","error");return;}sourceMode="batch";render();setMessage("Flock totals follow the selected batch and recorded additions, sales and mortality.");}
 function forecast(batchId,daysAhead){
  const batch=(window.FratelAgriPredictDashboard?.getBatches?.()||[]).find(b=>String(b.id)===String(batchId));if(!batch)throw new Error("Select a valid Broiler batch.");
- const days=Number(daysAhead);if(!Number.isInteger(days)||days<1||days>28)throw new Error("Forecast period must be 1–28 days.");
+ const requestedDays=Number(daysAhead);if(!Number.isInteger(requestedDays)||requestedDays<1||requestedDays>28)throw new Error("Forecast period must be 1–28 days.");
  const schedule=E.buildFlockScheduleFromBatch(model,batch),calc=E.calculate(schedule.model,{flockEvents:schedule.flockEvents});
  const age=window.AgriPredictFeed?.batchAge?.(batch);if(!Number.isInteger(age)||age<0)throw new Error("Could not establish batch age from its placement date.");
+ const remaining=Math.max(0,Number(batch.targetAgeDays)-age),days=Math.min(requestedDays,remaining);
+ if(days<1)throw new Error("The batch has reached its target harvest age. Check the batch target or create a new feeding plan.");
  let total=0,cost=0,costComplete=true;const dailyRows=[];
  for(let offset=0;offset<days;offset++){
   const dayIndex=age+offset,wi=Math.floor(dayIndex/7),di=dayIndex%7,w=calc.weeks[wi],planned=model.weeklySchedule[wi];
