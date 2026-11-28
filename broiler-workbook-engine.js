@@ -75,7 +75,7 @@ function calculateBreakEvenSalePrice(input){const birds=nonNegative(input.birdsT
 
 function calculateBatchCostAllocation(input){
 const batch=input?.batch;if(!batch||typeof batch!=="object")throw new TypeError("A Broiler batch is required.");
-const saleDate=String(input.saleDate||"");if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(saleDate))throw new TypeError("A valid sale date is required.");
+const saleDate=String(input.saleDate||"");if(!/^\d{4}-\d{2}-\d{2}$/.test(saleDate))throw new TypeError("A valid sale date is required.");
 if(input.allCostsConfirmed!==true)throw new Error("Confirm that all chick, health and other farm costs through the sale date have been recorded.");
 const initial=finite(batch.initialBirds,"Initial birds");if(!Number.isInteger(initial)||initial<=0)throw new RangeError("The batch must have a positive whole-number starting bird count.");
 if(batch.chickCost==null||batch.chickCost==="")throw new Error("Enter the actual chick purchase cost per chick in the batch record.");
