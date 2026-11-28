@@ -115,6 +115,8 @@ test("allocates recorded batch costs across saleable birds and includes mortalit
  ]};
  const r=E.calculateBatchCostAllocation({batch,saleDate:"2026-01-10",feedCostTotal:23000,saleCostPerBird:200,allCostsConfirmed:true});
  assert.equal(r.saleableBirds,115);
+ assert.equal(r.liveBirds,105);
+ assert.equal(r.previouslySoldBirds,10);
  assert.equal(r.chickPurchaseTotal,130000);
  assert.equal(r.otherCostsTotal,15000);
  assert.equal(r.feedCostTotal,23000);
