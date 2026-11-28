@@ -86,7 +86,7 @@ function renderWeeks(){
 function renderFormula(){
  const stage=model.stages.find(s=>s.id===formulaStage),formula=result?.formulas.find(f=>f.stageId===formulaStage);if(!stage||!formula)return;
  $("#bwiStage").value=formulaStage;
- $("#bwiFormulaTotals").innerHTML='<span>Mix weight <strong>'+fmt(formula.totalMixKg)+' kg</strong></span><span>Mix cost <strong>'+money(formula.totalMixCost)+'</strong></span><span>Cost/kg <strong>'+price(formula.costPerKg)+'</strong></span><span>Entry status <strong>'+(formula.complete?"Complete":"Incomplete")+'</strong></span>';
+ $("#bwiFormulaTotals").innerHTML='<span>Mix weight <strong>'+fmt(formula.totalMixKg)+' kg</strong></span><span>Mix cost <strong>'+price(formula.totalMixCost)+'</strong></span><span>Cost/kg <strong>'+price(formula.costPerKg)+'</strong></span><span>Entry status <strong>'+(formula.entriesComplete?(formula.complete?"Confirmed":"Needs confirmation"):"Missing ingredient rows")+'</strong></span>';
  $("#bwiIngredients").innerHTML=formula.entries.map(x=>{
   const item=model.ingredients.find(i=>i.id===x.ingredientId),raw=item.inclusionKg?.[formulaStage],entered=raw!==null&&raw!==undefined&&raw!=="";
   return '<tr><td><strong>'+esc(x.name)+'</strong><small>Excel row '+x.excelRow+'</small></td><td><input type="number" min="0" step="any" value="'+(entered?esc(raw):'')+'" placeholder="Enter kg or 0" data-mix="'+esc(x.ingredientId)+'" aria-label="'+esc(x.name)+' mix kg"></td><td>'+(formula.totalMixKg?fmt(x.inclusionKg/formula.totalMixKg*100)+'%':'—')+'</td><td><input type="number" min="0" step="any" value="'+esc(x.pricePerKg)+'" data-price="'+esc(x.ingredientId)+'" aria-label="'+esc(x.name)+' price per kg"></td><td>'+money(x.lineCost)+'</td><td>'+(entered?"Entered":"Missing — confirm 0 or quantity")+'</td></tr>';
@@ -137,7 +137,7 @@ function updateFormula(target){
  const item=model.ingredients.find(x=>x.id===(target.dataset.mix||target.dataset.price));if(!item)return;
  if(target.dataset.mix!==undefined){const raw=target.value.trim();if(raw!==""&&(!Number.isFinite(Number(raw))||Number(raw)<0))throw new Error("Ingredient quantity must be a non-negative number.");item.inclusionKg[formulaStage]=raw===""?null:Number(raw);
   const stage=model.stages.find(s=>s.id===formulaStage);
-  if(stage?.id==="pre_lay_17_20")stage.status=model.ingredients.every(x=>x.inclusionKg?.[formulaStage]!==null&&x.inclusionKg?.[formulaStage]!==undefined&&x.inclusionKg?.[formulaStage]!=="")?"active":"incomplete";
+  if(stage)stage.status="unverified";
  }else{const n=Number(target.value);if(!Number.isFinite(n)||n<0)throw new Error("Ingredient price must be a non-negative amount.");item.pricePerKg=n;}
 }
 function addWeek(){
@@ -147,8 +147,8 @@ function addWeek(){
 }
 function confirmStage(){
  const stage=model.stages.find(s=>s.id===formulaStage),formula=E.calculateFormula(model,formulaStage);if(!stage)return;
- if(!formula.complete){setMessage("This formulation still has blank ingredient quantities. Enter the actual quantity or 0 for every row before confirming.","error");return;}
- stage.status="active";setMessage(stage.label+" ("+stage.ageRange+") marked complete. Review its nutrient specifications before use.");render();
+ if(!formula.entriesComplete){setMessage("This formulation still has blank ingredient quantities. Enter the actual quantity or 0 for every row before confirming.","error");return;}
+ stage.status="active";setMessage(stage.label+" ("+stage.ageRange+") confirmed. Verify ingredient specifications and nutrient suitability before using this ration.");render();
 }
 async function load(){
  if(busy)return;busy=true;
