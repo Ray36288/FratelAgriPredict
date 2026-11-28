@@ -16,8 +16,6 @@
   const CONFIG = {
     currency: "UGX",
     forecastDays: [7, 14, 21, 28],
-    defaultFeedPerBirdKg: 3,
-    defaultProductionDays: 28,
     lowStockDays: 7
   };
 
@@ -748,25 +746,20 @@
       name: assertText(data.name, "Batch name"),
       placementDate: data.placementDate,
       initialBirds: positive(data.initialBirds, "Initial birds"),
-      targetAgeDays: number(
-        data.targetAgeDays || CONFIG.defaultProductionDays
-      ),
+      targetAgeDays: number(data.targetAgeDays),
       targetWeight: number(data.targetWeight),
-      targetFeedPerBird: number(
-        data.targetFeedPerBird || CONFIG.defaultFeedPerBirdKg
-      ),
+      // No feed-per-bird default: the age-specific schedule is entered in Daily Feed Plan.
+      targetFeedPerBird: data.targetFeedPerBird == null || data.targetFeedPerBird === ""
+        ? null
+        : positive(data.targetFeedPerBird, "Target feed per bird"),
       active: true,
       createdAt: new Date().toISOString()
     };
 
     assertDate(batch.placementDate, "Placement date");
 
-    if (batch.targetAgeDays <= 0) {
-      throw new Error("Target age must be positive.");
-    }
-
-    if (batch.targetFeedPerBird <= 0) {
-      throw new Error("Feed requirement must be positive.");
+    if (!Number.isFinite(batch.targetAgeDays) || batch.targetAgeDays <= 0) {
+      throw new Error("Enter a valid target harvest age in days.");
     }
 
     state.batches.push(batch);
@@ -1057,48 +1050,26 @@
 
   function forecastBatch(batchId, daysAhead) {
     const batch = getBatch(batchId);
-
-    if (!batch) {
-      throw new Error("Batch not found.");
-    }
-
+    if (!batch) throw new Error("Batch not found.");
     if (![7, 14, 21, 28].includes(Number(daysAhead))) {
       throw new Error("Forecast horizon must be 7, 14, 21 or 28 days.");
     }
-
     const age = batchAge(batch);
     const birds = liveBirds(batchId);
     const feed = batchFeedSummary(batchId);
-
     const daysRemaining = Math.max(0, number(batch.targetAgeDays) - age);
     const forecastDays = Math.min(Number(daysAhead), daysRemaining);
-    const dailyRequirement =
-      (birds * number(batch.targetFeedPerBird)) / Math.max(1, number(batch.targetAgeDays));
-
-    const projectedRequirement =
-      dailyRequirement * forecastDays;
-
-    const stock = sum(
-      state.finishedMovements,
-      item => item.quantity
-    );
-
     return {
       batch: batch.name,
       currentAge: age,
       forecastDays,
       projectedBirds: birds,
-      projectedFeedRequirement: projectedRequirement,
+      projectedFeedRequirement: null,
       currentAllocatedFeed: feed.remainingAllocated,
-      projectedAdditionalFeed:
-        Math.max(0, projectedRequirement - feed.remainingAllocated),
-      estimatedFeedCost:
-        projectedRequirement * averageFeedCostPerKg(),
-      estimatedTargetAge:
-        Math.max(0, batch.targetAgeDays - age),
-      note:
-        "Projection uses the batch feed target and current live-bird count. " +
-        "It is a planning estimate, not a biological guarantee."
+      projectedAdditionalFeed: null,
+      estimatedFeedCost: null,
+      estimatedTargetAge: daysRemaining,
+      note: "No flat average feed rate is assumed. Enter daily feed per bird in the Broiler Feed Management > Daily Feed Plan to calculate an age-specific requirement and cost."
     };
   }
 
