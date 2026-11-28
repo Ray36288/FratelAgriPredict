@@ -1183,17 +1183,12 @@
             <div class="panel-heading"><div><h2>Feed budget planner</h2><p>Combines recorded consumption with editable age-based daily feed standards where records are missing.</p></div></div>
             <div class="forecast-controls">
               <div class="form-field"><label for="forecastScope">Forecast scope</label><select id="forecastScope"><option value="active">Active batch</option><option value="farm">Whole farm (all batches)</option></select></div>
-              <div class="form-field"><label for="farmFeedForecastPeriod">Forecast period</label><select id="farmFeedForecastPeriod"><option value="14">2 weeks</option><option value="30">1 month</option><option value="60">2 months</option><option value="90">3 months</option><option value="180">6 months</option><option value="365">1 year</option></select></div>
-              <div class="form-field"><label for="feedPriceAssumption">Feed price (UGX/kg)</label><input type="number" id="feedPriceAssumption" min="0" step="1" placeholder="Uses latest recorded price"></div>
+              <div class="form-field"><label for="farmFeedForecastPeriod">Forecast period</label><select id="farmFeedForecastPeriod"><option value="14">2 weeks</option><option value="30">1 month</option><option value="60">2 months</option><option value="90">3 months</option><option value="120">4 months</option><option value="140">20 weeks</option></select></div>
             </div>
-            <div class="form-grid feed-standard-grid">
-              <div class="form-field"><label for="feedStandardStarter">Starter standard g/bird/day (day 1–14)</label><input id="feedStandardStarter" type="number" min="0" step="1" value="35"></div>
-              <div class="form-field"><label for="feedStandardGrower">Grower standard g/bird/day (day 15–28)</label><input id="feedStandardGrower" type="number" min="0" step="1" value="75"></div>
-              <div class="form-field"><label for="feedStandardFinisher">Finisher standard g/bird/day (day 29+)</label><input id="feedStandardFinisher" type="number" min="0" step="1" value="120"></div>
-            </div>
+            <p class="form-help">Feed quantities and costs are calculated from each batch's saved Daily Feed Plan and completed ingredient formulation. No default feeding standards or assumed feed prices are substituted.</p>
             <div class="form-actions"><button type="button" class="btn btn-outline" id="recalculateFeedBudgetBtn">Update estimate</button></div>
             <div id="feedBudgetResults" class="simulation-results"><p class="empty-message">Feed budget estimate will appear here.</p></div>
-            <p class="form-help">Daily standards are editable planning assumptions, not breed-specific guarantees. Recorded feed history is used first; age-based standards fill periods without records. Future batches are included in whole-farm forecasts.</p>
+            <p class="form-help">Whole-farm totals are shown only when each batch has a saved daily feed plan. Incomplete daily allowances or formulations remain clearly marked.</p>
           </article>
 
           <article class="content-panel">
