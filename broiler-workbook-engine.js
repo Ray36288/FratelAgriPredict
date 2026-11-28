@@ -72,6 +72,35 @@ return{model:nextModel,flockEvents,eventsApplied:changes.length,eventTiming:"Eve
 
 function simulateIngredientPrice(model,id,newPrice){const ingredient=model.ingredients.find(x=>x.id===id);if(!ingredient)throw new Error("Select a valid ingredient from the workbook list.");const price=nonNegative(newPrice,"New ingredient price"),baseline=calculate(model),scenario=calculate(model,{priceOverrides:{[id]:price}});return{ingredientId:id,oldPrice:ingredient.pricePerKg,newPrice:price,changePerKg:price-ingredient.pricePerKg,baseline,scenario,changeInFeedCost:scenario.totals.feedCost-baseline.totals.feedCost,changeInAverageFeedCostPerKg:scenario.totals.averageFeedCostPerKg-baseline.totals.averageFeedCostPerKg};}
 function calculateBreakEvenSalePrice(input){const birds=nonNegative(input.birdsToSell,"Birds to sell");if(birds<=0)throw new RangeError("Enter at least one bird to sell.");const perBird=nonNegative(input.accumulatedCostPerBird,"Accumulated cost per bird"),sale=nonNegative(input.saleCostsTotal||0,"Sale costs"),other=nonNegative(input.otherAllocatedCostsTotal||0,"Other allocated costs"),total=birds*perBird+sale+other,breakEven=total/birds,margin=input.profitMarginPercent==null?null:nonNegative(input.profitMarginPercent,"Profit margin");if(margin!=null&&margin>=100)throw new RangeError("Profit margin must be below 100% when expressed as a markup percentage.");return{birdsToSell:birds,allocatedCost:birds*perBird,saleCostsTotal:sale,otherAllocatedCostsTotal:other,totalCost:total,breakEvenPerBird:breakEven,suggestedPricePerBird:margin==null?null:breakEven*(1+margin/100),profitMarginPercent:margin};}
+
+function calculateBatchCostAllocation(input){
+const batch=input?.batch;if(!batch||typeof batch!=="object")throw new TypeError("A Broiler batch is required.");
+const saleDate=String(input.saleDate||"");if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(saleDate))throw new TypeError("A valid sale date is required.");
+if(input.allCostsConfirmed!==true)throw new Error("Confirm that all chick, health and other farm costs through the sale date have been recorded.");
+const initial=finite(batch.initialBirds,"Initial birds");if(!Number.isInteger(initial)||initial<=0)throw new RangeError("The batch must have a positive whole-number starting bird count.");
+if(batch.chickCost==null||batch.chickCost==="")throw new Error("Enter the actual chick purchase cost per chick in the batch record.");
+const chickPrice=nonNegative(batch.chickCost,"Chick cost per bird"),records=Array.isArray(batch.records)?batch.records:[],relevant=records.filter(r=>String(r.date||"")<=saleDate);
+let additions=0,mortality=0,additionCost=0,otherCosts=0;
+for(const r of relevant){
+const type=String(r.type||"").toLowerCase(),date=String(r.date||"");
+if(type==="addition"&&date<saleDate){
+const q=finite(r.quantity,"Added birds");if(!Number.isInteger(q)||q<=0)throw new RangeError("Added birds must be a positive whole number.");
+let cost=r.amount!=null&&r.amount!==""?nonNegative(r.amount,"Added bird purchase cost"):r.unitPrice!=null&&r.unitPrice!==""?q*nonNegative(r.unitPrice,"Added bird price"):null;
+if(cost==null)throw new Error("A bird addition before the sale date has no recorded purchase cost. Add its actual cost before calculating break-even.");
+additions+=q;additionCost+=cost;
+}
+if(type==="mortality"&&date<saleDate){const q=finite(r.quantity,"Mortality");if(!Number.isInteger(q)||q<0)throw new RangeError("Mortality must be a whole number.");mortality+=q;}
+if(type==="expense")otherCosts+=nonNegative(r.amount,"Farm expense");
+if(type==="health")otherCosts+=nonNegative(r.cost??0,"Health cost");
+}
+const saleableBirds=initial+additions-mortality;if(saleableBirds<=0)throw new RangeError("No saleable birds remain after recorded mortality.");
+const feedTotal=nonNegative(input.feedCostTotal,"Feed cost total"),saleCost=nonNegative(input.saleCostPerBird??0,"Sale cost per bird");
+const chickPurchaseTotal=initial*chickPrice+additionCost,nonFeedCostTotal=chickPurchaseTotal+otherCosts;
+const allocatedChickCostPerBird=chickPurchaseTotal/saleableBirds,allocatedOtherCostPerBird=otherCosts/saleableBirds,allocatedFeedCostPerBird=feedTotal/saleableBirds;
+const breakEvenPerBird=allocatedChickCostPerBird+allocatedOtherCostPerBird+allocatedFeedCostPerBird+saleCost;
+return{initialBirds:initial,addedBirds:additions,mortalityBirds:mortality,saleableBirds,chickPurchaseTotal,otherCostsTotal:otherCosts,nonFeedCostTotal,feedCostTotal:feedTotal,allocatedChickCostPerBird,allocatedOtherCostPerBird,allocatedFeedCostPerBird,saleCostPerBird:saleCost,breakEvenPerBird,totalAllocatedCost:breakEvenPerBird*saleableBirds};
+}
+
 function validateModel(model){const errors=[];if(!model||!Array.isArray(model.ingredients)||model.ingredients.length!==17)errors.push("Workbook must contain all 17 ingredient rows.");if(!Array.isArray(model.weeklySchedule)||model.weeklySchedule.length!==7)errors.push("Workbook must contain all seven weekly intake columns.");for(const x of model.ingredients||[]){if(!x.id||!x.name)errors.push("Every ingredient row needs a stable ID and name.");if(!Number.isFinite(Number(x.pricePerKg))||Number(x.pricePerKg)<0)errors.push((x.name||"Ingredient")+": invalid price.");}for(const x of model.weeklySchedule||[]){if(!Number.isFinite(Number(x.dailyKgPerBird))||Number(x.dailyKgPerBird)<0)errors.push("Week "+x.week+": invalid daily intake.");if(!Number.isInteger(Number(x.days))||Number(x.days)<0||Number(x.days)>7)errors.push("Week "+x.week+": feeding days must be a whole number from 0 to 7.");}for(const [i,d] of (model.layingDaysPerWeek||[]).entries())if(!Number.isInteger(Number(d))||Number(d)<0||Number(d)>7)errors.push("Week "+(i+1)+": egg days must be a whole number from 0 to 7.");try{calculate(model);}catch(error){errors.push(error.message);}return{valid:errors.length===0,errors};}
-return Object.freeze({MODEL_VERSION,STAGES,createDefaultModel,calculateFormula,calculate,simulateIngredientPrice,buildFlockScheduleFromBatch,calculateBreakEvenSalePrice,validateModel});
+return Object.freeze({MODEL_VERSION,STAGES,createDefaultModel,calculateFormula,calculate,simulateIngredientPrice,buildFlockScheduleFromBatch,calculateBreakEvenSalePrice,calculateBatchCostAllocation,validateModel});
 });
