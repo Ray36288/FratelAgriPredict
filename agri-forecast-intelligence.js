@@ -219,8 +219,9 @@
         const placed = parseDate(batch?.placementDate);
         const elapsed = Number.isFinite(placed) ? Math.floor(daysBetween(placed,today.getTime())) : null;
         const age = elapsed == null ? null : elapsed < 0 ? 0 : elapsed + 1;
-        const remaining = Number(batch?.targetAgeDays)>0 && age!=null ? Math.max(0,Number(batch.targetAgeDays)-age) : horizon;
-        const forecastDays = Math.min(horizon,remaining);
+        const targetAge = Number(batch?.targetAgeDays);
+         const remaining = Number.isInteger(targetAge) && targetAge > 0 && age!=null ? Math.max(0,targetAge-age) : null;
+        const forecastDays = remaining == null ? 0 : Math.min(horizon,remaining);
         projectedNeed += rate * forecastDays;
         dailyUse += rate;
         usageDays += dates.length;
