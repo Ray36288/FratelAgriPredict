@@ -14,7 +14,7 @@
     "feed_formula_versions", "feed_formula_items", "feed_production",
     "finished_feed_movements", "feed_allocations", "feed_consumption",
     "farm_transactions", "farm_price_history", "forecast_runs",
-    "forecast_scenarios", "inventory_items", "inventory_movements",
+    "forecast_scenarios", "broiler_workbook_models", "inventory_items", "inventory_movements",
     "layer_enterprise_data"
   ]);
 
@@ -883,6 +883,53 @@
     return { saved: rows.length };
   }
 
+  async function loadBroilerWorkbookModel() {
+    const enterprise = await findEnterprise("broiler");
+    if (!enterprise) return null;
+    const rows = await select("broiler_workbook_models", "*", query =>
+      query.eq("enterprise_id", enterprise.id).limit(1)
+    );
+    const row = rows[0];
+    return row ? {
+      id: row.id,
+      enterpriseId: row.enterprise_id,
+      modelVersion: Number(row.model_version),
+      modelData: row.model_data,
+      updatedAt: row.updated_at
+    } : null;
+  }
+
+  async function saveBroilerWorkbookModel(modelData, modelVersion = 1) {
+    if (!modelData || typeof modelData !== "object" || Array.isArray(modelData)) {
+      throw new Error("A valid Broiler workbook model is required.");
+    }
+    const version = Number(modelVersion);
+    if (!Number.isInteger(version) || version < 1) {
+      throw new Error("The workbook model version must be a positive whole number.");
+    }
+    const { user } = await ready();
+    const enterprise = await findEnterprise("broiler");
+    if (!enterprise) {
+      throw new Error("Create or open a Broiler batch before saving its workbook model.");
+    }
+    const saved = await upsert("broiler_workbook_models", [{
+      enterprise_id: enterprise.id,
+      model_version: version,
+      model_data: modelData,
+      updated_by: user.id,
+      updated_at: new Date().toISOString()
+    }], "enterprise_id");
+    const row = saved?.[0];
+    if (!row) throw new Error("Supabase did not confirm that the workbook model was saved.");
+    return {
+      id: row.id,
+      enterpriseId: row.enterprise_id,
+      modelVersion: Number(row.model_version),
+      modelData: row.model_data,
+      updatedAt: row.updated_at
+    };
+  }
+
   async function loadPortfolioData(createIfMissing = false) {
     await ready();
     const farm = createIfMissing ? await ensureFarm() : await findFarm();
@@ -925,7 +972,8 @@
     loadLivestockBatches, saveLivestockBatch, deleteLivestockBatch,
     saveFeedState, loadFeedState,
     savePortfolioInventory, savePortfolioExpenses, loadPortfolioData,
-    saveForecastRun, loadForecastRuns
+    saveForecastRun, loadForecastRuns,
+    loadBroilerWorkbookModel, saveBroilerWorkbookModel
   });
 
   client().auth.onAuthStateChange((_event, session) => {
