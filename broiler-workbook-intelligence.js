@@ -21,11 +21,15 @@ function activeBatch(){
 function migrateModel(saved){
  const defaults=E.createDefaultModel();
  if(!saved||typeof saved!=="object")return defaults;
+ const savedVersion=Number(saved.modelVersion||1);
  const merged={...defaults,...saved};
  ["stages","ingredients","weeklySchedule","birdCountByWeek","layingPercentages","layingDaysPerWeek"].forEach(k=>{if(Array.isArray(saved[k]))merged[k]=saved[k];});
- if(Number(saved.modelVersion||1)<E.MODEL_VERSION){
-  merged.weeklySchedule=(merged.weeklySchedule||defaults.weeklySchedule).map((w,i)=>({...defaults.weeklySchedule[i],...w,sourceReferenceKgPerBird:w.sourceReferenceKgPerBird??w.dailyKgPerBird??null,dailyKgPerBird:null,formulaStageConfirmed:i!==6}));
+ if(savedVersion<2){
+  merged.weeklySchedule=(merged.weeklySchedule||defaults.weeklySchedule).map((w,i)=>({...defaults.weeklySchedule[i],...w,sourceReferenceKgPerBird:w.sourceReferenceKgPerBird??w.dailyKgPerBird??null,dailyKgPerBird:null,formulaStageConfirmed:false}));
   merged.birdCountByWeek=Array(merged.weeklySchedule.length).fill(0);
+ }
+ if(savedVersion<3){
+  merged.stages=(merged.stages||defaults.stages).map(stage=>({...stage,status:stage.id==="pre_lay_17_20"?"incomplete":"unverified"}));
  }
  while(merged.weeklySchedule.length<7){
   const n=merged.weeklySchedule.length+1;
