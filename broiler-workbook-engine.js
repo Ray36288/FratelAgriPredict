@@ -4,7 +4,7 @@
  */
 (function(root,factory){const api=factory();if(typeof module==="object"&&module.exports)module.exports=api;if(root)root.FratelBroilerWorkbook=api;})(typeof globalThis!=="undefined"?globalThis:this,function(){
 "use strict";
-const MODEL_VERSION=2;
+const MODEL_VERSION=3;
 const STAGES=[
 {id:"rearing_0_4",label:"REARING",ageRange:"0–4 weeks",excelColumns:{kg:"B",percent:"C"},excelRows:[4,20],status:"unverified"},
 {id:"rearing_4_8",label:"REARING",ageRange:"4–8 weeks",excelColumns:{kg:"D",percent:"E"},excelRows:[4,20],status:"unverified"},
