@@ -295,28 +295,15 @@
       const days=n($("#forecastPeriod")?.value)||7;
       if(!batchId)return notify("Select a batch for the forecast.");
       try{
-        const baseline=APP.forecastBatch(batchId,days);
-        const batch=APP.getBatch(batchId);
-        const birdsInput=$("#forecastBirds")?.value;
-        const dailyInput=$("#forecastDailyConsumption")?.value;
-        const priceInput=$("#forecastFeedPrice")?.value;
-        const hasCustom=[birdsInput,dailyInput,priceInput].some(v=>String(v||"").trim()!=="");
-        let requirement=n(baseline.projectedFeedRequirement);
-        let estimatedCost=n(baseline.estimatedFeedCost);
-        let shortage=n(baseline.projectedAdditionalFeed);
-        if(hasCustom){
-          const birds=birdsInput!==""?Math.max(0,n(birdsInput)):APP.liveBirds(batchId);
-          const daily=dailyInput!==""?Math.max(0,n(dailyInput)):requirement/Math.max(1,days*Math.max(1,birds));
-          const price=priceInput!==""?Math.max(0,n(priceInput)):(requirement>0?estimatedCost/requirement:0);
-          requirement=birds*daily*days;
-          estimatedCost=requirement*price;
-          const stock=state.formulas.reduce((sum,f)=>sum+Math.max(0,APP.finishedStock(f.id)),0);
-          shortage=Math.max(0,requirement-stock);
-        }
-        setText("forecastFeedRequirement",`${fmt(requirement)} kg`);
-        setText("forecastFeedCost",money(estimatedCost));
-        setText("forecastFeedShortage",`${fmt(shortage)} kg`);
-        notify("Feed forecast calculated using the selected assumptions.");
+        const forecast=window.FratelBroilerWorkbookUI?.forecast(batchId,days);
+        if(!forecast)throw new Error("Open Daily Feed Plan and enter the daily feed allowances first.");
+        const inventory=APP.batchFeedSummary(batchId);
+        const requirement=forecast.projectedFeedRequirement;
+        const shortage=Math.max(0,requirement-n(inventory.remainingAllocated));
+        setText("forecastFeedRequirement",fmt(requirement)+" kg");
+        setText("forecastFeedCost",forecast.estimatedFeedCost==null?"Incomplete feed formulation":money(forecast.estimatedFeedCost));
+        setText("forecastFeedShortage",fmt(shortage)+" kg");
+        notify(forecast.note);
       }catch(err){notify(err.message);}
     });
     $("#runFeedScenarioBtn")?.addEventListener("click",()=>{
@@ -326,23 +313,20 @@
       if(!batchId){out.textContent="Select a batch and calculate a forecast before comparing scenarios.";return;}
       try{
         const days=n($("#forecastPeriod")?.value)||7;
-        const baseline=APP.forecastBatch(batchId,days);
+        const baseline=window.FratelBroilerWorkbookUI?.forecast(batchId,days);
+        if(!baseline)throw new Error("Open Daily Feed Plan and enter the daily feed allowances first.");
+        if(baseline.estimatedFeedCost==null)throw new Error("Complete the feed formulations for all forecast weeks before comparing feed costs.");
         const batch=APP.getBatch(batchId);
         const priceChange=n($("#scenarioFeedPrice")?.value)/100;
         const mortalityChange=Math.min(100,Math.max(0,n($("#scenarioMortality")?.value)))/100;
         const saleChange=n($("#scenarioSalePrice")?.value)/100;
-        const baseBirds=APP.liveBirds(batchId);
-        const adjustedBirds=baseBirds*(1-mortalityChange);
-        const baselineFeed=n(baseline.projectedFeedRequirement);
-        const scenarioFeed=baselineFeed*(1-mortalityChange);
-        const baselineCost=n(baseline.estimatedFeedCost);
-        const scenarioCost=baselineCost*(1-mortalityChange)*(1+priceChange);
-        const revenueUnits=batch?.priceBasis==="kg"
-          ? n(batch?.targetWeight)*baseBirds
-          : baseBirds;
+        const baseBirds=APP.liveBirds(batchId),adjustedBirds=baseBirds*(1-mortalityChange);
+        const baseFeed=baseline.projectedFeedRequirement,scenarioFeed=baseFeed*(1-mortalityChange);
+        const baseCost=baseline.estimatedFeedCost,scenarioCost=baseCost*(1-mortalityChange)*(1+priceChange);
+        const revenueUnits=batch?.priceBasis==="kg"?n(batch?.targetWeight)*baseBirds:baseBirds;
         const baseRevenue=revenueUnits*n(batch?.expectedPrice);
         const scenarioRevenue=revenueUnits*(1-mortalityChange)*n(batch?.expectedPrice)*(1+saleChange);
-        out.innerHTML=`<div class="feed-scenario-grid"><div><small>Baseline feed cost</small><strong>${money(baselineCost)}</strong></div><div><small>Scenario feed cost</small><strong>${money(scenarioCost)}</strong></div><div><small>Baseline birds</small><strong>${fmt(baseBirds)}</strong></div><div><small>Scenario birds</small><strong>${fmt(adjustedBirds)}</strong></div><div><small>Baseline indicative revenue</small><strong>${money(baseRevenue)}</strong></div><div><small>Scenario indicative revenue</small><strong>${money(scenarioRevenue)}</strong></div></div><p class="form-help">Illustrative comparison only. It applies the entered percentage assumptions to the selected batch's current forecast and expected selling price; it is not a guaranteed outcome.</p>`;
+        out.innerHTML='<div class="feed-scenario-grid"><div><small>Baseline feed requirement</small><strong>'+fmt(baseFeed)+' kg</strong></div><div><small>Scenario feed requirement</small><strong>'+fmt(scenarioFeed)+' kg</strong></div><div><small>Baseline feed cost</small><strong>'+money(baseCost)+'</strong></div><div><small>Scenario feed cost</small><strong>'+money(scenarioCost)+'</strong></div><div><small>Baseline birds</small><strong>'+fmt(baseBirds)+'</strong></div><div><small>Scenario birds</small><strong>'+fmt(adjustedBirds)+'</strong></div><div><small>Baseline indicative revenue</small><strong>'+money(baseRevenue)+'</strong></div><div><small>Scenario indicative revenue</small><strong>'+money(scenarioRevenue)+'</strong></div></div><p class="form-help">Scenario uses the saved daily feed plan as its baseline. Mortality and price changes are hypothetical adjustments, not expected biological results.</p>';
       }catch(err){out.textContent=err.message;}
     });
     $$('[data-feed-report]').forEach(btn=>btn.addEventListener("click",()=>{
