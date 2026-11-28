@@ -38,7 +38,7 @@ function ingredientKg(ingredient,stageId){const v=ingredient.inclusionKg?.[stage
 function calculateFormula(model,stageId,priceOverrides={}){
 const stage=stageOf(model,stageId);if(!stage)throw new Error("Unknown feed stage: "+stageId);
 const entries=model.ingredients.map(item=>{const kg=ingredientKg(item,stageId);const price=Object.prototype.hasOwnProperty.call(priceOverrides,item.id)?nonNegative(priceOverrides[item.id],item.name+" simulated price"):nonNegative(item.pricePerKg,item.name+" price");return{ingredientId:item.id,excelRow:item.excelRow,name:item.name,inclusionKg:kg,pricePerKg:price,lineCost:kg*price};});
-const totalMixKg=sum(entries.map(x=>x.inclusionKg)),totalMixCost=sum(entries.map(x=>x.lineCost)),complete=stage.status!=="incomplete"&&totalMixKg>0;
+const totalMixKg=sum(entries.map(x=>x.inclusionKg)),totalMixCost=sum(entries.map(x=>x.lineCost)),allIngredientRowsEntered=model.ingredients.every(item=>Object.prototype.hasOwnProperty.call(item.inclusionKg||{},stageId)&&item.inclusionKg[stageId]!==null&&item.inclusionKg[stageId]!==""),complete=stage.status!=="incomplete"&&allIngredientRowsEntered&&totalMixKg>0;
 return{stageId,stageLabel:stage.label,ageRange:stage.ageRange,complete,totalMixKg,totalMixCost,costPerKg:complete?totalMixCost/totalMixKg:null,percentageTotal:complete?sum(entries.map(x=>x.inclusionKg/totalMixKg)):null,entries};
 }
 function calculate(modelInput,options={}) {
