@@ -303,12 +303,16 @@
         return sum + (Number(r.quantity)||0) * (formula?.projectedCostPerKg || Number(allocation?.costPerKg) || 0);
       },0);
       const forecastDays = Math.min(horizon,remainingAge);
-      const futureFeedNeed = dailyFeed!==null ? dailyFeed*forecastDays : null;
       let remainingAllocatedFeed = 0;
       try { remainingAllocatedFeed = Number(FEED?.batchFeedSummary?.(batch.id)?.remainingAllocated) || 0; } catch (_) { remainingAllocatedFeed = 0; }
-      const linkedDailyFeed = linkedFeedDays>=3 && linkedSpan>0 ? linkedFeedTotal/linkedSpan : null;
-      const additionalFeedToBuy = linkedDailyFeed===null ? null : Math.max(0,linkedDailyFeed*forecastDays-remainingAllocatedFeed);
-      const futureFeedCost = additionalFeedToBuy!==null && linkedFeedTotal>0 ? additionalFeedToBuy*(formulaCosts/linkedFeedTotal) : null;
+      let plannedFeedForecast = null;
+      if (forecastDays > 0 && forecastDays <= 140) {
+        try { plannedFeedForecast = window.FratelBroilerWorkbookUI?.forecast(batch.id,forecastDays) || null; }
+        catch (_) { plannedFeedForecast = null; }
+      }
+      const futureFeedNeed = plannedFeedForecast?.projectedFeedRequirement ?? null;
+      const additionalFeedToBuy = futureFeedNeed === null ? null : Math.max(0,futureFeedNeed-remainingAllocatedFeed);
+      const futureFeedCost = plannedFeedForecast?.estimatedFeedCost ?? null;
       const recordedCosts = records.reduce((sum,r)=>sum + (r.type==="expense"?Number(r.amount)||0:r.type==="health"?Number(r.cost)||0:r.type==="feed"?(Number(r.totalCost)||((Number(r.quantity)||0)*(Number(r.unitPrice)||0))):0),0) + (Number(batch.initialBirds)||0)*(Number(batch.chickCost)||0);
       const expectedRevenue = Number(batch.expectedPrice)>0 ? (batch.priceBasis==="kg" ? birds*(Number(batch.targetWeight)||latestWeight||0)*Number(batch.expectedPrice) : birds*Number(batch.expectedPrice)) : null;
       const projectedTotalCost = futureFeedCost==null ? null : recordedCosts+futureFeedCost;
