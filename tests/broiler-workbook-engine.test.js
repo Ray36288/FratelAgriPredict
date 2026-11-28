@@ -103,6 +103,32 @@ test("rejects flock events before placement and flock reductions beyond the live
  assert.throws(()=>E.buildFlockScheduleFromBatch(m,{initialBirds:10,placementDate:"2026-01-01",records:[{type:"sale",date:"2026-01-01",quantity:11}]}),/exceed the birds available on feeding day/);
 });
 
+
+test("allocates recorded batch costs across saleable birds and includes mortality losses",()=>{
+ const batch={initialBirds:100,chickCost:1000,records:[
+  {type:"sale",date:"2026-01-05",quantity:10,amount:50000},
+  {type:"mortality",date:"2026-01-06",quantity:5},
+  {type:"addition",date:"2026-01-07",quantity:20,amount:30000},
+  {type:"expense",date:"2026-01-09",amount:10000},
+  {type:"health",date:"2026-01-09",cost:5000},
+  {type:"expense",date:"2026-01-11",amount:999999}
+ ]};
+ const r=E.calculateBatchCostAllocation({batch,saleDate:"2026-01-10",feedCostTotal:23000,saleCostPerBird:200,allCostsConfirmed:true});
+ assert.equal(r.saleableBirds,115);
+ assert.equal(r.chickPurchaseTotal,130000);
+ assert.equal(r.otherCostsTotal,15000);
+ assert.equal(r.feedCostTotal,23000);
+ close(r.allocatedChickCostPerBird,130000/115);
+ close(r.allocatedOtherCostPerBird,15000/115);
+ close(r.allocatedFeedCostPerBird,23000/115);
+ close(r.breakEvenPerBird,130000/115+15000/115+23000/115+200);
+});
+test("refuses a no-loss price when cost records are unconfirmed or incomplete",()=>{
+ assert.throws(()=>E.calculateBatchCostAllocation({batch:{initialBirds:10,chickCost:100,records:[]},saleDate:"2026-01-10",feedCostTotal:0,allCostsConfirmed:false}),/Confirm that all chick/);
+ assert.throws(()=>E.calculateBatchCostAllocation({batch:{initialBirds:10,records:[]},saleDate:"2026-01-10",feedCostTotal:0,allCostsConfirmed:true}),/actual chick purchase cost/);
+ assert.throws(()=>E.calculateBatchCostAllocation({batch:{initialBirds:10,chickCost:100,records:[{type:"addition",date:"2026-01-01",quantity:2}]},saleDate:"2026-01-10",feedCostTotal:0,allCostsConfirmed:true}),/no recorded purchase cost/);
+});
+
 test("reports feed cost per bird at each stage and flags incomplete pre-lay",()=>{
  const r=E.calculate(E.createDefaultModel());
  close(r.stageSummaries[0].perBirdFeedCost,86.8,1e-8);
