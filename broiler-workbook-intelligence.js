@@ -155,14 +155,17 @@ async function load(){
  try{
   await window.FratelCloud?.ready?.();const saved=await window.FratelCloud?.loadBroilerWorkbookModel?.();
   if(saved?.modelData){model=migrateModel(saved.modelData);modelReady=true;setMessage("Saved Broiler feed plan loaded from your farm account.");}
-  else{model=E.createDefaultModel();modelReady=true;setMessage("Workbook reference values loaded. Enter your own daily feed allowances and verify formulations.");}
+  else{model=E.createDefaultModel();modelReady=false;setMessage("Workbook reference values loaded. Enter daily feed allowances and confirm the saved plan to keep changes in your farm account.");}
  }catch(error){model=E.createDefaultModel();modelReady=false;setMessage("Saved feed plan could not load: "+error.message+". Review entries; cloud saving must be restored.","error");}
  finally{busy=false;fillStageChoices();render();document.dispatchEvent(new Event("fratel:workbook-model-ready"));}
 }
 async function save(){
  const validation=E.validateModel(model);if(!validation.valid){setMessage(validation.errors.join(" "),"error");return;}
- try{await window.FratelCloud?.saveBroilerWorkbookModel?.(model,E.MODEL_VERSION);modelReady=true;setMessage("Feed plan saved to your authenticated farm account.");renderWarnings();}
- catch(error){setMessage("Feed plan could not be saved: "+error.message,"error");}
+ try{
+  if(!window.FratelCloud||typeof window.FratelCloud.saveBroilerWorkbookModel!=="function")throw new Error("Authenticated farm cloud storage is unavailable.");
+  await window.FratelCloud.saveBroilerWorkbookModel(model,E.MODEL_VERSION);
+  modelReady=true;setMessage("Feed plan saved to your authenticated farm account.");renderWarnings();
+ }catch(error){setMessage("Feed plan could not be saved: "+error.message,"error");}
 }
 function useBatch(){if(!activeBatch()){setMessage("Create or select a Broiler batch first.","error");return;}sourceMode="batch";render();setMessage("Flock totals follow the selected batch and recorded additions, sales and mortality.");}
 function forecast(batchId,daysAhead){
