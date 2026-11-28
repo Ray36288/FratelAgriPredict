@@ -83,14 +83,14 @@ const chickPrice=nonNegative(batch.chickCost,"Chick cost per bird"),records=Arra
 let additions=0,mortality=0,sold=0,additionCost=0,otherCosts=0;
 for(const r of relevant){
 const type=String(r.type||"").toLowerCase(),date=String(r.date||"");
-if(type==="addition"&&date<saleDate){
+if(type==="addition"&&date<=saleDate){
 const q=finite(r.quantity,"Added birds");if(!Number.isInteger(q)||q<=0)throw new RangeError("Added birds must be a positive whole number.");
 let cost=r.amount!=null&&r.amount!==""?nonNegative(r.amount,"Added bird purchase cost"):r.unitPrice!=null&&r.unitPrice!==""?q*nonNegative(r.unitPrice,"Added bird price"):null;
-if(cost==null)throw new Error("A bird addition before the sale date has no recorded purchase cost. Add its actual cost before calculating break-even.");
+if(cost==null)throw new Error("A bird addition on or before the sale date has no recorded purchase cost. Add its actual cost before calculating break-even.");
 additions+=q;additionCost+=cost;
 }
-if(type==="mortality"&&date<saleDate){const q=finite(r.quantity,"Mortality");if(!Number.isInteger(q)||q<0)throw new RangeError("Mortality must be a whole number.");mortality+=q;}
-if(type==="sale"&&date<saleDate){const q=finite(r.quantity,"Previously sold birds");if(!Number.isInteger(q)||q<0)throw new RangeError("Previously sold birds must be a whole number.");sold+=q;}
+if(type==="mortality"&&date<=saleDate){const q=finite(r.quantity,"Mortality");if(!Number.isInteger(q)||q<0)throw new RangeError("Mortality must be a whole number.");mortality+=q;}
+if(type==="sale"&&date<=saleDate){const q=finite(r.quantity,"Previously sold birds");if(!Number.isInteger(q)||q<0)throw new RangeError("Previously sold birds must be a whole number.");sold+=q;}
 if(type==="expense")otherCosts+=nonNegative(r.amount,"Farm expense");
 if(type==="health")otherCosts+=nonNegative(r.cost??0,"Health cost");
 }
