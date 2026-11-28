@@ -80,7 +80,7 @@ if(input.allCostsConfirmed!==true)throw new Error("Confirm that all chick, healt
 const initial=finite(batch.initialBirds,"Initial birds");if(!Number.isInteger(initial)||initial<=0)throw new RangeError("The batch must have a positive whole-number starting bird count.");
 if(batch.chickCost==null||batch.chickCost==="")throw new Error("Enter the actual chick purchase cost per chick in the batch record.");
 const chickPrice=nonNegative(batch.chickCost,"Chick cost per bird"),records=Array.isArray(batch.records)?batch.records:[],relevant=records.filter(r=>String(r.date||"")<=saleDate);
-let additions=0,mortality=0,additionCost=0,otherCosts=0;
+let additions=0,mortality=0,sold=0,additionCost=0,otherCosts=0;
 for(const r of relevant){
 const type=String(r.type||"").toLowerCase(),date=String(r.date||"");
 if(type==="addition"&&date<saleDate){
@@ -90,15 +90,16 @@ if(cost==null)throw new Error("A bird addition before the sale date has no recor
 additions+=q;additionCost+=cost;
 }
 if(type==="mortality"&&date<saleDate){const q=finite(r.quantity,"Mortality");if(!Number.isInteger(q)||q<0)throw new RangeError("Mortality must be a whole number.");mortality+=q;}
+if(type==="sale"&&date<saleDate){const q=finite(r.quantity,"Previously sold birds");if(!Number.isInteger(q)||q<0)throw new RangeError("Previously sold birds must be a whole number.");sold+=q;}
 if(type==="expense")otherCosts+=nonNegative(r.amount,"Farm expense");
 if(type==="health")otherCosts+=nonNegative(r.cost??0,"Health cost");
 }
-const saleableBirds=initial+additions-mortality;if(saleableBirds<=0)throw new RangeError("No saleable birds remain after recorded mortality.");
+const saleableBirds=initial+additions-mortality,liveBirds=saleableBirds-sold;if(saleableBirds<=0||liveBirds<0)throw new RangeError("Recorded sales and mortality exceed the birds available by the sale date.");
 const feedTotal=nonNegative(input.feedCostTotal,"Feed cost total"),saleCost=nonNegative(input.saleCostPerBird??0,"Sale cost per bird");
 const chickPurchaseTotal=initial*chickPrice+additionCost,nonFeedCostTotal=chickPurchaseTotal+otherCosts;
 const allocatedChickCostPerBird=chickPurchaseTotal/saleableBirds,allocatedOtherCostPerBird=otherCosts/saleableBirds,allocatedFeedCostPerBird=feedTotal/saleableBirds;
 const breakEvenPerBird=allocatedChickCostPerBird+allocatedOtherCostPerBird+allocatedFeedCostPerBird+saleCost;
-return{initialBirds:initial,addedBirds:additions,mortalityBirds:mortality,saleableBirds,chickPurchaseTotal,otherCostsTotal:otherCosts,nonFeedCostTotal,feedCostTotal:feedTotal,allocatedChickCostPerBird,allocatedOtherCostPerBird,allocatedFeedCostPerBird,saleCostPerBird:saleCost,breakEvenPerBird,totalAllocatedCost:breakEvenPerBird*saleableBirds};
+return{initialBirds:initial,addedBirds:additions,mortalityBirds:mortality,previouslySoldBirds:sold,saleableBirds,liveBirds,chickPurchaseTotal,otherCostsTotal:otherCosts,nonFeedCostTotal,feedCostTotal:feedTotal,allocatedChickCostPerBird,allocatedOtherCostPerBird,allocatedFeedCostPerBird,saleCostPerBird:saleCost,breakEvenPerBird,totalAllocatedCost:breakEvenPerBird*saleableBirds};
 }
 
 function validateModel(model){const errors=[];if(!model||!Array.isArray(model.ingredients)||model.ingredients.length!==17)errors.push("Workbook must contain all 17 ingredient rows.");if(!Array.isArray(model.weeklySchedule)||model.weeklySchedule.length!==7)errors.push("Workbook must contain all seven weekly intake columns.");for(const x of model.ingredients||[]){if(!x.id||!x.name)errors.push("Every ingredient row needs a stable ID and name.");if(!Number.isFinite(Number(x.pricePerKg))||Number(x.pricePerKg)<0)errors.push((x.name||"Ingredient")+": invalid price.");}for(const x of model.weeklySchedule||[]){if(!Number.isFinite(Number(x.dailyKgPerBird))||Number(x.dailyKgPerBird)<0)errors.push("Week "+x.week+": invalid daily intake.");if(!Number.isInteger(Number(x.days))||Number(x.days)<0||Number(x.days)>7)errors.push("Week "+x.week+": feeding days must be a whole number from 0 to 7.");}for(const [i,d] of (model.layingDaysPerWeek||[]).entries())if(!Number.isInteger(Number(d))||Number(d)<0||Number(d)>7)errors.push("Week "+(i+1)+": egg days must be a whole number from 0 to 7.");try{calculate(model);}catch(error){errors.push(error.message);}return{valid:errors.length===0,errors};}
