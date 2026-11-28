@@ -125,6 +125,29 @@ test("allocates recorded batch costs across saleable birds and includes mortalit
  close(r.allocatedFeedCostPerBird,23000/115);
  close(r.breakEvenPerBird,130000/115+15000/115+23000/115+200);
 });
+test("includes same-day additions, mortality and earlier sales in sale-date allocation",()=>{
+ const batch={initialBirds:100,chickCost:1000,records:[
+  {type:"addition",date:"2026-01-10",quantity:10,amount:5000},
+  {type:"mortality",date:"2026-01-10",quantity:5},
+  {type:"sale",date:"2026-01-10",quantity:20,amount:40000},
+  {type:"expense",date:"2026-01-10",amount:1000},
+  {type:"health",date:"2026-01-10",cost:500},
+  {type:"mortality",date:"2026-01-11",quantity:50}
+ ]};
+ const r=E.calculateBatchCostAllocation({batch,saleDate:"2026-01-10",feedCostTotal:21000,saleCostPerBird:10,allCostsConfirmed:true});
+ assert.equal(r.addedBirds,10);
+ assert.equal(r.mortalityBirds,5);
+ assert.equal(r.previouslySoldBirds,20);
+ assert.equal(r.saleableBirds,105);
+ assert.equal(r.liveBirds,85);
+ assert.equal(r.chickPurchaseTotal,105000);
+ assert.equal(r.otherCostsTotal,1500);
+ close(r.allocatedChickCostPerBird,1000,1e-12);
+ close(r.allocatedOtherCostPerBird,1500/105,1e-12);
+ close(r.allocatedFeedCostPerBird,21000/105,1e-12);
+ close(r.breakEvenPerBird,1000+1500/105+21000/105+10,1e-12);
+});
+
 test("refuses a no-loss price when cost records are unconfirmed or incomplete",()=>{
  assert.throws(()=>E.calculateBatchCostAllocation({batch:{initialBirds:10,chickCost:100,records:[]},saleDate:"2026-01-10",feedCostTotal:0,allCostsConfirmed:false}),/Confirm that all chick/);
  assert.throws(()=>E.calculateBatchCostAllocation({batch:{initialBirds:10,records:[]},saleDate:"2026-01-10",feedCostTotal:0,allCostsConfirmed:true}),/actual chick purchase cost/);
