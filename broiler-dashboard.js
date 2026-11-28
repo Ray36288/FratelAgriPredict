@@ -224,7 +224,8 @@
       : null;
 
     const age = ageOf(batch);
-    const targetAge = number(batch.targetAgeDays) || 28;
+    const targetAgeValue = Number(batch.targetAgeDays);
+    const targetAge = Number.isInteger(targetAgeValue) && targetAgeValue > 0 ? targetAgeValue : null;
 
     return {
       records,
@@ -245,7 +246,7 @@
       profit: revenue - totalCosts,
       age,
       targetAge,
-      remainingDays: Math.max(0, targetAge - age)
+      remainingDays: targetAge == null ? null : Math.max(0, targetAge - age)
     };
   }
 
@@ -395,6 +396,12 @@
       return;
     }
 
+    const targetAgeDays = Number(values.targetAgeDays);
+    if (!Number.isInteger(targetAgeDays) || targetAgeDays < 1) {
+      $("#setupError").textContent = "Enter a valid target harvest age in whole days.";
+      return;
+    }
+
     let batch;
 
     if (editingBatchId) {
@@ -421,7 +428,7 @@
     batch.initialBirds = initialBirds;
     batch.chickCost = number(values.chickCost);
     batch.initialWeight = number(values.initialWeight);
-    batch.targetAgeDays = number(values.targetAgeDays) || 28;
+    batch.targetAgeDays = targetAgeDays;
     batch.targetWeight = number(values.targetWeight);
     batch.expectedPrice = number(values.expectedPrice);
     batch.priceBasis = values.priceBasis || "bird";
@@ -822,22 +829,17 @@
     $("#stageHint").textContent =
       `Your flock is currently in the ${lifecycleStage(stats.age).toLowerCase()} stage.`;
 
-    const targetDate = new Date(
-      `${batch.placementDate}T00:00:00`
-    );
+    if (stats.targetAge == null) {
+      $("#targetDate").textContent = "Not set";
+      $("#daysToTarget").textContent = "Not set";
+    } else {
+      const targetDate = new Date(`${batch.placementDate}T00:00:00`);
+      targetDate.setDate(targetDate.getDate() + Math.max(0, stats.targetAge - 1));
+      $("#targetDate").textContent = formatDate(targetDate.toISOString().slice(0, 10));
+      $("#daysToTarget").textContent = stats.remainingDays;
+    }
 
-    targetDate.setDate(targetDate.getDate() + Math.max(0, stats.targetAge - 1));
-
-    $("#targetDate").textContent = formatDate(
-      targetDate.toISOString().slice(0, 10)
-    );
-
-    $("#daysToTarget").textContent = stats.remainingDays;
-
-    const progress = Math.min(
-      100,
-      (stats.age / stats.targetAge) * 100
-    );
+    const progress = stats.targetAge == null ? 0 : Math.min(100, (stats.age / stats.targetAge) * 100);
 
     $("#timelineProgress").style.width = `${progress}%`;
 
@@ -1095,15 +1097,13 @@
 
     const stats = calculate(batch);
 
-    const harvestDate = new Date(
-      `${batch.placementDate}T00:00:00`
-    );
-
-    harvestDate.setDate(harvestDate.getDate() + Math.max(0, stats.targetAge - 1));
-
-    $("#predictedHarvestDate").textContent = formatDate(
-      harvestDate.toISOString().slice(0, 10)
-    );
+    if (stats.targetAge == null) {
+      $("#predictedHarvestDate").textContent = "Not set";
+    } else {
+      const harvestDate = new Date(`${batch.placementDate}T00:00:00`);
+      harvestDate.setDate(harvestDate.getDate() + Math.max(0, stats.targetAge - 1));
+      $("#predictedHarvestDate").textContent = formatDate(harvestDate.toISOString().slice(0, 10));
+    }
 
     $("#predictedBirds").textContent =
       `${formatNumber(stats.alive)} birds`;
@@ -1134,17 +1134,20 @@
       $("#predictedWeight").textContent = "Not available";
     }
 
-    if (stats.feedRecords.length && stats.age > 0) {
-      const dailyFeed = stats.feedConsumed / stats.age;
-      const remaining = dailyFeed * stats.remainingDays;
-
-      $("#predictedFeed").textContent =
-        `${formatNumber(remaining)} kg`;
-
-      $("#predictedFeed").nextElementSibling.textContent =
-        "Simple estimate using average recorded daily consumption.";
-    } else {
+    try {
+      const forecastDays = Math.min(28, Number(stats.remainingDays || 0));
+      const planned = forecastDays > 0
+        ? window.FratelBroilerWorkbookUI?.forecast(batch.id, forecastDays)
+        : null;
+      $("#predictedFeed").textContent = planned
+        ? `${formatNumber(planned.projectedFeedRequirement)} kg`
+        : "Not available";
+      $("#predictedFeed").nextElementSibling.textContent = planned
+        ? "Calculated from the saved daily feed-per-bird plan and current flock records."
+        : "Enter the daily feed-per-bird plan to calculate future requirements.";
+    } catch (error) {
       $("#predictedFeed").textContent = "Not available";
+      $("#predictedFeed").nextElementSibling.textContent = error.message;
     }
 
     $("#predictionTimeline").innerHTML = `
@@ -1154,11 +1157,11 @@
       </div>
       <div class="prediction-timeline-item">
         <strong>Target harvest age</strong>
-        <span>${stats.targetAge} days</span>
+        <span>${stats.targetAge == null ? "Not set" : stats.targetAge + " days"}</span>
       </div>
       <div class="prediction-timeline-item">
         <strong>Days remaining</strong>
-        <span>${stats.remainingDays} day${stats.remainingDays === 1 ? "" : "s"}</span>
+        <span>${stats.remainingDays == null ? "Not set" : stats.remainingDays + (stats.remainingDays === 1 ? " day" : " days")}</span>
       </div>
       <div class="prediction-timeline-item">
         <strong>Lifecycle stage</strong>
@@ -1351,7 +1354,7 @@
     let projected = 0;
     for (let d = 1; d <= days; d++) {
       const age = stats.age + d;
-      if (age > stats.targetAge) break;
+      if (stats.targetAge == null || age > stats.targetAge) break;
       const standardDaily = dailyFeedStandard(age, standards) * birds;
       projected += actualDailyKg !== null ? actualDailyKg : standardDaily;
     }
@@ -1533,7 +1536,7 @@ function renderPriceSimulation() {
       ["Birds placed", formatNumber(batch.initialBirds)],
       ["Placement date", formatDate(batch.placementDate)],
       ["Cost per chick", money(batch.chickCost)],
-      ["Target age", `${batch.targetAgeDays || 28} days`],
+      ["Target age", Number.isInteger(Number(batch.targetAgeDays)) && Number(batch.targetAgeDays) > 0 ? `${batch.targetAgeDays} days` : "Not set"],
       ["Target weight", `${batch.targetWeight || "--"} kg`],
       ["Expected selling price", money(batch.expectedPrice)],
       ["Price basis", batch.priceBasis],
@@ -1811,7 +1814,9 @@ function renderPriceSimulation() {
     const stats = calculate(batch);
 
     notify(
-      `${batch.name}: ${stats.alive} birds alive, ${stats.remainingDays} days to target harvest.`
+      stats.remainingDays == null
+        ? `${batch.name}: ${stats.alive} birds alive. Set a target harvest age to enable harvest forecasts.`
+        : `${batch.name}: ${stats.alive} birds alive, ${stats.remainingDays} days to target harvest.`
     );
   });
 
