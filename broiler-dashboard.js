@@ -1321,44 +1321,29 @@
   });
 
   
-  const feedStandardDefaults = { starter: 35, grower: 75, finisher: 120 };
-  function dailyFeedStandard(age, controls) {
-    if (age <= 14) return number(controls.starter) / 1000;
-    if (age <= 28) return number(controls.grower) / 1000;
-    return number(controls.finisher) / 1000;
-  }
-
-  function latestFeedPrice(batch) {
-    return [...(batch.priceChanges || [])]
-      .filter(p => String(p.category).toLowerCase() === "feed" && number(p.price) > 0)
-      .sort((a,b) => String(b.date || "").localeCompare(String(a.date || "")))[0]?.price || 0;
-  }
-
   function estimateBatchFeed(batch, days) {
     const stats = calculate(batch);
-    const endAge = stats.age + days;
-    const feedRows = (batch.records || []).filter(r => r.type === "feed" && number(r.quantity) > 0);
-    const recent = feedRows.filter(r => {
-      const age = Math.floor((new Date(`${r.date}T00:00:00`) - new Date(`${batch.placementDate}T00:00:00`)) / 86400000);
-      return age >= Math.max(0, stats.age - 14) && age <= stats.age;
-    });
-    const actualDailyKg = recent.length
-      ? recent.reduce((s,r) => s + number(r.quantity),0) / Math.max(1, Math.min(14, stats.age || 1))
-      : (feedRows.length && stats.age > 0 ? stats.feedConsumed / stats.age : null);
-    const birds = Math.max(0, stats.alive);
-    const standards = {
-      starter: $("#feedStandardStarter")?.value || feedStandardDefaults.starter,
-      grower: $("#feedStandardGrower")?.value || feedStandardDefaults.grower,
-      finisher: $("#feedStandardFinisher")?.value || feedStandardDefaults.finisher
-    };
-    let projected = 0;
-    for (let d = 1; d <= days; d++) {
-      const age = stats.age + d;
-      if (stats.targetAge == null || age > stats.targetAge) break;
-      const standardDaily = dailyFeedStandard(age, standards) * birds;
-      projected += actualDailyKg !== null ? actualDailyKg : standardDaily;
+    try {
+      const plan = window.FratelBroilerWorkbookUI?.forecast(batch.id, days);
+      if (!plan) throw new Error("Daily Feed Plan is not available.");
+      return {
+        batch,
+        birds: stats.alive,
+        projected: plan.projectedFeedRequirement,
+        estimatedCost: plan.estimatedFeedCost,
+        basis: "Saved daily feed per bird plan",
+        stats
+      };
+    } catch (error) {
+      return {
+        batch,
+        birds: stats.alive,
+        projected: null,
+        estimatedCost: null,
+        basis: error.message || "Complete the daily feed plan",
+        stats
+      };
     }
-    return {batch, birds, projected, actualDailyKg, stats};
   }
 
   function renderFeedBudget() {
@@ -1367,26 +1352,29 @@
     const days = Math.max(1, number($("#farmFeedForecastPeriod")?.value) || 30);
     const scope = $("#forecastScope")?.value || "active";
     const batches = scope === "farm" ? data.batches : [getBatch()].filter(Boolean);
-    if (!batches.length) { output.innerHTML = '<p class="empty-message">No batches available.</p>'; return; }
-    const rows = batches.map(b => estimateBatchFeed(b, days));
-    const totalFeed = rows.reduce((s,r)=>s+r.projected,0);
-    const latest = rows.map(r=>latestFeedPrice(r.batch)).filter(v=>number(v)>0);
-    const price = number($("#feedPriceAssumption")?.value) || (latest.length ? latest.reduce((a,b)=>a+number(b),0)/latest.length : 0);
-    const totalCost = totalFeed * price;
+    if (!batches.length) {
+      output.innerHTML = '<p class="empty-message">No batches available.</p>';
+      return;
+    }
+    const rows = batches.map(batch => estimateBatchFeed(batch, days));
+    const feedComplete = rows.every(row => row.projected !== null);
+    const costComplete = feedComplete && rows.every(row => row.estimatedCost !== null);
+    const totalFeed = feedComplete ? rows.reduce((sum, row) => sum + row.projected, 0) : null;
+    const totalCost = costComplete ? rows.reduce((sum, row) => sum + row.estimatedCost, 0) : null;
     output.innerHTML = `
       <div class="simulation-results-grid">
-        <div class="simulation-result"><span>Estimated feed required</span><strong>${formatNumber(totalFeed)} kg</strong></div>
-        <div class="simulation-result"><span>Estimated feed budget</span><strong>${money(totalCost)}</strong></div>
+        <div class="simulation-result"><span>Planned feed required</span><strong>${totalFeed == null ? "Incomplete plan" : formatNumber(totalFeed) + " kg"}</strong></div>
+        <div class="simulation-result"><span>Planned feed cost</span><strong>${totalCost == null ? "Incomplete formulation" : money(totalCost)}</strong></div>
         <div class="simulation-result"><span>Forecast period</span><strong>${days} days</strong></div>
       </div>
-      <div class="table-container"><table><thead><tr><th>Batch</th><th>Birds alive</th><th>Feed estimate</th><th>Basis</th><th>Estimated cost</th></tr></thead><tbody>
-      ${rows.map(r=>`<tr><td>${escapeHTML(r.batch.name || "Batch")}</td><td>${formatNumber(r.birds)}</td><td>${formatNumber(r.projected)} kg</td><td>${r.actualDailyKg !== null ? "Recorded daily use" : "Editable age standard"}</td><td>${money(r.projected*price)}</td></tr>`).join("")}
+      <div class="table-container"><table><thead><tr><th>Batch</th><th>Birds alive</th><th>Feed required</th><th>Calculation basis</th><th>Feed cost</th></tr></thead><tbody>
+      ${rows.map(row => `<tr><td>${escapeHTML(row.batch.name || "Batch")}</td><td>${formatNumber(row.birds)}</td><td>${row.projected == null ? "Incomplete" : formatNumber(row.projected) + " kg"}</td><td>${escapeHTML(row.basis)}</td><td>${row.estimatedCost == null ? "Incomplete" : money(row.estimatedCost)}</td></tr>`).join("")}
       </tbody></table></div>
-      <p class="form-help">Only days up to each batch's target harvest age are counted. Where records exist, recent average daily feed is used; otherwise the age standard is used. Price uses the entered assumption or latest recorded feed price.</p>`;
+      <p class="form-help">Forecasts use the saved daily feed allowance for each age-week and actual flock changes. A missing daily allowance or unconfirmed formulation remains incomplete; no age-standard intake or assumed feed price is substituted.</p>`;
   }
 
   $("#recalculateFeedBudgetBtn")?.addEventListener("click", renderFeedBudget);
-  ["forecastScope","farmFeedForecastPeriod","feedPriceAssumption","feedStandardStarter","feedStandardGrower","feedStandardFinisher"].forEach(id => {
+  ["forecastScope","farmFeedForecastPeriod"].forEach(id => {
     $(`#${id}`)?.addEventListener("input", renderFeedBudget);
     $(`#${id}`)?.addEventListener("change", renderFeedBudget);
   });
@@ -1400,37 +1388,36 @@
     const days = number($("#priceSimulationHorizon")?.value) || 60;
     const scope = $("#priceSimulationScope")?.value || "active";
     const batches = scope === "farm" ? data.batches : [batch];
-    let baselineFeed = 0;
-    let feedCost = 0;
-    let currentRevenue = 0;
-    let recordedCosts = 0;
-    const rows = batches.map(b => {
-      const estimate = estimateBatchFeed(b, days);
-      const unitPrice = number($("#feedPriceAssumption")?.value) || number(latestFeedPrice(b));
-      baselineFeed += estimate.projected;
-      feedCost += estimate.projected * unitPrice;
-      const s = estimate.stats;
-      currentRevenue += s.revenue;
-      recordedCosts += s.totalCosts;
-      return {name:b.name || "Batch", feed:estimate.projected, price:unitPrice, cost:estimate.projected*unitPrice};
+    const rows = batches.map(item => {
+      const estimate = estimateBatchFeed(item, days);
+      const unitCost = estimate.projected > 0 && estimate.estimatedCost != null
+        ? estimate.estimatedCost / estimate.projected
+        : null;
+      return {name:item.name || "Batch", feed:estimate.projected, cost:estimate.estimatedCost, unitCost, stats:estimate.stats, basis:estimate.basis};
     });
-    const simulatedFeedCost = feedCost * (1 + change/100);
-    const delta = simulatedFeedCost - feedCost;
-    const projectedCost = recordedCosts + simulatedFeedCost;
-    const projectedProfit = currentRevenue - projectedCost;
+    const feedComplete = rows.every(row => row.feed !== null);
+    const costComplete = feedComplete && rows.every(row => row.cost !== null);
+    const baselineFeed = feedComplete ? rows.reduce((sum,row)=>sum+row.feed,0) : null;
+    const feedCost = costComplete ? rows.reduce((sum,row)=>sum+row.cost,0) : null;
+    const simulatedFeedCost = feedCost == null ? null : feedCost * (1 + change/100);
+    const delta = simulatedFeedCost == null ? null : simulatedFeedCost - feedCost;
+    const currentRevenue = rows.reduce((sum,row)=>sum+row.stats.revenue,0);
+    const recordedCosts = rows.reduce((sum,row)=>sum+row.stats.totalCosts,0);
+    const projectedCost = simulatedFeedCost == null ? null : recordedCosts + simulatedFeedCost;
+    const projectedProfit = projectedCost == null ? null : currentRevenue - projectedCost;
     output.innerHTML = `
       <div class="simulation-results-grid">
-        <div class="simulation-result"><span>Forecast feed requirement</span><strong>${formatNumber(baselineFeed)} kg</strong></div>
-        <div class="simulation-result"><span>Current-price feed budget</span><strong>${money(feedCost)}</strong></div>
-        <div class="simulation-result"><span>Simulated feed budget</span><strong>${money(simulatedFeedCost)}</strong></div>
-        <div class="simulation-result"><span>Budget impact</span><strong class="${delta > 0 ? "negative-value" : "positive-value"}">${delta > 0 ? "+" : ""}${money(delta)}</strong></div>
-        <div class="simulation-result"><span>Estimated costs incl. forecast feed</span><strong>${money(projectedCost)}</strong></div>
-        <div class="simulation-result"><span>Illustrative profit / loss</span><strong>${money(projectedProfit)}</strong></div>
+        <div class="simulation-result"><span>Forecast feed requirement</span><strong>${baselineFeed == null ? "Incomplete plan" : formatNumber(baselineFeed) + " kg"}</strong></div>
+        <div class="simulation-result"><span>Current planned feed cost</span><strong>${feedCost == null ? "Incomplete formulation" : money(feedCost)}</strong></div>
+        <div class="simulation-result"><span>Simulated feed cost</span><strong>${simulatedFeedCost == null ? "Unavailable" : money(simulatedFeedCost)}</strong></div>
+        <div class="simulation-result"><span>Budget impact</span><strong>${delta == null ? "Unavailable" : (delta > 0 ? "+" : "") + money(delta)}</strong></div>
+        <div class="simulation-result"><span>Estimated costs incl. forecast feed</span><strong>${projectedCost == null ? "Unavailable" : money(projectedCost)}</strong></div>
+        <div class="simulation-result"><span>Illustrative profit / loss</span><strong>${projectedProfit == null ? "Unavailable" : money(projectedProfit)}</strong></div>
       </div>
-      <div class="table-container"><table><thead><tr><th>Batch</th><th>Forecast feed</th><th>Current price/kg</th><th>Simulated feed cost</th></tr></thead><tbody>
-      ${rows.map(r=>`<tr><td>${escapeHTML(r.name)}</td><td>${formatNumber(r.feed)} kg</td><td>${money(r.price)}</td><td>${money(r.cost*(1+change/100))}</td></tr>`).join("")}
+      <div class="table-container"><table><thead><tr><th>Batch</th><th>Forecast feed</th><th>Calculated cost/kg</th><th>Simulated feed cost</th></tr></thead><tbody>
+      ${rows.map(row=>`<tr><td>${escapeHTML(row.name)}</td><td>${row.feed == null ? "Incomplete" : formatNumber(row.feed) + " kg"}</td><td>${row.unitCost == null ? "Incomplete" : money(row.unitCost)}</td><td>${row.cost == null ? "Incomplete" : money(row.cost*(1+change/100))}</td></tr>`).join("")}
       </tbody></table></div>
-      <p class="form-help">Simulation only: actual price history and transactions are unchanged. Profit estimate adds forecast feed to recorded costs and compares it with revenue already recorded; it is not a final-batch profit forecast. Enter a selling-price assumption separately in batch setup/records to improve revenue projections.</p>`;
+      <p class="form-help">Simulation changes the calculated cost of the saved feed plan by the percentage entered. Missing feed rates or incomplete formulations are not filled with estimated standards or assumed prices. Revenue and other recorded costs remain unchanged.</p>`;
   }
 
   $("#priceSimulationChange")?.addEventListener("input", renderLivePriceSimulation);
